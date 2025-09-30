@@ -260,38 +260,30 @@ function Homepage() {
     return (
         <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-sky-100 relative overflow-hidden">
 
-            {/* Enhanced Modern Header */}
-            <header className={`sticky top-0 z-50 transition-all duration-300 ${isScrolled ? 'bg-white/98 backdrop-blur-lg shadow-lg border-b border-blue-100/80' : 'bg-white/95 backdrop-blur-sm shadow-sm border-b border-blue-100/60'}`}>
+            {/* Enhanced Modern Header - Fixed on Mobile */}
+            <header className={`fixed md:sticky top-0 left-0 right-0 z-50 w-full transition-all duration-300 ${isScrolled ? 'bg-white/98 backdrop-blur-lg shadow-lg border-b border-blue-100/80' : 'bg-white/95 backdrop-blur-sm shadow-sm border-b border-blue-100/60'}`}>
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="flex items-center justify-between h-20">
+                    <div className="flex items-center justify-between h-[4.5rem] md:h-[5.5rem]">
                         {/* Left: Enhanced logo + name */}
                         <div className="flex items-center gap-4 group">
                             <div className="relative">
-                                <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all duration-300 group-hover:scale-105">
+                                <div className="w-10 h-10 md:w-12 md:h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all duration-300 group-hover:scale-105">
                                     <HospitalIcon />
                                 </div>
                                 <div className="absolute -top-1 -right-1 w-4 h-4 bg-gradient-to-br from-blue-400 to-indigo-500 rounded-full opacity-75 animate-pulse"></div>
                             </div>
                             <div className="group-hover:translate-x-1 transition-transform duration-300">
-                                <h1 className="text-xl font-bold text-gray-900 group-hover:text-blue-700 transition-colors duration-300">Health Track</h1>
+                                <h1 className="text-lg md:text-xl font-bold text-gray-900 group-hover:text-blue-700 transition-colors duration-300">Health Track</h1>
                                 
                             </div>
                         </div>
 
-                        
+                        {/* Desktop Navigation intentionally removed per request (keeps header minimal) */}
 
                         <div className="flex items-center gap-3">
-                            <button 
-                                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                                className="md:hidden p-2 rounded-lg text-gray-600 hover:text-blue-600 hover:bg-blue-50 transition-all duration-300"
-                            >
-                                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    {isMobileMenuOpen ? (
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                    ) : (
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                                    )}
-                                </svg>
+                            {/* Simple Login Button for Mobile */}
+                            <button className="text-sm px-4 py-2 rounded-lg font-medium text-blue-700 border border-blue-200 hover:bg-blue-50 hover:border-blue-300 transition-all duration-300">
+                                Login
                             </button>
                             
                             <div className="hidden md:flex items-center gap-3">
@@ -304,44 +296,25 @@ function Homepage() {
                             </div>
                         </div>
                     </div>
-                    
-                    <div className={`md:hidden transition-all duration-300 overflow-hidden ${isMobileMenuOpen ? 'max-h-80 opacity-100' : 'max-h-0 opacity-0'}`}>
-                        <div className="py-4 border-t border-blue-100">
-                            <nav className="flex flex-col space-y-4">
-                                <a href="#features" className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors duration-300 py-2">Features</a>
-                                <a href="#benefits" className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors duration-300 py-2">Benefits</a>
-                                <a href="#pricing" className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors duration-300 py-2">Pricing</a>
-                                <a href="#contact" className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors duration-300 py-2">Contact</a>
-                                <div className="flex flex-col gap-3 pt-4 border-t border-blue-100">
-                                    <button className="text-sm px-4 py-2 rounded-lg font-medium text-blue-700 border border-blue-200 hover:bg-blue-50 transition-all duration-300">
-                                        Sign In
-                                    </button>
-                                    <button className="text-sm px-4 py-2 rounded-lg font-semibold bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700 transition-all duration-300">
-                                        Sign Up
-                                    </button>
-                                </div>
-                            </nav>
-                        </div>
-                    </div>
                 </div>
             </header>
             
             {/* Modern Split Layout Hero Section */}
-            <section className="relative min-h-[100vh] md:min-h-[90vh] bg-gradient-to-br from-slate-50 to-blue-50 overflow-hidden flex justify-center items-center">
+            <section className="relative min-h-[100vh] md:min-h-[90vh] bg-gradient-to-br from-slate-50 to-blue-50 overflow-hidden flex justify-center items-center pt-[4.5rem] md:pt-0">
                 {/* Background Elements */}
                 <div className="absolute inset-0">
                     {/* Geometric Background */}
                     <div className="absolute inset-0 bg-grid-slate-100 [mask-image:linear-gradient(0deg,white,rgba(255,255,255,0.6))]"></div>
                     
                     {/* Floating Orbs */}
-                    <div className="absolute top-20 left-20 w-72 h-72 bg-blue-400/20 rounded-full blur-3xl animate-pulse"></div>
-                    <div className="absolute bottom-40 right-10 w-96 h-96 bg-indigo-400/15 rounded-full blur-3xl animate-pulse animation-delay-1000"></div>
+                    <div className="hidden sm:block absolute top-20 left-6 sm:left-20 w-56 sm:w-72 h-56 sm:h-72 bg-blue-400/20 rounded-full blur-3xl animate-pulse"></div>
+                    <div className="hidden sm:block absolute bottom-28 sm:bottom-40 right-4 sm:right-10 w-72 sm:w-96 h-72 sm:h-96 bg-indigo-400/15 rounded-full blur-3xl animate-pulse animation-delay-1000"></div>
                 </div>
 
                 <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="grid lg:grid-cols-2 gap-12 items-center min-h-[75vh] py-16">
+                    <div className="grid lg:grid-cols-2 gap-8 md:gap-12 items-center min-h-[65vh] md:min-h-[75vh] py-8 sm:py-12 md:py-16">
                         {/* Left Content */}
-                        <div className="space-y-8">
+                        <div className="space-y-4 sm:space-y-6 md:space-y-8">
                             {/* Status Badge */}
                             <div className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-100 to-indigo-100 text-blue-700 px-4 py-2 rounded-full text-sm font-semibold">
                                 <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
@@ -349,7 +322,7 @@ function Homepage() {
                             </div>
                             
                             {/* Main Headline */}
-                            <div className="space-y-4">
+                            <div className="space-y-3 sm:space-y-4">
                                 <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 leading-tight">
                                     The Future of
                                     <span className="block mt-2 bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
@@ -367,15 +340,16 @@ function Homepage() {
                             
                             {/* CTA Buttons */}
                             <div className="flex flex-col sm:flex-row gap-4 pt-4">
-                                <button className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-8 py-4 rounded-2xl font-semibold text-base shadow-xl hover:shadow-2xl hover:scale-105 transition-all duration-300 group">
+                                <button aria-label="Get Started" className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-6 py-4 md:px-8 md:py-4 rounded-2xl font-semibold text-base shadow-xl hover:shadow-2xl hover:scale-105 transition-all duration-300 group w-full sm:w-auto sm:min-w-[280px] justify-center">
                                     <span>Get Started</span>
                                     <svg className="w-5 h-5 group-hover:translate-x-1 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
                                     </svg>
                                 </button>
-                                <button className="inline-flex items-center gap-2 border-2 border-gray-300 text-gray-700 px-8 py-4 rounded-2xl font-semibold text-base hover:border-blue-300 hover:text-blue-600 transition-all duration-300 group">
-                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h1.586a1 1 0 01.707.293l2.414 2.414a1 1 0 00.707.293H15M9 10v4a2 2 0 002 2h2a2 2 0 002-2v-4m-6 0V8a2 2 0 012-2h2a2 2 0 012 2v2" />
+                                <button aria-label="Watch Demo" className="inline-flex items-center gap-3 border-2 border-gray-300 text-gray-700 px-6 py-4 md:px-8 md:py-4 rounded-2xl font-semibold text-base hover:border-blue-300 hover:text-blue-600 transition-all duration-300 group w-full sm:w-auto sm:min-w-[280px] justify-center">
+                                    {/* Simple filled play-in-circle icon (dark filled, inherits color) */}
+                                    <svg className="w-5 h-5 flex-shrink-0" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                                        <path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zm-1 14.5v-9l6 4.5-6 4.5z" />
                                     </svg>
                                     <span>Watch Demo</span>
                                 </button>
@@ -383,9 +357,9 @@ function Homepage() {
                         </div>
 
                         {/* Right Visual */}
-                        <div className="relative w-full max-w-md mx-auto">
+                        <div className="relative w-full max-w-[20rem] sm:max-w-md mx-auto">
                             {/* Main Dashboard Mockup - Wider Size */}
-                            <div className="relative bg-white rounded-2xl shadow-2xl p-6 transform rotate-3 hover:rotate-0 transition-transform duration-500">
+                            <div className="relative bg-white rounded-2xl shadow-2xl p-4 sm:p-6 transform rotate-1 sm:rotate-3 hover:rotate-0 transition-transform duration-500">
                                 {/* Header */}
                                 <div className="flex items-center justify-between mb-6">
                                     <div className="flex items-center gap-3">
@@ -402,7 +376,7 @@ function Homepage() {
                                 {/* Dashboard Content */}
                                 <div className="space-y-4">
                                     {/* Stats Cards */}
-                                    <div className="grid grid-cols-2 gap-4">
+                                    <div className="grid grid-cols-2 gap-3 sm:gap-4">
                                         <div className="bg-blue-50 rounded-xl p-4">
                                             <div className="flex items-center gap-3">
                                                 <div className="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center">
@@ -428,12 +402,12 @@ function Homepage() {
                                     </div>
                                     
                                     {/* Chart Area */}
-                                    <div className="bg-gray-50 rounded-xl p-6">
+                                    <div className="bg-gray-50 rounded-xl p-4 sm:p-6">
                                         <div className="flex items-center justify-between mb-4">
                                             <span className="font-semibold text-gray-800">Patient Flow</span>
                                             <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
                                         </div>
-                                        <div className="h-24 bg-gradient-to-r from-blue-200 to-indigo-300 rounded-lg flex items-end justify-center">
+                                        <div className="h-20 sm:h-24 bg-gradient-to-r from-blue-200 to-indigo-300 rounded-lg flex items-end justify-center">
                                             <div className="text-xs text-gray-600 mb-2">Real-time Analytics</div>
                                         </div>
                                     </div>
@@ -453,10 +427,10 @@ function Homepage() {
                             </div>
                             
                             {/* Floating Elements - Adjusted for smaller mockup */}
-                            <div className="absolute -top-4 -right-4 w-16 h-16 bg-gradient-to-br from-blue-400 to-indigo-500 rounded-xl shadow-xl rotate-12 flex items-center justify-center">
+                            <div className="hidden sm:flex absolute -top-4 -right-4 w-16 h-16 bg-gradient-to-br from-blue-400 to-indigo-500 rounded-xl shadow-xl rotate-12 items-center justify-center">
                                 <HeartMonitorIcon />
                             </div>
-                            <div className="absolute -bottom-3 -left-3 w-14 h-14 bg-gradient-to-br from-emerald-400 to-teal-500 rounded-lg shadow-lg -rotate-12 flex items-center justify-center">
+                            <div className="hidden sm:flex absolute -bottom-3 -left-3 w-14 h-14 bg-gradient-to-br from-emerald-400 to-teal-500 rounded-lg shadow-lg -rotate-12 items-center justify-center">
                                 <SecurityIcon />
                             </div>
                         </div>
@@ -465,7 +439,7 @@ function Homepage() {
             </section>
             
             {/* Powerful Features Overview */}
-            <section className="py-36 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-white to-blue-50 relative">
+            <section className="py-20 sm:py-28 lg:py-36 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-white to-blue-50 relative">
                 <div className="max-w-7xl mx-auto">
                     {/* Section Header */}
                     <div className="text-center mb-16">
@@ -485,7 +459,7 @@ function Homepage() {
                     {/* Feature Categories */}
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-16">
                         {/* For Hospitals */}
-                        <div className="group bg-gradient-to-br from-blue-50 to-indigo-100 rounded-3xl p-8 hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 border border-blue-100">
+                        <div className="group bg-gradient-to-br from-blue-50 to-indigo-100 rounded-3xl p-6 sm:p-8 hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 border border-blue-100">
                             <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 group-hover:rotate-3 transition-all duration-300">
                                 <HospitalIcon />
                             </div>
@@ -508,7 +482,7 @@ function Homepage() {
                         </div>
                         
                         {/* For Doctors */}
-                        <div className="group bg-gradient-to-br from-emerald-50 to-teal-100 rounded-3xl p-8 hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 border border-emerald-100">
+                        <div className="group bg-gradient-to-br from-emerald-50 to-teal-100 rounded-3xl p-6 sm:p-8 hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 border border-emerald-100">
                             <div className="w-16 h-16 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 group-hover:rotate-3 transition-all duration-300">
                                 <DoctorIcon />
                             </div>
@@ -531,7 +505,7 @@ function Homepage() {
                         </div>
                         
                         {/* For Patients */}
-                        <div className="group bg-gradient-to-br from-purple-50 to-pink-100 rounded-3xl p-8 hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 border border-purple-100">
+                        <div className="group bg-gradient-to-br from-purple-50 to-pink-100 rounded-3xl p-6 sm:p-8 hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 border border-purple-100">
                             <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-pink-600 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 group-hover:rotate-3 transition-all duration-300">
                                 <PatientIcon />
                             </div>
@@ -556,7 +530,7 @@ function Homepage() {
                 </div>
             </section>
 
-            <section className="py-36 px-4 sm:px-6 lg:px-8 bg-white">
+            <section className="py-20 sm:py-28 lg:py-36 px-4 sm:px-6 lg:px-8 bg-white">
                 <div className="max-w-7xl mx-auto">
                     <div className="text-center mb-16">
                         <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
@@ -567,7 +541,7 @@ function Homepage() {
                         </p>
                     </div>
                     
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8">
                         {/* Row 1 - Core System Features */}
                         <div className="group bg-gradient-to-br from-emerald-50 to-teal-100 rounded-3xl p-6 hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 border border-emerald-200">
                             <div className="w-14 h-14 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-all duration-300 text-white">
@@ -637,7 +611,7 @@ function Homepage() {
                 </div>
             </section>
 
-            <section className="py-36 pb-48 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-gray-50 to-blue-50">
+            <section className="py-20 sm:py-28 lg:py-36 pb-24 lg:pb-48 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-gray-50 to-blue-50">
                 <div className="max-w-7xl mx-auto">
                     <div className="text-center mb-16">
                         <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
@@ -648,7 +622,7 @@ function Homepage() {
                         </p>
                     </div>
                     
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
                         <div className="bg-white rounded-3xl p-8 shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 border border-gray-100">
                             <div className="flex items-center mb-6">
                                 <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center text-white font-bold">
