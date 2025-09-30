@@ -70,11 +70,11 @@ const SignIn = () => {
             // Single set of credentials for all roles
             const defaultCredentials = {
                 email: 'test@admin.com',
-                password: 'admin'
+                password: 'admin123'
             };
-            
+
             if (formData.email !== defaultCredentials.email || formData.password !== defaultCredentials.password) {
-                setErrors({ general: 'Invalid credentials. Use test@admin.com / admin' });
+                setErrors({ general: 'Invalid credentials. Use test@admin.com / admin123' });
                 setIsLoading(false);
                 return;
             }
@@ -248,7 +248,7 @@ const SignIn = () => {
                             <h4 className="text-sm font-medium text-blue-900 mb-2">Demo Credentials (All Roles):</h4>
                             <div className="text-xs text-blue-700 space-y-1">
                                 <div><strong>Email:</strong> test@admin.com</div>
-                                <div><strong>Password:</strong> admin</div>
+                                <div><strong>Password:</strong> admin123</div>
                                 <div className="text-blue-600 mt-2">Select your role above and use these credentials to sign in</div>
                             </div>
                         </div>

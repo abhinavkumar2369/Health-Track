@@ -15,7 +15,7 @@ const SignUp = () => {
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-    const ADMIN_ACCESS_CODE = 'admin'; // Simple admin access code matching the login credentials
+    const ADMIN_ACCESS_CODE = 'admin123'; // Simple admin access code matching the login credentials
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
