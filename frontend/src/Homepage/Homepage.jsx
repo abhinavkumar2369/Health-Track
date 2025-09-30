@@ -1,4 +1,5 @@
 ﻿import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 const customStyles = `
   @keyframes fadeInUp {
@@ -136,6 +137,7 @@ const RocketIcon = () => (
 );
 
 function Homepage() {
+    const navigate = useNavigate();
     const [activeRole, setActiveRole] = useState('overview');
     const [isVisible, setIsVisible] = useState(false);
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -281,16 +283,17 @@ function Homepage() {
                         {/* Desktop Navigation intentionally removed per request (keeps header minimal) */}
 
                         <div className="flex items-center gap-3">
-                            {/* Simple Login Button for Mobile */}
-                            <button className="text-sm px-4 py-2 rounded-lg font-medium text-blue-700 border border-blue-200 hover:bg-blue-50 hover:border-blue-300 transition-all duration-300">
-                                Login
-                            </button>
-                            
                             <div className="hidden md:flex items-center gap-3">
-                                <button className="text-sm px-5 py-2.5 rounded-xl font-medium text-blue-700 border border-blue-200 hover:bg-blue-50 hover:border-blue-300 transition-all duration-300 hover:scale-105 hover:shadow-sm">
+                                <button 
+                                    onClick={() => navigate('/signin')}
+                                    className="text-sm px-5 py-2.5 rounded-xl font-medium text-blue-700 border border-blue-200 hover:bg-blue-50 hover:border-blue-300 transition-all duration-300 hover:scale-105 hover:shadow-sm"
+                                >
                                     Sign In
                                 </button>
-                                <button className="text-sm px-5 py-2.5 rounded-xl font-semibold bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700 transition-all duration-300 hover:scale-105 hover:shadow-lg shadow-blue-200">
+                                <button 
+                                    onClick={() => navigate('/signup')}
+                                    className="text-sm px-5 py-2.5 rounded-xl font-semibold bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700 transition-all duration-300 hover:scale-105 hover:shadow-lg shadow-blue-200"
+                                >
                                     Sign Up
                                 </button>
                             </div>
@@ -340,7 +343,11 @@ function Homepage() {
                             
                             {/* CTA Buttons */}
                             <div className="flex flex-col sm:flex-row gap-4 pt-4">
-                                <button aria-label="Get Started" className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-6 py-4 md:px-8 md:py-4 rounded-2xl font-semibold text-base shadow-xl hover:shadow-2xl hover:scale-105 transition-all duration-300 group w-full sm:w-auto sm:min-w-[280px] justify-center">
+                                <button 
+                                    onClick={() => navigate('/signin')}
+                                    aria-label="Get Started" 
+                                    className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-6 py-4 md:px-8 md:py-4 rounded-2xl font-semibold text-base shadow-xl hover:shadow-2xl hover:scale-105 transition-all duration-300 group w-full sm:w-auto sm:min-w-[280px] justify-center"
+                                >
                                     <span>Get Started</span>
                                     <svg className="w-5 h-5 group-hover:translate-x-1 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
