@@ -104,17 +104,76 @@ const SignIn = () => {
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50 flex items-center justify-center p-4">
-            <div className="max-w-md w-full space-y-8">
-                {/* Header */}
-                <div className="text-center">
-                    <div className="mx-auto w-16 h-16 bg-gradient-to-br from-blue-500 to-green-500 rounded-xl flex items-center justify-center mb-4">
-                        <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
+            <div className="max-w-6xl w-full">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+                    {/* Left Side - Branding/Info (Hidden on mobile) */}
+                    <div className="hidden lg:flex flex-col justify-center space-y-8">
+                        <div className="text-center lg:text-left">
+                            <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-green-500 rounded-2xl flex items-center justify-center mb-6 mx-auto lg:mx-0">
+                                <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                            </div>
+                            <h1 className="text-4xl font-bold text-gray-900 mb-4">Health Track</h1>
+                            <p className="text-xl text-gray-600 mb-8">Your comprehensive healthcare management platform</p>
+                        </div>
+                        
+                        <div className="space-y-6">
+                            <div className="flex items-center space-x-4">
+                                <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
+                                    <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                </div>
+                                <div>
+                                    <h3 className="font-semibold text-gray-900">Secure & Reliable</h3>
+                                    <p className="text-gray-600">Advanced security for your health data</p>
+                                </div>
+                            </div>
+                            
+                            <div className="flex items-center space-x-4">
+                                <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
+                                    <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                                    </svg>
+                                </div>
+                                <div>
+                                    <h3 className="font-semibold text-gray-900">Fast Access</h3>
+                                    <p className="text-gray-600">Quick access to all your health information</p>
+                                </div>
+                            </div>
+                            
+                            <div className="flex items-center space-x-4">
+                                <div className="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center">
+                                    <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                                    </svg>
+                                </div>
+                                <div>
+                                    <h3 className="font-semibold text-gray-900">Multi-Role Support</h3>
+                                    <p className="text-gray-600">Designed for patients, doctors, and administrators</p>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                    <h2 className="text-3xl font-bold text-gray-900">Welcome Back</h2>
-                    <p className="mt-2 text-gray-600">Sign in to access your Health Track dashboard</p>
-                </div>
+
+                    {/* Right Side - Sign In Form */}
+                    <div className="max-w-md mx-auto w-full space-y-8">
+                        {/* Header */}
+                        <div className="text-center lg:hidden">
+                            <div className="mx-auto w-16 h-16 bg-gradient-to-br from-blue-500 to-green-500 rounded-xl flex items-center justify-center mb-4">
+                                <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                            </div>
+                            <h2 className="text-3xl font-bold text-gray-900">Welcome Back</h2>
+                            <p className="mt-2 text-gray-600">Sign in to access your Health Track dashboard</p>
+                        </div>
+
+                        <div className="hidden lg:block text-center">
+                            <h2 className="text-2xl font-bold text-gray-900">Welcome Back</h2>
+                            <p className="mt-2 text-gray-600">Sign in to access your dashboard</p>
+                        </div>
 
                 {/* Sign In Form */}
                 <div className="bg-white rounded-2xl shadow-xl p-8 border border-gray-100">
@@ -243,16 +302,6 @@ const SignIn = () => {
                             )}
                         </button>
 
-                        {/* Demo Credentials */}
-                        <div className="bg-blue-50 rounded-lg p-4 mt-6">
-                            <h4 className="text-sm font-medium text-blue-900 mb-2">Demo Credentials (All Roles):</h4>
-                            <div className="text-xs text-blue-700 space-y-1">
-                                <div><strong>Email:</strong> test@admin.com</div>
-                                <div><strong>Password:</strong> admin123</div>
-                                <div className="text-blue-600 mt-2">Select your role above and use these credentials to sign in</div>
-                            </div>
-                        </div>
-
                         {/* Sign Up Link */}
                         <div className="text-center">
                             <p className="text-sm text-gray-600">
@@ -270,6 +319,8 @@ const SignIn = () => {
                 </div>
             </div>
         </div>
+    </div>
+</div>
     );
 };
 

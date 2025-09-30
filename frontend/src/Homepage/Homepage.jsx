@@ -260,23 +260,23 @@ function Homepage() {
     };
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-sky-100 relative overflow-hidden">
+        <div className="min-h-screen bg-white relative overflow-hidden">
 
             {/* Enhanced Modern Header - Fixed on Mobile */}
-            <header className={`fixed md:sticky top-0 left-0 right-0 z-50 w-full transition-all duration-300 ${isScrolled ? 'bg-white/98 backdrop-blur-lg shadow-lg border-b border-blue-100/80' : 'bg-white/95 backdrop-blur-sm shadow-sm border-b border-blue-100/60'}`}>
+            <header className={`fixed md:sticky top-0 left-0 right-0 z-50 w-full transition-all duration-300 ${isScrolled ? 'bg-white/98 backdrop-blur-lg shadow-lg border-b border-gray-100' : 'bg-white/95 backdrop-blur-sm shadow-sm border-b border-gray-100'}`}>
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="flex items-center justify-between h-[4.5rem] md:h-[5.5rem]">
                         {/* Left: Enhanced logo + name */}
                         <div className="flex items-center gap-4 group">
                             <div className="relative">
-                                <div className="w-10 h-10 md:w-12 md:h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all duration-300 group-hover:scale-105">
-                                    <HospitalIcon />
+                                <div className="w-10 h-10 md:w-12 md:h-12 bg-gradient-to-br from-blue-500 to-green-500 rounded-xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all duration-300 group-hover:scale-105">
+                                    <svg className="w-6 h-6 md:w-7 md:h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
                                 </div>
-                                <div className="absolute -top-1 -right-1 w-4 h-4 bg-gradient-to-br from-blue-400 to-indigo-500 rounded-full opacity-75 animate-pulse"></div>
                             </div>
                             <div className="group-hover:translate-x-1 transition-transform duration-300">
-                                <h1 className="text-lg md:text-xl font-bold text-gray-900 group-hover:text-blue-700 transition-colors duration-300">Health Track</h1>
-                                
+                                <h1 className="text-lg md:text-xl font-bold bg-gradient-to-r from-blue-600 to-green-600 bg-clip-text text-transparent group-hover:from-blue-700 group-hover:to-green-700 transition-all duration-300">Health Track</h1>
                             </div>
                         </div>
 
@@ -286,13 +286,13 @@ function Homepage() {
                             <div className="hidden md:flex items-center gap-3">
                                 <button 
                                     onClick={() => navigate('/signin')}
-                                    className="text-sm px-5 py-2.5 rounded-xl font-medium text-blue-700 border border-blue-200 hover:bg-blue-50 hover:border-blue-300 transition-all duration-300 hover:scale-105 hover:shadow-sm"
+                                    className="text-sm px-5 py-2.5 rounded-xl font-medium text-gray-700 border-2 border-gray-200 hover:border-blue-300 hover:text-blue-600 transition-all duration-300 hover:scale-105"
                                 >
                                     Sign In
                                 </button>
                                 <button 
                                     onClick={() => navigate('/signup')}
-                                    className="text-sm px-5 py-2.5 rounded-xl font-semibold bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700 transition-all duration-300 hover:scale-105 hover:shadow-lg shadow-blue-200"
+                                    className="text-sm px-5 py-2.5 rounded-xl font-semibold bg-gradient-to-r from-blue-600 to-green-600 text-white hover:from-blue-700 hover:to-green-700 transition-all duration-300 hover:scale-105 shadow-lg hover:shadow-xl"
                                 >
                                     Sign Up
                                 </button>
@@ -303,15 +303,12 @@ function Homepage() {
             </header>
             
             {/* Modern Split Layout Hero Section */}
-            <section className="relative min-h-[100vh] md:min-h-[90vh] bg-gradient-to-br from-slate-50 to-blue-50 overflow-hidden flex justify-center items-center pt-[4.5rem] md:pt-0">
+            <section className="relative min-h-[100vh] md:min-h-[90vh] bg-white overflow-hidden flex justify-center items-center pt-[4.5rem] md:pt-0">
                 {/* Background Elements */}
                 <div className="absolute inset-0">
-                    {/* Geometric Background */}
-                    <div className="absolute inset-0 bg-grid-slate-100 [mask-image:linear-gradient(0deg,white,rgba(255,255,255,0.6))]"></div>
-                    
-                    {/* Floating Orbs */}
-                    <div className="hidden sm:block absolute top-20 left-6 sm:left-20 w-56 sm:w-72 h-56 sm:h-72 bg-blue-400/20 rounded-full blur-3xl animate-pulse"></div>
-                    <div className="hidden sm:block absolute bottom-28 sm:bottom-40 right-4 sm:right-10 w-72 sm:w-96 h-72 sm:h-96 bg-indigo-400/15 rounded-full blur-3xl animate-pulse animation-delay-1000"></div>
+                    {/* Floating Orbs - matching sign-in/sign-up style */}
+                    <div className="hidden sm:block absolute top-20 left-6 sm:left-20 w-56 sm:w-72 h-56 sm:h-72 bg-blue-200/30 rounded-full blur-3xl animate-pulse"></div>
+                    <div className="hidden sm:block absolute bottom-28 sm:bottom-40 right-4 sm:right-10 w-72 sm:w-96 h-72 sm:h-96 bg-green-200/25 rounded-full blur-3xl animate-pulse animation-delay-1000"></div>
                 </div>
 
                 <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -319,8 +316,8 @@ function Homepage() {
                         {/* Left Content */}
                         <div className="space-y-4 sm:space-y-6 md:space-y-8">
                             {/* Status Badge */}
-                            <div className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-100 to-indigo-100 text-blue-700 px-4 py-2 rounded-full text-sm font-semibold">
-                                <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+                            <div className="inline-flex items-center gap-2 bg-white/80 backdrop-blur-sm text-gray-700 px-4 py-2 rounded-full text-sm font-semibold border border-gray-200 shadow-sm">
+                                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
                                 <span>🎓 Final Year Project</span>
                             </div>
                             
@@ -328,11 +325,11 @@ function Homepage() {
                             <div className="space-y-3 sm:space-y-4">
                                 <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 leading-tight">
                                     The Future of
-                                    <span className="block mt-2 bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+                                    <span className="block mt-2 bg-gradient-to-r from-blue-600 to-green-600 bg-clip-text text-transparent">
                                         Healthcare Management
                                     </span>
                                 </h1>
-                                <div className="w-20 h-1 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-full"></div>
+                                <div className="w-20 h-1 bg-gradient-to-r from-blue-600 to-green-600 rounded-full"></div>
                             </div>
                             
                             {/* Description */}
@@ -346,15 +343,14 @@ function Homepage() {
                                 <button 
                                     onClick={() => navigate('/signin')}
                                     aria-label="Get Started" 
-                                    className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-6 py-4 md:px-8 md:py-4 rounded-2xl font-semibold text-base shadow-xl hover:shadow-2xl hover:scale-105 transition-all duration-300 group w-full sm:w-auto sm:min-w-[280px] justify-center"
+                                    className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-600 to-green-600 text-white px-6 py-4 md:px-8 md:py-4 rounded-2xl font-semibold text-base shadow-xl hover:shadow-2xl hover:scale-105 transition-all duration-300 group w-full sm:w-auto sm:min-w-[280px] justify-center"
                                 >
                                     <span>Get Started</span>
                                     <svg className="w-5 h-5 group-hover:translate-x-1 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
                                     </svg>
                                 </button>
-                                <button aria-label="Watch Demo" className="inline-flex items-center gap-3 border-2 border-gray-300 text-gray-700 px-6 py-4 md:px-8 md:py-4 rounded-2xl font-semibold text-base hover:border-blue-300 hover:text-blue-600 transition-all duration-300 group w-full sm:w-auto sm:min-w-[280px] justify-center">
-                                    {/* Simple filled play-in-circle icon (dark filled, inherits color) */}
+                                <button aria-label="Watch Demo" className="inline-flex items-center gap-3 border-2 border-gray-300 text-gray-700 px-6 py-4 md:px-8 md:py-4 rounded-2xl font-semibold text-base hover:border-blue-300 hover:text-blue-600 hover:bg-white transition-all duration-300 group w-full sm:w-auto sm:min-w-[280px] justify-center">
                                     <svg className="w-5 h-5 flex-shrink-0" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                                         <path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zm-1 14.5v-9l6 4.5-6 4.5z" />
                                     </svg>
@@ -366,11 +362,11 @@ function Homepage() {
                         {/* Right Visual */}
                         <div className="relative w-full max-w-[20rem] sm:max-w-md mx-auto">
                             {/* Main Dashboard Mockup - Wider Size */}
-                            <div className="relative bg-white rounded-2xl shadow-2xl p-4 sm:p-6 transform rotate-1 sm:rotate-3 hover:rotate-0 transition-transform duration-500">
+                            <div className="relative bg-white rounded-2xl shadow-2xl p-4 sm:p-6 transform rotate-1 sm:rotate-3 hover:rotate-0 transition-transform duration-500 border border-gray-100">
                                 {/* Header */}
                                 <div className="flex items-center justify-between mb-6">
                                     <div className="flex items-center gap-3">
-                                        <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg"></div>
+                                        <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-green-500 rounded-lg"></div>
                                         <span className="font-bold text-gray-900">Health Track</span>
                                     </div>
                                     <div className="flex gap-2">
@@ -384,9 +380,9 @@ function Homepage() {
                                 <div className="space-y-4">
                                     {/* Stats Cards */}
                                     <div className="grid grid-cols-2 gap-3 sm:gap-4">
-                                        <div className="bg-blue-50 rounded-xl p-4">
+                                        <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-4 border border-blue-200">
                                             <div className="flex items-center gap-3">
-                                                <div className="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center">
+                                                <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
                                                     <PatientIcon />
                                                 </div>
                                                 <div>
@@ -395,49 +391,49 @@ function Homepage() {
                                                 </div>
                                             </div>
                                         </div>
-                                        <div className="bg-indigo-50 rounded-xl p-4">
+                                        <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-4 border border-green-200">
                                             <div className="flex items-center gap-3">
-                                                <div className="w-10 h-10 bg-indigo-500 rounded-lg flex items-center justify-center">
+                                                <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-green-600 rounded-lg flex items-center justify-center">
                                                     <DoctorIcon />
                                                 </div>
                                                 <div>
                                                     <div className="text-sm text-gray-600">Doctors</div>
-                                                    <div className="text-xl font-bold text-indigo-600">124</div>
+                                                    <div className="text-xl font-bold text-green-600">124</div>
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
                                     
                                     {/* Chart Area */}
-                                    <div className="bg-gray-50 rounded-xl p-4 sm:p-6">
+                                    <div className="bg-gray-50 rounded-xl p-4 sm:p-6 border border-gray-200">
                                         <div className="flex items-center justify-between mb-4">
                                             <span className="font-semibold text-gray-800">Patient Flow</span>
-                                            <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                                            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
                                         </div>
-                                        <div className="h-20 sm:h-24 bg-gradient-to-r from-blue-200 to-indigo-300 rounded-lg flex items-end justify-center">
+                                        <div className="h-20 sm:h-24 bg-gradient-to-r from-blue-200 to-green-200 rounded-lg flex items-end justify-center">
                                             <div className="text-xs text-gray-600 mb-2">Real-time Analytics</div>
                                         </div>
                                     </div>
                                     
                                     {/* Action Items */}
                                     <div className="space-y-2">
-                                        <div className="flex items-center gap-3 p-3 bg-green-50 rounded-lg">
+                                        <div className="flex items-center gap-3 p-3 bg-green-50 rounded-lg border border-green-200">
                                             <div className="w-4 h-4 bg-green-500 rounded-full"></div>
                                             <span className="text-sm text-green-700">New appointment scheduled</span>
                                         </div>
-                                        <div className="flex items-center gap-3 p-3 bg-yellow-50 rounded-lg">
-                                            <div className="w-4 h-4 bg-yellow-500 rounded-full"></div>
-                                            <span className="text-sm text-yellow-700">Lab results pending review</span>
+                                        <div className="flex items-center gap-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                                            <div className="w-4 h-4 bg-blue-500 rounded-full"></div>
+                                            <span className="text-sm text-blue-700">Lab results pending review</span>
                                         </div>
                                     </div>
                                 </div>
                             </div>
                             
                             {/* Floating Elements - Adjusted for smaller mockup */}
-                            <div className="hidden sm:flex absolute -top-4 -right-4 w-16 h-16 bg-gradient-to-br from-blue-400 to-indigo-500 rounded-xl shadow-xl rotate-12 items-center justify-center">
+                            <div className="hidden sm:flex absolute -top-4 -right-4 w-16 h-16 bg-gradient-to-br from-blue-400 to-blue-500 rounded-xl shadow-xl rotate-12 items-center justify-center">
                                 <HeartMonitorIcon />
                             </div>
-                            <div className="hidden sm:flex absolute -bottom-3 -left-3 w-14 h-14 bg-gradient-to-br from-emerald-400 to-teal-500 rounded-lg shadow-lg -rotate-12 items-center justify-center">
+                            <div className="hidden sm:flex absolute -bottom-3 -left-3 w-14 h-14 bg-gradient-to-br from-green-400 to-green-500 rounded-lg shadow-lg -rotate-12 items-center justify-center">
                                 <SecurityIcon />
                             </div>
                         </div>
@@ -446,17 +442,17 @@ function Homepage() {
             </section>
             
             {/* Powerful Features Overview */}
-            <section className="py-20 sm:py-28 lg:py-36 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-white to-blue-50 relative">
+            <section className="py-20 sm:py-28 lg:py-36 px-4 sm:px-6 lg:px-8 bg-white relative">
                 <div className="max-w-7xl mx-auto">
                     {/* Section Header */}
                     <div className="text-center mb-16">
-                        <div className="inline-flex items-center gap-2 bg-blue-100 text-blue-800 px-4 py-2 rounded-full text-sm font-semibold mb-6">
-                            <div className="w-2 h-2 bg-blue-600 rounded-full animate-pulse"></div>
+                        <div className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-50 to-green-50 text-gray-700 px-4 py-2 rounded-full text-sm font-semibold mb-6 border border-gray-200">
+                            <div className="w-2 h-2 bg-gradient-to-r from-blue-600 to-green-600 rounded-full animate-pulse"></div>
                             Complete Healthcare Platform
                         </div>
                         <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
                             Everything you need to modernize
-                            <span className="text-blue-600 block">healthcare delivery</span>
+                            <span className="bg-gradient-to-r from-blue-600 to-green-600 bg-clip-text text-transparent block">healthcare delivery</span>
                         </h2>
                         <p className="text-xl text-gray-600 max-w-3xl mx-auto">
                             From patient registration to AI-powered diagnostics, Health Track provides comprehensive tools for every healthcare stakeholder.
@@ -466,8 +462,8 @@ function Homepage() {
                     {/* Feature Categories */}
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-16">
                         {/* For Hospitals */}
-                        <div className="group bg-gradient-to-br from-blue-50 to-indigo-100 rounded-3xl p-6 sm:p-8 hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 border border-blue-100">
-                            <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 group-hover:rotate-3 transition-all duration-300">
+                        <div className="group bg-gradient-to-br from-blue-50 to-blue-100 rounded-3xl p-6 sm:p-8 hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 border border-blue-200">
+                            <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 group-hover:rotate-3 transition-all duration-300">
                                 <HospitalIcon />
                             </div>
                             <h3 className="text-2xl font-bold text-gray-900 mb-4">For Hospitals</h3>
@@ -478,57 +474,57 @@ function Homepage() {
                                     <span className="text-sm text-gray-700">Doctor & Staff Management</span>
                                 </div>
                                 <div className="flex items-center gap-3">
-                                    <div className="w-2 h-2 bg-indigo-500 rounded-full"></div>
+                                    <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
                                     <span className="text-sm text-gray-700">Resource Optimization</span>
                                 </div>
                                 <div className="flex items-center gap-3">
-                                    <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
+                                    <div className="w-2 h-2 bg-blue-700 rounded-full"></div>
                                     <span className="text-sm text-gray-700">Financial Analytics</span>
                                 </div>
                             </div>
                         </div>
                         
                         {/* For Doctors */}
-                        <div className="group bg-gradient-to-br from-emerald-50 to-teal-100 rounded-3xl p-6 sm:p-8 hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 border border-emerald-100">
-                            <div className="w-16 h-16 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 group-hover:rotate-3 transition-all duration-300">
+                        <div className="group bg-gradient-to-br from-green-50 to-green-100 rounded-3xl p-6 sm:p-8 hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 border border-green-200">
+                            <div className="w-16 h-16 bg-gradient-to-br from-green-500 to-green-600 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 group-hover:rotate-3 transition-all duration-300">
                                 <DoctorIcon />
                             </div>
                             <h3 className="text-2xl font-bold text-gray-900 mb-4">For Doctors</h3>
                             <p className="text-gray-600 mb-6 leading-relaxed">AI-enhanced clinical tools for better diagnoses and patient care.</p>
                             <div className="space-y-3">
                                 <div className="flex items-center gap-3">
-                                    <div className="w-2 h-2 bg-emerald-500 rounded-full"></div>
+                                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
                                     <span className="text-sm text-gray-700">Smart Medical Records</span>
                                 </div>
                                 <div className="flex items-center gap-3">
-                                    <div className="w-2 h-2 bg-teal-500 rounded-full"></div>
+                                    <div className="w-2 h-2 bg-green-600 rounded-full"></div>
                                     <span className="text-sm text-gray-700">AI Diagnostic Support</span>
                                 </div>
                                 <div className="flex items-center gap-3">
-                                    <div className="w-2 h-2 bg-emerald-600 rounded-full"></div>
+                                    <div className="w-2 h-2 bg-green-700 rounded-full"></div>
                                     <span className="text-sm text-gray-700">Prescription Management</span>
                                 </div>
                             </div>
                         </div>
                         
                         {/* For Patients */}
-                        <div className="group bg-gradient-to-br from-purple-50 to-pink-100 rounded-3xl p-6 sm:p-8 hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 border border-purple-100">
-                            <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-pink-600 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 group-hover:rotate-3 transition-all duration-300">
+                        <div className="group bg-gradient-to-br from-gray-50 to-gray-100 rounded-3xl p-6 sm:p-8 hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 border border-gray-200">
+                            <div className="w-16 h-16 bg-gradient-to-br from-gray-500 to-gray-600 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 group-hover:rotate-3 transition-all duration-300">
                                 <PatientIcon />
                             </div>
                             <h3 className="text-2xl font-bold text-gray-900 mb-4">For Patients</h3>
                             <p className="text-gray-600 mb-6 leading-relaxed">Personalized health insights and seamless healthcare access.</p>
                             <div className="space-y-3">
                                 <div className="flex items-center gap-3">
-                                    <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
+                                    <div className="w-2 h-2 bg-gray-500 rounded-full"></div>
                                     <span className="text-sm text-gray-700">Personal Health Records</span>
                                 </div>
                                 <div className="flex items-center gap-3">
-                                    <div className="w-2 h-2 bg-pink-500 rounded-full"></div>
+                                    <div className="w-2 h-2 bg-gray-600 rounded-full"></div>
                                     <span className="text-sm text-gray-700">Health Monitoring</span>
                                 </div>
                                 <div className="flex items-center gap-3">
-                                    <div className="w-2 h-2 bg-purple-600 rounded-full"></div>
+                                    <div className="w-2 h-2 bg-gray-700 rounded-full"></div>
                                     <span className="text-sm text-gray-700">Smart Recommendations</span>
                                 </div>
                             </div>
@@ -544,7 +540,7 @@ function Homepage() {
                             Cutting-Edge Healthcare Technology
                         </h2>
                         <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-                            Advanced features that set HDIMS apart from traditional healthcare systems
+                            Advanced features that set Health Track apart from traditional healthcare systems
                         </p>
                     </div>
                     
@@ -618,7 +614,7 @@ function Homepage() {
                 </div>
             </section>
 
-            <section className="py-20 sm:py-28 lg:py-36 pb-24 lg:pb-48 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-gray-50 to-blue-50">
+            <section className="py-20 sm:py-28 lg:py-36 pb-24 lg:pb-48 px-4 sm:px-6 lg:px-8 bg-white">
                 <div className="max-w-7xl mx-auto">
                     <div className="text-center mb-16">
                         <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
@@ -630,9 +626,9 @@ function Homepage() {
                     </div>
                     
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
-                        <div className="bg-white rounded-3xl p-8 shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 border border-gray-100">
+                        <div className="bg-gradient-to-br from-blue-50 to-white rounded-3xl p-8 shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 border border-blue-100">
                             <div className="flex items-center mb-6">
-                                <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center text-white font-bold">
+                                <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center text-white font-bold">
                                     <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                                     </svg>
@@ -645,14 +641,14 @@ function Homepage() {
                             <p className="text-gray-700 leading-relaxed mb-4">
                                 Built with React.js frontend and Node.js backend, featuring modern UI components and robust API architecture for seamless healthcare management.
                             </p>
-                            <div className="flex text-blue-400">
-                                <span className="text-sm font-semibold bg-blue-100 px-3 py-1 rounded-full">React + Node.js</span>
+                            <div className="flex">
+                                <span className="text-sm font-semibold bg-blue-100 text-blue-700 px-3 py-1 rounded-full">React + Node.js</span>
                             </div>
                         </div>
                         
-                        <div className="bg-white rounded-3xl p-8 shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 border border-gray-100">
+                        <div className="bg-gradient-to-br from-green-50 to-white rounded-3xl p-8 shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 border border-green-100">
                             <div className="flex items-center mb-6">
-                                <div className="w-12 h-12 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold">
+                                <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-green-600 rounded-full flex items-center justify-center text-white font-bold">
                                     <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                                     </svg>
@@ -665,14 +661,14 @@ function Homepage() {
                             <p className="text-gray-700 leading-relaxed mb-4">
                                 Incorporates AI-powered features for patient diagnosis assistance, health analytics, and predictive healthcare insights using modern ML algorithms.
                             </p>
-                            <div className="flex text-indigo-400">
-                                <span className="text-sm font-semibold bg-indigo-100 px-3 py-1 rounded-full">AI/ML Features</span>
+                            <div className="flex">
+                                <span className="text-sm font-semibold bg-green-100 text-green-700 px-3 py-1 rounded-full">AI/ML Features</span>
                             </div>
                         </div>
                         
-                        <div className="bg-white rounded-3xl p-8 shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 border border-gray-100">
+                        <div className="bg-gradient-to-br from-gray-50 to-white rounded-3xl p-8 shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 border border-gray-200">
                             <div className="flex items-center mb-6">
-                                <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-teal-600 rounded-full flex items-center justify-center text-white font-bold">
+                                <div className="w-12 h-12 bg-gradient-to-br from-gray-500 to-gray-600 rounded-full flex items-center justify-center text-white font-bold">
                                     <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                                     </svg>
@@ -685,8 +681,8 @@ function Homepage() {
                             <p className="text-gray-700 leading-relaxed mb-4">
                                 Implements robust security measures including JWT authentication, encrypted data storage, and role-based access control for healthcare data protection.
                             </p>
-                            <div className="flex text-green-400">
-                                <span className="text-sm font-semibold bg-green-100 px-3 py-1 rounded-full">Secure Architecture</span>
+                            <div className="flex">
+                                <span className="text-sm font-semibold bg-gray-200 text-gray-700 px-3 py-1 rounded-full">Secure Architecture</span>
                             </div>
                         </div>
                     </div>
@@ -696,72 +692,72 @@ function Homepage() {
             
 
 
-            <footer className="bg-gray-900 text-white py-16 px-4 sm:px-6 lg:px-8">
+            <footer className="bg-white border-t border-gray-200 py-16 px-4 sm:px-6 lg:px-8">
                 <div className="max-w-7xl mx-auto">
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8 mb-12">
                         {/* Brand */}
                         <div className="lg:col-span-2">
                             <div className="flex items-center gap-3 mb-6">
-                                <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center">
+                                <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-green-500 rounded-xl flex items-center justify-center">
                                     <span className="text-white font-bold text-lg">H</span>
                                 </div>
-                                <span className="text-2xl font-bold">Health Track</span>
+                                <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-green-600 bg-clip-text text-transparent">Health Track</span>
                             </div>
-                            <p className="text-gray-400 leading-relaxed max-w-md mb-6">
+                            <p className="text-gray-600 leading-relaxed max-w-md mb-6">
                                 Transforming healthcare with intelligent technology, seamless integration, and patient-centered solutions for the digital age.
                             </p>
                             <div className="flex items-center gap-4">
-                                <div className="w-10 h-10 bg-gray-800 rounded-full flex items-center justify-center hover:bg-blue-600 transition-colors duration-300 cursor-pointer">
+                                <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center hover:bg-blue-600 hover:text-white transition-all duration-300 cursor-pointer text-blue-600">
                                     <span className="text-sm">f</span>
                                 </div>
-                                <div className="w-10 h-10 bg-gray-800 rounded-full flex items-center justify-center hover:bg-blue-600 transition-colors duration-300 cursor-pointer">
+                                <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center hover:bg-blue-600 hover:text-white transition-all duration-300 cursor-pointer text-blue-600">
                                     <span className="text-sm">t</span>
                                 </div>
-                                <div className="w-10 h-10 bg-gray-800 rounded-full flex items-center justify-center hover:bg-blue-600 transition-colors duration-300 cursor-pointer">
+                                <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center hover:bg-blue-600 hover:text-white transition-all duration-300 cursor-pointer text-blue-600">
                                     <span className="text-sm">in</span>
                                 </div>
                             </div>
                         </div>
                         
                         <div>
-                            <h4 className="text-lg font-semibold mb-4">Solutions</h4>
-                            <ul className="space-y-3 text-gray-400">
-                                <li><a href="#" className="hover:text-blue-400 transition-colors duration-300">Hospital Management</a></li>
-                                <li><a href="#" className="hover:text-blue-400 transition-colors duration-300">Clinical Workflow</a></li>
-                                <li><a href="#" className="hover:text-blue-400 transition-colors duration-300">Patient Portal</a></li>
-                                <li><a href="#" className="hover:text-blue-400 transition-colors duration-300">AI Analytics</a></li>
-                                <li><a href="#" className="hover:text-blue-400 transition-colors duration-300">Mobile Health</a></li>
+                            <h4 className="text-lg font-semibold mb-4 text-gray-900">Solutions</h4>
+                            <ul className="space-y-3 text-gray-600">
+                                <li><a href="#" className="hover:text-blue-600 transition-colors duration-300">Hospital Management</a></li>
+                                <li><a href="#" className="hover:text-blue-600 transition-colors duration-300">Clinical Workflow</a></li>
+                                <li><a href="#" className="hover:text-blue-600 transition-colors duration-300">Patient Portal</a></li>
+                                <li><a href="#" className="hover:text-blue-600 transition-colors duration-300">AI Analytics</a></li>
+                                <li><a href="#" className="hover:text-blue-600 transition-colors duration-300">Mobile Health</a></li>
                             </ul>
                         </div>
     
                         <div>
-                            <h4 className="text-lg font-semibold mb-4">Resources</h4>
-                            <ul className="space-y-3 text-gray-400">
-                                <li><a href="#" className="hover:text-blue-400 transition-colors duration-300">Documentation</a></li>
-                                <li><a href="#" className="hover:text-blue-400 transition-colors duration-300">API Reference</a></li>
-                                <li><a href="#" className="hover:text-blue-400 transition-colors duration-300">Case Studies</a></li>
-                                <li><a href="#" className="hover:text-blue-400 transition-colors duration-300">Support</a></li>
+                            <h4 className="text-lg font-semibold mb-4 text-gray-900">Resources</h4>
+                            <ul className="space-y-3 text-gray-600">
+                                <li><a href="#" className="hover:text-blue-600 transition-colors duration-300">Documentation</a></li>
+                                <li><a href="#" className="hover:text-blue-600 transition-colors duration-300">API Reference</a></li>
+                                <li><a href="#" className="hover:text-blue-600 transition-colors duration-300">Case Studies</a></li>
+                                <li><a href="#" className="hover:text-blue-600 transition-colors duration-300">Support</a></li>
                             </ul>
                         </div>
                         
                 
                         <div>
-                            <h4 className="text-lg font-semibold mb-4">Company</h4>
-                            <ul className="space-y-3 text-gray-400">
-                                <li><a href="#" className="hover:text-blue-400 transition-colors duration-300">About Us</a></li>
-                                <li><a href="#" className="hover:text-blue-400 transition-colors duration-300">Careers</a></li>
-                                <li><a href="#" className="hover:text-blue-400 transition-colors duration-300">Privacy Policy</a></li>
-                                <li><a href="#" className="hover:text-blue-400 transition-colors duration-300">Terms of Service</a></li>
-                                <li><a href="#" className="hover:text-blue-400 transition-colors duration-300">Contact</a></li>
+                            <h4 className="text-lg font-semibold mb-4 text-gray-900">Company</h4>
+                            <ul className="space-y-3 text-gray-600">
+                                <li><a href="#" className="hover:text-blue-600 transition-colors duration-300">About Us</a></li>
+                                <li><a href="#" className="hover:text-blue-600 transition-colors duration-300">Careers</a></li>
+                                <li><a href="#" className="hover:text-blue-600 transition-colors duration-300">Privacy Policy</a></li>
+                                <li><a href="#" className="hover:text-blue-600 transition-colors duration-300">Terms of Service</a></li>
+                                <li><a href="#" className="hover:text-blue-600 transition-colors duration-300">Contact</a></li>
                             </ul>
                         </div>
                     </div>
                     
-                    <div className="border-t border-gray-800 pt-8 flex flex-col md:flex-row items-center justify-between">
-                        <p className="text-gray-400 text-sm">
+                    <div className="border-t border-gray-200 pt-8 flex flex-col md:flex-row items-center justify-between">
+                        <p className="text-gray-600 text-sm">
                             © 2024  Health-Track.  All rights reserved.
                         </p>
-                        <div className="flex items-center gap-6 mt-4 md:mt-0 text-sm text-gray-400">
+                        <div className="flex items-center gap-6 mt-4 md:mt-0 text-sm text-gray-600">
                             <span className="flex items-center gap-2">
                                 <div className="w-2 h-2 bg-green-500 rounded-full"></div>
                                 System Operational

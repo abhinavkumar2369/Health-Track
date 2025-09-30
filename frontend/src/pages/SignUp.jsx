@@ -7,15 +7,12 @@ const SignUp = () => {
         fullName: '',
         email: '',
         password: '',
-        confirmPassword: '',
-        adminAccessCode: ''
+        confirmPassword: ''
     });
     const [errors, setErrors] = useState({});
     const [isLoading, setIsLoading] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-
-    const ADMIN_ACCESS_CODE = 'admin123'; // Simple admin access code matching the login credentials
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
@@ -77,12 +74,6 @@ const SignUp = () => {
             newErrors.confirmPassword = 'Passwords do not match';
         }
         
-        if (!formData.adminAccessCode.trim()) {
-            newErrors.adminAccessCode = 'Admin access code is required';
-        } else if (formData.adminAccessCode !== ADMIN_ACCESS_CODE) {
-            newErrors.adminAccessCode = 'Invalid admin access code';
-        }
-        
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
     };
@@ -124,23 +115,76 @@ const SignUp = () => {
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50 flex items-center justify-center p-4">
-            <div className="max-w-md w-full space-y-8">
-                {/* Header */}
-                <div className="text-center">
-                    <div className="mx-auto w-16 h-16 bg-gradient-to-br from-blue-500 to-green-500 rounded-xl flex items-center justify-center mb-4">
-                        <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
-                        </svg>
+            <div className="max-w-6xl w-full">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+                    {/* Left Side - Branding/Info (Hidden on mobile) */}
+                    <div className="hidden lg:flex flex-col justify-center space-y-8">
+                        <div className="text-center lg:text-left">
+                            <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-green-500 rounded-2xl flex items-center justify-center mb-6 mx-auto lg:mx-0">
+                                <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                                </svg>
+                            </div>
+                            <h1 className="text-4xl font-bold text-gray-900 mb-4">Join Health Track</h1>
+                            <p className="text-xl text-gray-600 mb-8">Create your administrator account to manage the healthcare platform</p>
+                        </div>
+                        
+                        <div className="space-y-6">
+                            <div className="flex items-center space-x-4">
+                                <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
+                                    <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                                    </svg>
+                                </div>
+                                <div>
+                                    <h3 className="font-semibold text-gray-900">Admin Privileges</h3>
+                                    <p className="text-gray-600">Full control over system settings and users</p>
+                                </div>
+                            </div>
+                            
+                            <div className="flex items-center space-x-4">
+                                <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
+                                    <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.5-2a11.954 11.954 0 00-.5-4m.5 4c1.384 0 2.667.249 3.875.713M9 12l2 2 4-4m.5 4c1.384 0 2.667.249 3.875.713M9 12l2 2 4-4" />
+                                    </svg>
+                                </div>
+                                <div>
+                                    <h3 className="font-semibold text-gray-900">Secure Setup</h3>
+                                    <p className="text-gray-600">Advanced password requirements and access control</p>
+                                </div>
+                            </div>
+                            
+                            <div className="flex items-center space-x-4">
+                                <div className="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center">
+                                    <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                                    </svg>
+                                </div>
+                                <div>
+                                    <h3 className="font-semibold text-gray-900">Immediate Access</h3>
+                                    <p className="text-gray-600">Start managing your healthcare system right away</p>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                    <h2 className="text-3xl font-bold text-gray-900">Admin Registration</h2>
-                    <p className="mt-2 text-gray-600">Create a new administrator account</p>
-                    <div className="mt-3 inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                        <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
-                        </svg>
-                        Admin Access Code Required
-                    </div>
-                </div>
+
+                    {/* Right Side - Sign Up Form */}
+                    <div className="max-w-md mx-auto w-full space-y-8">
+                        {/* Header */}
+                        <div className="text-center lg:hidden">
+                            <div className="mx-auto w-16 h-16 bg-gradient-to-br from-blue-500 to-green-500 rounded-xl flex items-center justify-center mb-4">
+                                <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                                </svg>
+                            </div>
+                            <h2 className="text-3xl font-bold text-gray-900">Admin Registration</h2>
+                            <p className="mt-2 text-gray-600">Create a new administrator account</p>
+                        </div>
+
+                        <div className="hidden lg:block text-center">
+                            <h2 className="text-2xl font-bold text-gray-900">Admin Registration</h2>
+                            <p className="mt-2 text-gray-600">Create your administrator account</p>
+                        </div>
 
                 {/* Sign Up Form */}
                 <div className="bg-white rounded-2xl shadow-xl p-8 border border-gray-100">
@@ -324,35 +368,6 @@ const SignUp = () => {
                             {errors.confirmPassword && <p className="mt-1 text-sm text-red-600">{errors.confirmPassword}</p>}
                         </div>
 
-                        {/* Admin Access Code */}
-                        <div>
-                            <label htmlFor="adminAccessCode" className="block text-sm font-medium text-gray-700 mb-2">
-                                Admin Access Code
-                            </label>
-                            <div className="relative">
-                                <input
-                                    id="adminAccessCode"
-                                    name="adminAccessCode"
-                                    type="text"
-                                    value={formData.adminAccessCode}
-                                    onChange={handleInputChange}
-                                    className={`w-full px-4 py-3 rounded-xl border-2 transition-colors duration-200 focus:outline-none focus:ring-0 ${
-                                        errors.adminAccessCode
-                                            ? 'border-red-300 focus:border-red-500'
-                                            : 'border-gray-200 focus:border-blue-500'
-                                    }`}
-                                    placeholder="Enter admin access code"
-                                />
-                                <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
-                                    <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
-                                    </svg>
-                                </div>
-                            </div>
-                            {errors.adminAccessCode && <p className="mt-1 text-sm text-red-600">{errors.adminAccessCode}</p>}
-                            <p className="mt-1 text-xs text-gray-500">Contact your system administrator for the access code</p>
-                        </div>
-
                         {/* Submit Button */}
                         <button
                             type="submit"
@@ -365,35 +380,15 @@ const SignUp = () => {
                                     Creating Account...
                                 </div>
                             ) : (
-                                'Create Admin Account'
+                                'Create Account'
                             )}
                         </button>
-
-                        {/* Demo Access Code */}
-                        <div className="bg-yellow-50 rounded-lg p-4 mt-6">
-                            <h4 className="text-sm font-medium text-yellow-900 mb-2">Demo Access Code:</h4>
-                            <div className="text-xs text-yellow-700 font-mono bg-yellow-100 px-2 py-1 rounded">
-                                HEALTH_ADMIN_2024
-                            </div>
-                        </div>
-
-                        {/* Sign In Link */}
-                        <div className="text-center">
-                            <p className="text-sm text-gray-600">
-                                Already have an account?{' '}
-                                <button
-                                    type="button"
-                                    onClick={() => navigate('/signin')}
-                                    className="text-blue-600 hover:text-blue-500 font-medium"
-                                >
-                                    Sign In
-                                </button>
-                            </p>
-                        </div>
                     </form>
                 </div>
             </div>
         </div>
+    </div>
+</div>
     );
 };
 
