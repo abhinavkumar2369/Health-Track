@@ -68,23 +68,23 @@ const FeaturesSection = () => {
                     </div>
                     
                     {/* For Patients */}
-                    <div className="group bg-gradient-to-br from-gray-50 to-gray-100 rounded-3xl p-6 sm:p-8 hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 border border-gray-200">
-                        <div className="w-16 h-16 bg-gradient-to-br from-gray-500 to-gray-600 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 group-hover:rotate-3 transition-all duration-300">
+                    <div className="group bg-gradient-to-br from-red-50 to-rose-100 rounded-3xl p-6 sm:p-8 hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 border border-rose-200">
+                        <div className="w-16 h-16 bg-gradient-to-br from-rose-400 to-rose-500 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 group-hover:rotate-3 transition-all duration-300">
                             <PatientIcon />
                         </div>
                         <h3 className="text-2xl font-bold text-gray-900 mb-4">For Patients</h3>
                         <p className="text-gray-600 mb-6 leading-relaxed">Personalized health insights and seamless healthcare access.</p>
                         <div className="space-y-3">
                             <div className="flex items-center gap-3">
-                                <div className="w-2 h-2 bg-gray-500 rounded-full"></div>
+                                <div className="w-2 h-2 bg-rose-400 rounded-full"></div>
                                 <span className="text-sm text-gray-700">Personal Health Records</span>
                             </div>
                             <div className="flex items-center gap-3">
-                                <div className="w-2 h-2 bg-gray-600 rounded-full"></div>
+                                <div className="w-2 h-2 bg-rose-500 rounded-full"></div>
                                 <span className="text-sm text-gray-700">Health Monitoring</span>
                             </div>
                             <div className="flex items-center gap-3">
-                                <div className="w-2 h-2 bg-gray-700 rounded-full"></div>
+                                <div className="w-2 h-2 bg-rose-600 rounded-full"></div>
                                 <span className="text-sm text-gray-700">Smart Recommendations</span>
                             </div>
                         </div>

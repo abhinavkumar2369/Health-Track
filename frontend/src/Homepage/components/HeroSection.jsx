@@ -45,15 +45,15 @@ const HeroSection = () => {
                             <button 
                                 onClick={() => navigate('/signin')}
                                 aria-label="Get Started" 
-                                className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-600 to-green-600 text-white px-6 py-4 md:px-8 md:py-4 rounded-2xl font-semibold text-base shadow-xl hover:shadow-2xl hover:scale-105 transition-all duration-300 group w-full sm:w-auto sm:min-w-[280px] justify-center"
+                                className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-600 to-green-600 text-white px-5 py-2.5 rounded-xl font-semibold text-sm shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 group w-auto justify-center"
                             >
                                 <span>Get Started</span>
-                                <svg className="w-5 h-5 group-hover:translate-x-1 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <svg className="w-4 h-4 group-hover:translate-x-1 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
                                 </svg>
                             </button>
-                            <button aria-label="Watch Demo" className="inline-flex items-center gap-3 border-2 border-gray-300 text-gray-700 px-6 py-4 md:px-8 md:py-4 rounded-2xl font-semibold text-base hover:border-blue-300 hover:text-blue-600 hover:bg-white transition-all duration-300 group w-full sm:w-auto sm:min-w-[280px] justify-center">
-                                <svg className="w-5 h-5 flex-shrink-0" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                            <button aria-label="Watch Demo" className="inline-flex items-center gap-2 border-2 border-gray-300 text-gray-700 px-5 py-2.5 rounded-xl font-semibold text-sm hover:border-blue-300 hover:text-blue-600 hover:bg-white transition-all duration-300 group w-auto justify-center">
+                                <svg className="w-4 h-4 flex-shrink-0" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                                     <path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zm-1 14.5v-9l6 4.5-6 4.5z" />
                                 </svg>
                                 <span>Watch Demo</span>

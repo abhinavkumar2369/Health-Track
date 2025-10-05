@@ -263,7 +263,7 @@ function Homepage() {
         <div className="min-h-screen bg-white relative overflow-hidden">
 
             {/* Enhanced Modern Header - Fixed on Mobile */}
-            <header className={`fixed md:sticky top-0 left-0 right-0 z-50 w-full transition-all duration-300 ${isScrolled ? 'bg-white/98 backdrop-blur-lg shadow-lg border-b border-gray-100' : 'bg-white/95 backdrop-blur-sm shadow-sm border-b border-gray-100'}`}>
+            <header className={`fixed md:sticky top-0 left-0 right-0 z-50 w-full transition-all duration-300 ${isScrolled ? 'bg-white/98 backdrop-blur-lg shadow-lg border-b border-gray-100' : 'bg-white/95 backdrop-blur-sm shadow-none border-b border-transparent'}`}>
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="flex items-center justify-between h-[4.5rem] md:h-[5.5rem]">
                         {/* Left: Enhanced logo + name */}
@@ -276,7 +276,7 @@ function Homepage() {
                                 </div>
                             </div>
                             <div className="group-hover:translate-x-1 transition-transform duration-300">
-                                <h1 className="text-lg md:text-xl font-bold bg-gradient-to-r from-blue-600 to-green-600 bg-clip-text text-transparent group-hover:from-blue-700 group-hover:to-green-700 transition-all duration-300">Health Track</h1>
+                                <h1 className="text-xl md:text-2xl font-bold bg-gradient-to-r from-blue-600 to-green-600 bg-clip-text text-transparent group-hover:from-blue-700 group-hover:to-green-700 transition-all duration-300">Health Track</h1>
                             </div>
                         </div>
 
@@ -343,15 +343,15 @@ function Homepage() {
                                 <button 
                                     onClick={() => navigate('/signin')}
                                     aria-label="Get Started" 
-                                    className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-600 to-green-600 text-white px-6 py-4 md:px-8 md:py-4 rounded-2xl font-semibold text-base shadow-xl hover:shadow-2xl hover:scale-105 transition-all duration-300 group w-full sm:w-auto sm:min-w-[280px] justify-center"
+                                    className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-600 to-green-600 text-white px-8 py-5 rounded-xl font-semibold text-sm shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 group w-auto justify-center"
                                 >
                                     <span>Get Started</span>
-                                    <svg className="w-5 h-5 group-hover:translate-x-1 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <svg className="w-4 h-4 group-hover:translate-x-1 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
                                     </svg>
                                 </button>
-                                <button aria-label="Watch Demo" className="inline-flex items-center gap-3 border-2 border-gray-300 text-gray-700 px-6 py-4 md:px-8 md:py-4 rounded-2xl font-semibold text-base hover:border-blue-300 hover:text-blue-600 hover:bg-white transition-all duration-300 group w-full sm:w-auto sm:min-w-[280px] justify-center">
-                                    <svg className="w-5 h-5 flex-shrink-0" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                                <button aria-label="Watch Demo" className="inline-flex items-center gap-2 border-2 border-gray-300 text-gray-700 px-5 py-2.5 rounded-xl font-semibold text-sm hover:border-blue-300 hover:text-blue-600 hover:bg-white transition-all duration-300 group w-auto justify-center">
+                                    <svg className="w-4 h-4 flex-shrink-0" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                                         <path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zm-1 14.5v-9l6 4.5-6 4.5z" />
                                     </svg>
                                     <span>Watch Demo</span>
@@ -508,23 +508,23 @@ function Homepage() {
                         </div>
                         
                         {/* For Patients */}
-                        <div className="group bg-gradient-to-br from-gray-50 to-gray-100 rounded-3xl p-6 sm:p-8 hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 border border-gray-200">
-                            <div className="w-16 h-16 bg-gradient-to-br from-gray-500 to-gray-600 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 group-hover:rotate-3 transition-all duration-300">
+                        <div className="group bg-gradient-to-br from-red-50 to-rose-100 rounded-3xl p-6 sm:p-8 hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 border border-rose-200">
+                            <div className="w-16 h-16 bg-gradient-to-br from-rose-400 to-rose-500 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 group-hover:rotate-3 transition-all duration-300">
                                 <PatientIcon />
                             </div>
                             <h3 className="text-2xl font-bold text-gray-900 mb-4">For Patients</h3>
                             <p className="text-gray-600 mb-6 leading-relaxed">Personalized health insights and seamless healthcare access.</p>
                             <div className="space-y-3">
                                 <div className="flex items-center gap-3">
-                                    <div className="w-2 h-2 bg-gray-500 rounded-full"></div>
+                                    <div className="w-2 h-2 bg-rose-400 rounded-full"></div>
                                     <span className="text-sm text-gray-700">Personal Health Records</span>
                                 </div>
                                 <div className="flex items-center gap-3">
-                                    <div className="w-2 h-2 bg-gray-600 rounded-full"></div>
+                                    <div className="w-2 h-2 bg-rose-500 rounded-full"></div>
                                     <span className="text-sm text-gray-700">Health Monitoring</span>
                                 </div>
                                 <div className="flex items-center gap-3">
-                                    <div className="w-2 h-2 bg-gray-700 rounded-full"></div>
+                                    <div className="w-2 h-2 bg-rose-600 rounded-full"></div>
                                     <span className="text-sm text-gray-700">Smart Recommendations</span>
                                 </div>
                             </div>
@@ -666,9 +666,9 @@ function Homepage() {
                             </div>
                         </div>
                         
-                        <div className="bg-gradient-to-br from-gray-50 to-white rounded-3xl p-8 shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 border border-gray-200">
+                        <div className="bg-gradient-to-br from-red-50 to-rose-100 rounded-3xl p-8 shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 border border-rose-200">
                             <div className="flex items-center mb-6">
-                                <div className="w-12 h-12 bg-gradient-to-br from-gray-500 to-gray-600 rounded-full flex items-center justify-center text-white font-bold">
+                                <div className="w-12 h-12 bg-gradient-to-br from-rose-400 to-rose-500 rounded-full flex items-center justify-center text-white font-bold">
                                     <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                                     </svg>
@@ -682,7 +682,7 @@ function Homepage() {
                                 Implements robust security measures including JWT authentication, encrypted data storage, and role-based access control for healthcare data protection.
                             </p>
                             <div className="flex">
-                                <span className="text-sm font-semibold bg-gray-200 text-gray-700 px-3 py-1 rounded-full">Secure Architecture</span>
+                                <span className="text-sm font-semibold bg-rose-200 text-rose-700 px-3 py-1 rounded-full">Secure Architecture</span>
                             </div>
                         </div>
                     </div>
@@ -699,7 +699,9 @@ function Homepage() {
                         <div className="lg:col-span-2">
                             <div className="flex items-center gap-3 mb-6">
                                 <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-green-500 rounded-xl flex items-center justify-center">
-                                    <span className="text-white font-bold text-lg">H</span>
+                                    <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
                                 </div>
                                 <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-green-600 bg-clip-text text-transparent">Health Track</span>
                             </div>
@@ -755,7 +757,7 @@ function Homepage() {
                     
                     <div className="border-t border-gray-200 pt-8 flex flex-col md:flex-row items-center justify-between">
                         <p className="text-gray-600 text-sm">
-                            © 2024  Health-Track.  All rights reserved.
+                            © 2025-26  Health-Track.  All rights reserved.
                         </p>
                         <div className="flex items-center gap-6 mt-4 md:mt-0 text-sm text-gray-600">
                             <span className="flex items-center gap-2">
