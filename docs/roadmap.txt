@@ -1,0 +1,119 @@
+Hospitals (Admin)
+``````````````````
+[need to have create account initially]
+
+• Add Doctors, Patients.
+• Visualize Data (Different Disease Visualizations and other stats)
+
+
+
+Doctors
+```````
+• Add Patients.
+• Add Patients Prescription and Records.
+• Lab Reports Integration
+• AI based appointment Scheduling. (Here the docter decide the time slots with duration & AI automatically appoints it)
+
+
+
+Patients
+````````
+• Add and Update Personal details.
+• Insurance Detail Integration.
+• Vaccination History, BMI Reports
+• Record to E-Record ().
+• Summarized Health History Report Generator (help in emergency, insurance)
+• Disease Prediction and Risk Scoring (Use Patient History, BMI, Life style Data & Lab Report to predict the risk) (Eg-Heart Attack, Diabetes)
+• Health Tips, Recommendation System
+• Allergies
+
+
+
+HL7 / FHIR
+``````````
+• Support interoperability with government System.
+• Token based authentication
+
+
++------------------------------------------------------------+
+|                 HDIMS - Health Data & Information          |
+|                     Management System                      |
++------------------------------------------------------------+
+|                                                            |
+|  +----------------+    +----------------+                  |
+|  | Authentication |    | Role-Based      |                 |
+|  | (JWT + OTP)    |    | Access Control  |                 |
+|  +----------------+    | (Patients,      |                 |
+|                        | Doctors, Admins)|                 |
+|                        +----------------+                  |
+|                                                            |
+|  +---------------------------------------------------+     |
+|  |           Centralized EHR (Electronic Health Record)|   |
+|  +---------------------------------------------------+     |
+|  | - Patient History (Prescriptions, Reports, etc.)   |    |
+|  | - Allergies & Diagnoses                            |    |
+|  | - Lab Report Integration (Graphs & Trends)         |    |
+|  +---------------------------------------------------+     |
+|                                                            |
+|  +----------------+    +----------------+    +---------+   |
+|  | Appointment    |    | Health         |    | AI-Based|   |
+|  | Scheduling     |    | Analytics      |    | Risk    |   |
+|  | (Booking, SMS  |    | Dashboard      |    | Prediction| |
+|  | Reminders)     |    | (Trends, Reports)|  | (Diseases)| |
+|  +----------------+    +----------------+    +---------+   |
+|                                                            |
+|  +----------------+    +----------------+    +---------+   |
+|  | Vaccination    |    | Insurance      |    | Emergency|  |
+|  | & Health Tracker|   | Integration    |    | QR Code  |  |
+|  | (Reminders, BMI)|   | (Claims, Plans)|    | (Allergies) |
+|  +----------------+    +----------------+    +---------+   |
+|                                                            |
+|  +----------------+    +----------------+                  |
+|  | AI Report      |    | Computer Vision|                  |
+|  | Summarizer     |    | (OCR for       |                  |
+|  | (Simplifies    |    | prescriptions) |                  |
+|  | medical terms) |    |                |                  |
+|  +----------------+    +----------------+                  |
+|                                                            |
+|  +-----------------------------------------------------+   |
+|  | Personalized Health Recommendations (Diet, Exercise)|   |
+|  +-----------------------------------------------------+   |
+|                                                            |
+|  +----------------+                                        |
+|  | HL7 / FHIR     | (Interoperability with other systems)  |
+|  | Standards      |                                        |
+|  +----------------+                                        |
++------------------------------------------------------------+
+
+
+Advanced Features You Could Add
+
+To take your project from good to excellent, here are extra features you can consider:
+
+1. Disease Heatmap Visualization
+	Show trends of diseases by region (using charts/maps).
+	Helps in outbreak monitoring (like dengue, flu, etc.).
+
+
+2. Voice Assistant for Patients
+	Patients can ask “What’s my next appointment?” or “Show my health history” using speech.
+	Use a speech-to-text + NLP integration.
+
+
+3. Blockchain for EHR Security (Optional, advanced)
+	Store a hash of medical records on blockchain for tamper-proof verification.
+	Data Privacy & Consent Management
+
+4. Patients can control what parts of their data doctors/insurance can access.
+	Good to demonstrate GDPR/ HIPAA-inspired compliance.
+
+
+5. Wearable/IoT Device Integration
+	Collect real-time health data (heart rate, steps, sleep) from smart devices.
+	Sync into the health dashboard.
+
+
+6. AI Chatbot for Health Queries
+	Patients can ask common questions about symptoms, medicine instructions, or diet plans.
+	Predictive Analytics for Hospitals
+	Admin dashboard can show trends like “expected patient inflow next month,” or “bed occupancy prediction.”
