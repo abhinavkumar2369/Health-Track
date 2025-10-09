@@ -25,13 +25,13 @@ const Header = ({ isScrolled }) => {
                     <div className="flex items-center gap-3">
                         <div className="hidden md:flex items-center gap-3">
                             <button 
-                                onClick={() => navigate('/signin')}
+                                onClick={() => navigate('/sign-in')}
                                 className="text-sm px-5 py-2.5 rounded-xl font-medium text-gray-700 border-2 border-gray-200 hover:border-blue-300 hover:text-blue-600 transition-all duration-300 hover:scale-105"
                             >
                                 Sign In
                             </button>
                             <button 
-                                onClick={() => navigate('/signup')}
+                                onClick={() => navigate('/sign-up')}
                                 className="text-sm px-5 py-2.5 rounded-xl font-semibold bg-gradient-to-r from-blue-600 to-green-600 text-white hover:from-blue-700 hover:to-green-700 transition-all duration-300 hover:scale-105 shadow-lg hover:shadow-xl"
                             >
                                 Sign Up

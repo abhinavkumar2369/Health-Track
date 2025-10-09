@@ -1,13 +1,17 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { adminAPI } from '../services/api';
+import authService from '../services/authService';
 
 const SignUp = () => {
     const navigate = useNavigate();
     const [formData, setFormData] = useState({
-        fullName: '',
+        firstName: '',
+        lastName: '',
         email: '',
         password: '',
-        confirmPassword: ''
+        confirmPassword: '',
+        phone: ''
     });
     const [errors, setErrors] = useState({});
     const [isLoading, setIsLoading] = useState(false);
@@ -49,10 +53,12 @@ const SignUp = () => {
     const validateForm = () => {
         const newErrors = {};
         
-        if (!formData.fullName.trim()) {
-            newErrors.fullName = 'Full name is required';
-        } else if (formData.fullName.trim().length < 2) {
-            newErrors.fullName = 'Full name must be at least 2 characters';
+        if (!formData.firstName.trim()) {
+            newErrors.firstName = 'First name is required';
+        }
+        
+        if (!formData.lastName.trim()) {
+            newErrors.lastName = 'Last name is required';
         }
         
         if (!formData.email.trim()) {
@@ -86,26 +92,22 @@ const SignUp = () => {
         setIsLoading(true);
         
         try {
-            // Simulate API call
-            await new Promise(resolve => setTimeout(resolve, 2000));
-            
-            // Mock successful registration
-            const newAdmin = {
-                fullName: formData.fullName,
+            // Register admin via API
+            const response = await adminAPI.registerAdmin({
+                firstName: formData.firstName,
+                lastName: formData.lastName,
                 email: formData.email,
-                role: 'admin',
-                createdAt: new Date().toISOString()
-            };
+                password: formData.password,
+                phone: formData.phone || undefined
+            });
             
-            // Store user info (in real app, use proper state management)
-            localStorage.setItem('user', JSON.stringify(newAdmin));
-            
-            // Show success and redirect
-            alert('Admin account created successfully! Redirecting to dashboard...');
-            navigate('/admin-dashboard');
+            if (response.success) {
+                alert(`Admin account created successfully!\n\nYour ID: ${response.data.uniqueId}\n\nPlease sign in with your credentials.`);
+                navigate('/sign-in');
+            }
             
         } catch (error) {
-            setErrors({ general: 'Registration failed. Please try again.' });
+            setErrors({ general: error.message || 'Registration failed. Please try again.' });
         } finally {
             setIsLoading(false);
         }
@@ -201,32 +203,46 @@ const SignUp = () => {
                             </div>
                         )}
 
-                        {/* Full Name */}
+                        {/* First Name */}
                         <div>
-                            <label htmlFor="fullName" className="block text-sm font-medium text-gray-700 mb-2">
-                                Full Name
+                            <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-2">
+                                First Name
                             </label>
-                            <div className="relative">
-                                <input
-                                    id="fullName"
-                                    name="fullName"
-                                    type="text"
-                                    value={formData.fullName}
-                                    onChange={handleInputChange}
-                                    className={`w-full px-4 py-3 rounded-xl border-2 transition-colors duration-200 focus:outline-none focus:ring-0 ${
-                                        errors.fullName
-                                            ? 'border-red-300 focus:border-red-500'
-                                            : 'border-gray-200 focus:border-blue-500'
-                                    }`}
-                                    placeholder="Enter your full name"
-                                />
-                                <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
-                                    <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                                    </svg>
-                                </div>
-                            </div>
-                            {errors.fullName && <p className="mt-1 text-sm text-red-600">{errors.fullName}</p>}
+                            <input
+                                id="firstName"
+                                name="firstName"
+                                type="text"
+                                value={formData.firstName}
+                                onChange={handleInputChange}
+                                className={`w-full px-4 py-3 rounded-xl border-2 transition-colors duration-200 focus:outline-none focus:ring-0 ${
+                                    errors.firstName
+                                        ? 'border-red-300 focus:border-red-500'
+                                        : 'border-gray-200 focus:border-blue-500'
+                                }`}
+                                placeholder="Enter your first name"
+                            />
+                            {errors.firstName && <p className="mt-1 text-sm text-red-600">{errors.firstName}</p>}
+                        </div>
+
+                        {/* Last Name */}
+                        <div>
+                            <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 mb-2">
+                                Last Name
+                            </label>
+                            <input
+                                id="lastName"
+                                name="lastName"
+                                type="text"
+                                value={formData.lastName}
+                                onChange={handleInputChange}
+                                className={`w-full px-4 py-3 rounded-xl border-2 transition-colors duration-200 focus:outline-none focus:ring-0 ${
+                                    errors.lastName
+                                        ? 'border-red-300 focus:border-red-500'
+                                        : 'border-gray-200 focus:border-blue-500'
+                                }`}
+                                placeholder="Enter your last name"
+                            />
+                            {errors.lastName && <p className="mt-1 text-sm text-red-600">{errors.lastName}</p>}
                         </div>
 
                         {/* Email */}
@@ -366,6 +382,22 @@ const SignUp = () => {
                                 </button>
                             </div>
                             {errors.confirmPassword && <p className="mt-1 text-sm text-red-600">{errors.confirmPassword}</p>}
+                        </div>
+
+                        {/* Phone (Optional) */}
+                        <div>
+                            <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-2">
+                                Phone Number <span className="text-gray-400 text-xs">(Optional)</span>
+                            </label>
+                            <input
+                                id="phone"
+                                name="phone"
+                                type="tel"
+                                value={formData.phone}
+                                onChange={handleInputChange}
+                                className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-blue-500 transition-colors duration-200 focus:outline-none focus:ring-0"
+                                placeholder="+1234567890"
+                            />
                         </div>
 
                         {/* Submit Button */}

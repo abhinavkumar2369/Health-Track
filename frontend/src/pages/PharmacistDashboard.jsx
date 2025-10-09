@@ -9,13 +9,13 @@ const PharmacistDashboard = () => {
     useEffect(() => {
         const userData = localStorage.getItem('user');
         if (!userData) {
-            navigate('/signin');
+            navigate('/sign-in');
             return;
         }
         
         const parsedUser = JSON.parse(userData);
         if (parsedUser.role !== 'pharmacist') {
-            navigate('/signin');
+            navigate('/sign-in');
             return;
         }
         

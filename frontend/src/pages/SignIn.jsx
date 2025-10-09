@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { authAPI } from '../services/api';
+import authService from '../services/authService';
 
 const SignIn = () => {
     const navigate = useNavigate();
@@ -64,39 +66,29 @@ const SignIn = () => {
         setIsLoading(true);
         
         try {
-            // Simulate API call
-            await new Promise(resolve => setTimeout(resolve, 1500));
+            // Call API to login
+            const response = await authAPI.login(formData.email, formData.password);
             
-            // Single set of credentials for all roles
-            const defaultCredentials = {
-                email: 'test@admin.com',
-                password: 'admin123'
-            };
-
-            if (formData.email !== defaultCredentials.email || formData.password !== defaultCredentials.password) {
-                setErrors({ general: 'Invalid credentials. Use test@admin.com / admin123' });
-                setIsLoading(false);
-                return;
+            if (response.success) {
+                // Store token and user info
+                authService.login(response.token, response.user);
+                
+                // Redirect to appropriate dashboard based on user role
+                const dashboardRoutes = {
+                    admin: '/admin-dashboard',
+                    doctor: '/doctor-dashboard',
+                    patient: '/patient-dashboard',
+                    pharmacist: '/pharmacist-dashboard'
+                };
+                
+                navigate(dashboardRoutes[response.user.role]);
+            } else {
+                setErrors({ general: 'Invalid credentials' });
             }
             
-            // Store user info (in real app, use proper state management)
-            localStorage.setItem('user', JSON.stringify({ 
-                email: formData.email, 
-                role: formData.role 
-            }));
-            
-            // Redirect to appropriate dashboard
-            const dashboardRoutes = {
-                admin: '/admin-dashboard',
-                doctor: '/doctor-dashboard',
-                patient: '/patient-dashboard',
-                pharmacist: '/pharmacist-dashboard'
-            };
-            
-            navigate(dashboardRoutes[formData.role]);
-            
         } catch (error) {
-            setErrors({ general: 'Sign in failed. Please try again.' });
+            console.error('Login error:', error);
+            setErrors({ general: error.message || 'Sign in failed. Please check your credentials.' });
         } finally {
             setIsLoading(false);
         }
@@ -308,7 +300,7 @@ const SignIn = () => {
                                 Need admin access?{' '}
                                 <button
                                     type="button"
-                                    onClick={() => navigate('/signup')}
+                                    onClick={() => navigate('/sign-up')}
                                     className="text-blue-600 hover:text-blue-500 font-medium"
                                 >
                                     Contact Administrator

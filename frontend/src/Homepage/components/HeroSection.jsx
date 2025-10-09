@@ -43,7 +43,7 @@ const HeroSection = () => {
                         {/* CTA Buttons */}
                         <div className="flex flex-col sm:flex-row gap-4 pt-4">
                             <button 
-                                onClick={() => navigate('/signin')}
+                                onClick={() => navigate('/sign-in')}
                                 aria-label="Get Started" 
                                 className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-600 to-green-600 text-white px-5 py-2.5 rounded-xl font-semibold text-sm shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 group w-auto justify-center"
                             >

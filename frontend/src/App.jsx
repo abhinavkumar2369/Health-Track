@@ -12,12 +12,12 @@ const ProtectedRoute = ({ children, allowedRole }) => {
   const userData = localStorage.getItem('user');
   
   if (!userData) {
-    return <Navigate to="/signin" replace />;
+    return <Navigate to="/sign-in" replace />;
   }
   
   const user = JSON.parse(userData);
   if (allowedRole && user.role !== allowedRole) {
-    return <Navigate to="/signin" replace />;
+    return <Navigate to="/sign-in" replace />;
   }
   
   return children;
@@ -29,8 +29,8 @@ function App() {
       <Routes>
         {/* Public Routes */}
         <Route path="/" element={<Homepage />} />
-        <Route path="/signin" element={<SignIn />} />
-        <Route path="/signup" element={<SignUp />} />
+        <Route path="/sign-in" element={<SignIn />} />
+        <Route path="/sign-up" element={<SignUp />} />
         
         {/* Protected Dashboard Routes */}
         <Route 
