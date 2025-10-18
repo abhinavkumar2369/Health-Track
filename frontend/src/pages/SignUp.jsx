@@ -6,12 +6,10 @@ import authService from '../services/authService';
 const SignUp = () => {
     const navigate = useNavigate();
     const [formData, setFormData] = useState({
-        firstName: '',
-        lastName: '',
+        fullName: '',
         email: '',
         password: '',
-        confirmPassword: '',
-        phone: ''
+        confirmPassword: ''
     });
     const [errors, setErrors] = useState({});
     const [isLoading, setIsLoading] = useState(false);
@@ -53,12 +51,10 @@ const SignUp = () => {
     const validateForm = () => {
         const newErrors = {};
         
-        if (!formData.firstName.trim()) {
-            newErrors.firstName = 'First name is required';
-        }
-        
-        if (!formData.lastName.trim()) {
-            newErrors.lastName = 'Last name is required';
+        if (!formData.fullName.trim()) {
+            newErrors.fullName = 'Full name is required';
+        } else if (formData.fullName.trim().length < 2) {
+            newErrors.fullName = 'Full name must be at least 2 characters';
         }
         
         if (!formData.email.trim()) {
@@ -92,13 +88,17 @@ const SignUp = () => {
         setIsLoading(true);
         
         try {
+            // Split full name into first and last name
+            const nameParts = formData.fullName.trim().split(' ');
+            const firstName = nameParts[0];
+            const lastName = nameParts.slice(1).join(' ') || nameParts[0];
+            
             // Register admin via API
             const response = await adminAPI.registerAdmin({
-                firstName: formData.firstName,
-                lastName: formData.lastName,
+                firstName: firstName,
+                lastName: lastName,
                 email: formData.email,
-                password: formData.password,
-                phone: formData.phone || undefined
+                password: formData.password
             });
             
             if (response.success) {
@@ -203,46 +203,32 @@ const SignUp = () => {
                             </div>
                         )}
 
-                        {/* First Name */}
+                        {/* Full Name */}
                         <div>
-                            <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-2">
-                                First Name
+                            <label htmlFor="fullName" className="block text-sm font-medium text-gray-700 mb-2">
+                                Full Name
                             </label>
-                            <input
-                                id="firstName"
-                                name="firstName"
-                                type="text"
-                                value={formData.firstName}
-                                onChange={handleInputChange}
-                                className={`w-full px-4 py-3 rounded-xl border-2 transition-colors duration-200 focus:outline-none focus:ring-0 ${
-                                    errors.firstName
-                                        ? 'border-red-300 focus:border-red-500'
-                                        : 'border-gray-200 focus:border-blue-500'
-                                }`}
-                                placeholder="Enter your first name"
-                            />
-                            {errors.firstName && <p className="mt-1 text-sm text-red-600">{errors.firstName}</p>}
-                        </div>
-
-                        {/* Last Name */}
-                        <div>
-                            <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 mb-2">
-                                Last Name
-                            </label>
-                            <input
-                                id="lastName"
-                                name="lastName"
-                                type="text"
-                                value={formData.lastName}
-                                onChange={handleInputChange}
-                                className={`w-full px-4 py-3 rounded-xl border-2 transition-colors duration-200 focus:outline-none focus:ring-0 ${
-                                    errors.lastName
-                                        ? 'border-red-300 focus:border-red-500'
-                                        : 'border-gray-200 focus:border-blue-500'
-                                }`}
-                                placeholder="Enter your last name"
-                            />
-                            {errors.lastName && <p className="mt-1 text-sm text-red-600">{errors.lastName}</p>}
+                            <div className="relative">
+                                <input
+                                    id="fullName"
+                                    name="fullName"
+                                    type="text"
+                                    value={formData.fullName}
+                                    onChange={handleInputChange}
+                                    className={`w-full px-4 py-3 rounded-xl border-2 transition-colors duration-200 focus:outline-none focus:ring-0 ${
+                                        errors.fullName
+                                            ? 'border-red-300 focus:border-red-500'
+                                            : 'border-gray-200 focus:border-blue-500'
+                                    }`}
+                                    placeholder="Enter your full name"
+                                />
+                                <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
+                                    <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                    </svg>
+                                </div>
+                            </div>
+                            {errors.fullName && <p className="mt-1 text-sm text-red-600">{errors.fullName}</p>}
                         </div>
 
                         {/* Email */}
@@ -382,22 +368,6 @@ const SignUp = () => {
                                 </button>
                             </div>
                             {errors.confirmPassword && <p className="mt-1 text-sm text-red-600">{errors.confirmPassword}</p>}
-                        </div>
-
-                        {/* Phone (Optional) */}
-                        <div>
-                            <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-2">
-                                Phone Number <span className="text-gray-400 text-xs">(Optional)</span>
-                            </label>
-                            <input
-                                id="phone"
-                                name="phone"
-                                type="tel"
-                                value={formData.phone}
-                                onChange={handleInputChange}
-                                className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-blue-500 transition-colors duration-200 focus:outline-none focus:ring-0"
-                                placeholder="+1234567890"
-                            />
                         </div>
 
                         {/* Submit Button */}

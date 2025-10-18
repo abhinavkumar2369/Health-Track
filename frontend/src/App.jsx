@@ -1,5 +1,5 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import Homepage from './Homepage/Homepage';
+import Homepage from './pages/Homepage';
 import SignIn from './pages/SignIn';
 import SignUp from './pages/SignUp';
 import AdminDashboard from './pages/AdminDashboard';
