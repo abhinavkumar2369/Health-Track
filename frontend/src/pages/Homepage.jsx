@@ -75,7 +75,7 @@ function Homepage() {
             {/* ========================================
                 HEADER SECTION
                 ======================================== */}
-            <header className={`fixed md:sticky top-0 left-0 right-0 z-50 w-full transition-all duration-300 ${isScrolled ? 'bg-white/98 backdrop-blur-lg shadow-lg border-b border-gray-100' : 'bg-white/95 backdrop-blur-sm shadow-none border-b border-transparent'}`}>
+            <header className={`fixed top-0 left-0 right-0 z-50 w-full transition-all duration-300 ${isScrolled ? 'bg-white/98 backdrop-blur-lg shadow-lg border-b border-gray-100' : 'bg-white/95 backdrop-blur-sm shadow-none border-b border-transparent'}`}>
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="flex items-center justify-between h-[4.5rem] md:h-[5.5rem]">
                         {/* Logo */}
@@ -116,7 +116,7 @@ function Homepage() {
             {/* ========================================
                 HERO SECTION
                 ======================================== */}
-            <section className="relative min-h-[100vh] md:min-h-[90vh] bg-white overflow-hidden flex justify-center items-center pt-[4.5rem] md:pt-0">
+            <section className="relative min-h-[100vh] md:min-h-[90vh] bg-white overflow-hidden flex justify-center items-center pt-[4.5rem] md:pt-[6rem]">
                 {/* Background Decorative Elements */}
                 <div className="absolute inset-0">
                     <div className="hidden sm:block absolute top-20 left-6 sm:left-20 w-56 sm:w-72 h-56 sm:h-72 bg-blue-200/30 rounded-full blur-3xl animate-pulse"></div>
@@ -127,12 +127,6 @@ function Homepage() {
                     <div className="grid lg:grid-cols-2 gap-8 md:gap-12 items-center min-h-[65vh] md:min-h-[75vh] py-8 sm:py-12 md:py-16">
                         {/* Left Content */}
                         <div className="space-y-4 sm:space-y-6 md:space-y-8">
-                            {/* Status Badge */}
-                            <div className="inline-flex items-center gap-2 bg-white/80 backdrop-blur-sm text-gray-700 px-4 py-2 rounded-full text-sm font-semibold border border-gray-200 shadow-sm">
-                                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                                <span>🎓 Final Year Project</span>
-                            </div>
-                            
                             {/* Main Headline */}
                             <div className="space-y-3 sm:space-y-4">
                                 <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 leading-tight">
@@ -175,81 +169,130 @@ function Homepage() {
                         </div>
 
                         {/* Right Visual - Dashboard Mockup */}
-                        <div className="relative w-full max-w-[20rem] sm:max-w-md mx-auto">
-                            <div className="relative bg-white rounded-2xl shadow-2xl p-4 sm:p-6 transform rotate-1 sm:rotate-3 hover:rotate-0 transition-transform duration-500 border border-gray-100">
-                                {/* Header */}
-                                <div className="flex items-center justify-between mb-6">
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-green-500 rounded-lg"></div>
-                                        <span className="font-bold text-gray-900">Health Track</span>
-                                    </div>
-                                    <div className="flex gap-2">
-                                        <div className="w-3 h-3 bg-red-400 rounded-full"></div>
-                                        <div className="w-3 h-3 bg-yellow-400 rounded-full"></div>
-                                        <div className="w-3 h-3 bg-green-400 rounded-full"></div>
-                                    </div>
-                                </div>
-                                
-                                {/* Dashboard Content */}
-                                <div className="space-y-4">
-                                    {/* Stats Cards */}
-                                    <div className="grid grid-cols-2 gap-3 sm:gap-4">
-                                        <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-4 border border-blue-200">
-                                            <div className="flex items-center gap-3">
-                                                <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
-                                                    <PatientIcon />
-                                                </div>
-                                                <div>
-                                                    <div className="text-sm text-gray-600">Patients</div>
-                                                    <div className="text-xl font-bold text-blue-600">2,847</div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-4 border border-green-200">
-                                            <div className="flex items-center gap-3">
-                                                <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-green-600 rounded-lg flex items-center justify-center">
-                                                    <DoctorIcon />
-                                                </div>
-                                                <div>
-                                                    <div className="text-sm text-gray-600">Doctors</div>
-                                                    <div className="text-xl font-bold text-green-600">124</div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    
-                                    {/* Chart Area */}
-                                    <div className="bg-gray-50 rounded-xl p-4 sm:p-6 border border-gray-200">
-                                        <div className="flex items-center justify-between mb-4">
-                                            <span className="font-semibold text-gray-800">Patient Flow</span>
-                                            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                                        </div>
-                                        <div className="h-20 sm:h-24 bg-gradient-to-r from-blue-200 to-green-200 rounded-lg flex items-end justify-center">
-                                            <div className="text-xs text-gray-600 mb-2">Real-time Analytics</div>
-                                        </div>
-                                    </div>
-                                    
-                                    {/* Action Items */}
-                                    <div className="space-y-2">
-                                        <div className="flex items-center gap-3 p-3 bg-green-50 rounded-lg border border-green-200">
-                                            <div className="w-4 h-4 bg-green-500 rounded-full"></div>
-                                            <span className="text-sm text-green-700">New appointment scheduled</span>
-                                        </div>
-                                        <div className="flex items-center gap-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
-                                            <div className="w-4 h-4 bg-blue-500 rounded-full"></div>
-                                            <span className="text-sm text-blue-700">Lab results pending review</span>
-                                        </div>
-                                    </div>
-                                </div>
+                        {/* Right Visual - Enhanced Dashboard Mockup */}
+                        <div className="relative w-full max-w-[19rem] sm:max-w-[26rem] mx-auto ml-8 sm:ml-16 lg:ml-32">
+                          <div className="bg-gradient-to-r from-[#3b82f6] to-[#22c55e] rounded-3xl p-[1px]">
+                            <div className="bg-[#fefdff] rounded-3xl p-3 sm:p-4 backdrop-blur-sm">
+                              {/* Modern Header with Glassmorphism */}
+                              <div className="flex items-center justify-between mb-3.5 pb-3 border-b border-gray-300">
+                                  <div className="flex items-center gap-3">
+                                      <div className="w-8.5 h-8.5 bg-gradient-to-br from-blue-500 via-blue-600 to-green-500 rounded-xl shadow-lg flex items-center justify-center">
+                                          <svg className="w-4.5 h-4.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                          </svg>
+                                      </div>
+                                      <div>
+                                          <span className="font-bold text-gray-900 text-sm">Health Track</span>
+                                          <div className="flex items-center gap-1 mt-0.5">
+                                              <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></div>
+                                              <span className="text-xs text-green-600 font-medium">Live</span>
+                                          </div>
+                                      </div>
+                                  </div>
+                                  <div className="flex gap-1.5">
+                                      <div className="w-2.5 h-2.5 bg-red-400 rounded-full hover:scale-110 transition-transform cursor-pointer"></div>
+                                      <div className="w-2.5 h-2.5 bg-yellow-400 rounded-full hover:scale-110 transition-transform cursor-pointer"></div>
+                                      <div className="w-2.5 h-2.5 bg-green-400 rounded-full hover:scale-110 transition-transform cursor-pointer"></div>
+                                  </div>
+                              </div>
+                              
+                              {/* Enhanced Dashboard Content */}
+                              <div className="space-y-3">
+                                  {/* Modern Stats Cards with Animations */}
+                                  <div className="grid grid-cols-2 gap-2.5">
+                                      <div className="group relative bg-gradient-to-br from-blue-400 to-blue-500 rounded-2xl p-3 hover:-translate-y-1 overflow-hidden transition-all duration-300">
+                                          <div className="absolute top-0 right-0 w-20 h-20 bg-white/10 rounded-full -mr-10 -mt-10"></div>
+                                          <div className="relative z-10">
+                                              <div className="flex items-center justify-between mb-2">
+                                                  <div className="w-8 h-8 bg-white/20 backdrop-blur-sm rounded-lg flex items-center justify-center">
+                                                      <Heart className="w-4 h-4 text-white" fill="white" strokeWidth={2} />
+                                                  </div>
+                                                  <span className="text-xs font-semibold text-white/80">+12%</span>
+                                              </div>
+                                              <div className="text-xs text-white/90 font-medium mb-1">Total Patients</div>
+                                              <div className="text-2xl font-bold text-white">2,847</div>
+                                          </div>
+                                      </div>
+                                      
+                                      <div className="group relative bg-gradient-to-br from-green-400 to-green-500 rounded-2xl p-3 hover:-translate-y-1 overflow-hidden transition-all duration-300">
+                                          <div className="absolute top-0 right-0 w-20 h-20 bg-white/10 rounded-full -mr-10 -mt-10"></div>
+                                          <div className="relative z-10">
+                                              <div className="flex items-center justify-between mb-2">
+                                                  <div className="w-8 h-8 bg-white/20 backdrop-blur-sm rounded-lg flex items-center justify-center">
+                                                      <Stethoscope className="w-4 h-4 text-white" strokeWidth={2} />
+                                                  </div>
+                                                  <span className="text-xs font-semibold text-white/80">+8</span>
+                                              </div>
+                                              <div className="text-xs text-white/90 font-medium mb-1">Active Doctors</div>
+                                              <div className="text-2xl font-bold text-white">124</div>
+                                          </div>
+                                      </div>
+                                  </div>
+                                  
+                                  {/* Sophisticated Chart Area */}
+                                  <div className="bg-white rounded-2xl p-3.5 border border-gray-300">
+                                      <div className="flex items-center justify-between mb-3">
+                                          <div>
+                                              <span className="font-bold text-gray-900 text-sm">Patient Analytics</span>
+                                              <p className="text-xs text-gray-500 mt-0.5">Weekly Overview</p>
+                                          </div>
+                                          <div className="flex items-center gap-2 bg-green-50 px-3 py-1.5 rounded-full">
+                                              <Activity className="w-3 h-3 text-green-600" strokeWidth={2.5} />
+                                              <span className="text-xs font-semibold text-green-700">Active</span>
+                                          </div>
+                                      </div>
+                                      <div className="h-16 relative">
+                                          {/* Animated Bar Chart */}
+                                          <div className="absolute bottom-0 left-0 right-0 flex items-end justify-between gap-2 h-full">
+                                              <div className="flex-1 bg-gradient-to-t from-blue-400 to-blue-300 rounded-t-lg transition-all duration-500" style={{height: '45%'}}></div>
+                                              <div className="flex-1 bg-gradient-to-t from-green-400 to-green-300 rounded-t-lg transition-all duration-500" style={{height: '70%'}}></div>
+                                              <div className="flex-1 bg-gradient-to-t from-blue-400 to-blue-300 rounded-t-lg transition-all duration-500" style={{height: '55%'}}></div>
+                                              <div className="flex-1 bg-gradient-to-t from-green-400 to-green-300 rounded-t-lg transition-all duration-500" style={{height: '85%'}}></div>
+                                              <div className="flex-1 bg-gradient-to-t from-blue-400 to-blue-300 rounded-t-lg transition-all duration-500" style={{height: '65%'}}></div>
+                                              <div className="flex-1 bg-gradient-to-t from-green-400 to-green-300 rounded-t-lg transition-all duration-500" style={{height: '95%'}}></div>
+                                              <div className="flex-1 bg-gradient-to-t from-blue-400 to-blue-300 rounded-t-lg transition-all duration-500" style={{height: '75%'}}></div>
+                                          </div>
+                                      </div>
+                                      <div className="flex items-center justify-center gap-4 mt-3 pt-2.5 border-t border-gray-200">
+                                          <div className="flex items-center gap-1.5">
+                                              <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
+                                              <span className="text-xs text-gray-600">Visits</span>
+                                          </div>
+                                          <div className="flex items-center gap-1.5">
+                                              <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+                                              <span className="text-xs text-gray-600">Checkups</span>
+                                          </div>
+                                      </div>
+                                  </div>
+                                  
+                                  {/* Modern Activity Feed */}
+                                  <div className="space-y-2">
+                                      <div className="flex items-center gap-3 p-2.5 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl border-2 border-green-300 hover:border-green-200 transition-all duration-300">
+                                          <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-emerald-600 rounded-lg flex items-center justify-center flex-shrink-0">
+                                              <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                                              </svg>
+                                          </div>
+                                          <div className="flex-1 min-w-0">
+                                              <span className="text-xs font-semibold text-green-800 block">Appointment Confirmed</span>
+                                              <span className="text-xs text-green-600">Dr. Sarah • 2:30 PM</span>
+                                          </div>
+                                      </div>
+                                      <div className="flex items-center gap-3 p-2.5 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border-2 border-blue-200 hover:border-blue-200 transition-all duration-300">
+                                          <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center flex-shrink-0">
+                                              <FlaskConical className="w-4 h-4 text-white" strokeWidth={2.5} />
+                                          </div>
+                                          <div className="flex-1 min-w-0">
+                                              <span className="text-xs font-semibold text-blue-800 block">Lab Results Ready</span>
+                                              <span className="text-xs text-blue-600">Blood Test • Review Now</span>
+                                          </div>
+                                      </div>
+                                  </div>
+                              </div>
                             </div>
+                          </div>
                             
-                            {/* Floating Accent Elements */}
-                            <div className="hidden sm:flex absolute -top-4 -right-4 w-16 h-16 bg-gradient-to-br from-blue-400 to-blue-500 rounded-xl shadow-xl rotate-12 items-center justify-center">
-                                <HeartMonitorIcon />
-                            </div>
-                            <div className="hidden sm:flex absolute -bottom-3 -left-3 w-14 h-14 bg-gradient-to-br from-green-400 to-green-500 rounded-lg shadow-lg -rotate-12 items-center justify-center">
-                                <SecurityIcon />
-                            </div>
+                            {/* Removed glow effect */}
                         </div>
                     </div>
                 </div>
@@ -258,7 +301,7 @@ function Homepage() {
             {/* ========================================
                 FEATURES OVERVIEW SECTION
                 ======================================== */}
-            <section className="py-20 sm:py-28 lg:py-36 px-4 sm:px-6 lg:px-8 bg-white relative">
+            <section className="py-20 sm:py-28 lg:py-28 px-4 sm:px-6 lg:px-8 bg-white relative">
                 <div className="max-w-7xl mx-auto">
                     {/* Section Header */}
                     <div className="text-center mb-16">
@@ -352,7 +395,7 @@ function Homepage() {
             {/* ========================================
                 TECHNOLOGY FEATURES SECTION
                 ======================================== */}
-            <section className="py-20 sm:py-28 lg:py-36 px-4 sm:px-6 lg:px-8 bg-white">
+            <section className="py-20 sm:py-28 lg:py-28 px-4 sm:px-6 lg:px-8 bg-white">
                 <div className="max-w-7xl mx-auto">
                     <div className="text-center mb-16">
                         <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
@@ -434,87 +477,9 @@ function Homepage() {
             </section>
 
             {/* ========================================
-                ACADEMIC PROJECT SECTION
-                ======================================== */}
-            <section className="py-20 sm:py-28 lg:py-36 pb-24 px-4 sm:px-6 lg:px-8 bg-white">
-                <div className="max-w-7xl mx-auto">
-                    <div className="text-center mb-16">
-                        <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
-                            Academic Project Showcase
-                        </h2>
-                        <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-                            Developed as part of Final Year Project, demonstrating modern healthcare technology solutions
-                        </p>
-                    </div>
-                    
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
-                        <div className="bg-gradient-to-br from-blue-50 to-white rounded-3xl p-8 shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 border border-blue-100">
-                            <div className="flex items-center mb-6">
-                                <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center text-white font-bold">
-                                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                    </svg>
-                                </div>
-                                <div className="ml-4">
-                                    <h4 className="font-bold text-gray-900">Full Stack Development</h4>
-                                    <p className="text-gray-600 text-sm">Frontend & Backend</p>
-                                </div>
-                            </div>
-                            <p className="text-gray-700 leading-relaxed mb-4">
-                                Built with React.js frontend and Node.js backend, featuring modern UI components and robust API architecture for seamless healthcare management.
-                            </p>
-                            <div className="flex">
-                                <span className="text-sm font-semibold bg-blue-100 text-blue-700 px-3 py-1 rounded-full">React + Node.js</span>
-                            </div>
-                        </div>
-                        
-                        <div className="bg-gradient-to-br from-green-50 to-white rounded-3xl p-8 shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 border border-green-100">
-                            <div className="flex items-center mb-6">
-                                <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-green-600 rounded-full flex items-center justify-center text-white font-bold">
-                                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                                    </svg>
-                                </div>
-                                <div className="ml-4">
-                                    <h4 className="font-bold text-gray-900">AI Integration</h4>
-                                    <p className="text-gray-600 text-sm">Machine Learning</p>
-                                </div>
-                            </div>
-                            <p className="text-gray-700 leading-relaxed mb-4">
-                                Incorporates AI-powered features for patient diagnosis assistance, health analytics, and predictive healthcare insights using modern ML algorithms.
-                            </p>
-                            <div className="flex">
-                                <span className="text-sm font-semibold bg-green-100 text-green-700 px-3 py-1 rounded-full">AI/ML Features</span>
-                            </div>
-                        </div>
-                        
-                        <div className="bg-gradient-to-br from-red-50 to-rose-100 rounded-3xl p-8 shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 border border-rose-200">
-                            <div className="flex items-center mb-6">
-                                <div className="w-12 h-12 bg-gradient-to-br from-rose-400 to-rose-500 rounded-full flex items-center justify-center text-white font-bold">
-                                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                                    </svg>
-                                </div>
-                                <div className="ml-4">
-                                    <h4 className="font-bold text-gray-900">Security & Privacy</h4>
-                                    <p className="text-gray-600 text-sm">Data Protection</p>
-                                </div>
-                            </div>
-                            <p className="text-gray-700 leading-relaxed mb-4">
-                                Implements robust security measures including JWT authentication, encrypted data storage, and role-based access control for healthcare data protection.
-                            </p>
-                            <div className="flex">
-                                <span className="text-sm font-semibold bg-rose-200 text-rose-700 px-3 py-1 rounded-full">Secure Architecture</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            {/* ========================================
                 FOOTER SECTION
                 ======================================== */}
-            <footer className="bg-white border-t border-gray-200 py-16 px-4 sm:px-6 lg:px-8">
+            <footer className="bg-white  py-16 px-4 sm:px-6 lg:px-8">
                 <div className="max-w-7xl mx-auto">
                     <div className="border-t border-gray-200 pt-8 flex flex-col md:flex-row items-center justify-between">
                     <p className="text-gray-600 text-sm">
