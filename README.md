@@ -1,4 +1,4 @@
-![Health Track Banner](docs/screenshots/health-track-banner.png)
+![Health Track Banner](screenshots/health-track-banner.png)
 
 ## Overview ✨
 Health-Track is a modern healthcare management platform designed to streamline patient care, clinical workflows, and data analytics for hospitals, doctors, and patients.
