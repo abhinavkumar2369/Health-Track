@@ -37,6 +37,10 @@ Health-Track is a modern healthcare management platform designed to streamline p
 - Lucide React (Icons)
 - JWT (Authentication)
 
+## Diagrams
+![Block Diagram 1](screenshots/block-diagram-1.png)
+
+
 ## Installation 💻
 1. Clone the repository:
    ```sh
