@@ -1,5 +1,5 @@
 // API configuration and utilities
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
 // Get token from localStorage
 const getToken = () => localStorage.getItem('token');
@@ -22,7 +22,7 @@ const apiRequest = async (endpoint, options = {}) => {
         const data = await response.json();
 
         if (!response.ok) {
-            throw new Error(data.message || 'API request failed');
+            throw new Error(data.error || data.message || 'API request failed');
         }
 
         return data;
@@ -34,117 +34,207 @@ const apiRequest = async (endpoint, options = {}) => {
 
 // Auth API
 export const authAPI = {
-    login: async (email, password) => {
-        return apiRequest('/auth/login', {
+    login: async (email, password, profession) => {
+        return apiRequest('/auth/sign-in', {
             method: 'POST',
-            body: JSON.stringify({ email, password }),
+            body: JSON.stringify({ email, password, profession }),
         });
     },
 
-    getMe: async () => {
-        return apiRequest('/auth/me');
-    },
-
-    updatePassword: async (currentPassword, newPassword) => {
-        return apiRequest('/auth/updatepassword', {
-            method: 'PUT',
-            body: JSON.stringify({ currentPassword, newPassword }),
-        });
-    },
-
-    logout: async () => {
-        return apiRequest('/auth/logout', {
+    signUp: async (fullName, email, password) => {
+        return apiRequest('/auth/sign-up', {
             method: 'POST',
+            body: JSON.stringify({ fullName, email, password }),
         });
+    },
+
+    logout: () => {
+        // Client-side logout (clear token)
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        return Promise.resolve({ success: true });
     },
 };
 
 // Admin API
 export const adminAPI = {
-    registerAdmin: async (userData) => {
-        return apiRequest('/admin/register', {
+    // Add doctor or pharmacist
+    addStaff: async (fullName, email, password, profession) => {
+        return apiRequest('/admin/staff', {
             method: 'POST',
-            body: JSON.stringify(userData),
+            body: JSON.stringify({ fullName, email, password, profession }),
         });
     },
 
-    getAllUsers: async (filters = {}) => {
-        const queryParams = new URLSearchParams(filters).toString();
-        return apiRequest(`/admin/users${queryParams ? `?${queryParams}` : ''}`);
+    removeStaff: async (staffId) => {
+        return apiRequest(`/admin/staff/${staffId}`, {
+            method: 'DELETE',
+        });
     },
 
-    getUser: async (id) => {
-        return apiRequest(`/admin/users/${id}`);
+    getAllDoctors: async () => {
+        return apiRequest('/admin/doctors');
     },
 
-    activateUser: async (id) => {
-        return apiRequest(`/admin/users/${id}/activate`, {
+    getAllPharmacists: async () => {
+        return apiRequest('/admin/pharmacists');
+    },
+
+    // Hospital Management
+    addHospital: async (hospitalData) => {
+        return apiRequest('/admin/hospitals', {
+            method: 'POST',
+            body: JSON.stringify(hospitalData),
+        });
+    },
+
+    getAllHospitals: async () => {
+        return apiRequest('/admin/hospitals');
+    },
+
+    updateHospital: async (hospitalId, hospitalData) => {
+        return apiRequest(`/admin/hospitals/${hospitalId}`, {
             method: 'PUT',
+            body: JSON.stringify(hospitalData),
         });
     },
 
-    deactivateUser: async (id) => {
-        return apiRequest(`/admin/users/${id}/deactivate`, {
-            method: 'PUT',
+    deleteHospital: async (hospitalId) => {
+        return apiRequest(`/admin/hospitals/${hospitalId}`, {
+            method: 'DELETE',
         });
     },
 
-    // Admin can add users
-    addDoctor: async (doctorData) => {
-        return apiRequest('/admin/doctors', {
-            method: 'POST',
-            body: JSON.stringify(doctorData),
-        });
-    },
-
-    addPatient: async (patientData) => {
-        return apiRequest('/admin/patients', {
-            method: 'POST',
-            body: JSON.stringify(patientData),
-        });
-    },
-
-    addPharmacist: async (pharmacistData) => {
-        return apiRequest('/admin/pharmacists', {
-            method: 'POST',
-            body: JSON.stringify(pharmacistData),
-        });
+    // System Statistics
+    getStats: async () => {
+        return apiRequest('/admin/stats');
     },
 };
 
 // Doctor API
 export const doctorAPI = {
-    addPatient: async (patientData) => {
+    addPatient: async (fullName, email, password) => {
         return apiRequest('/doctor/patients', {
             method: 'POST',
-            body: JSON.stringify(patientData),
+            body: JSON.stringify({ fullName, email, password }),
         });
     },
 
-    addDoctor: async (doctorData) => {
-        return apiRequest('/doctor/doctors', {
-            method: 'POST',
-            body: JSON.stringify(doctorData),
+    removePatient: async (patientId) => {
+        return apiRequest(`/doctor/patients/${patientId}`, {
+            method: 'DELETE',
         });
     },
 
-    addPharmacist: async (pharmacistData) => {
-        return apiRequest('/doctor/pharmacists', {
-            method: 'POST',
-            body: JSON.stringify(pharmacistData),
-        });
-    },
-
-    getPatients: async () => {
+    getMyPatients: async () => {
         return apiRequest('/doctor/patients');
     },
 
-    getDoctors: async () => {
-        return apiRequest('/doctor/doctors');
+    getPatientDetails: async (patientId) => {
+        return apiRequest(`/doctor/patients/${patientId}`);
     },
 
-    getPharmacists: async () => {
-        return apiRequest('/doctor/pharmacists');
+    getPatientDocuments: async (patientId) => {
+        return apiRequest(`/doctor/patients/${patientId}/documents`);
+    },
+};
+
+// Patient API
+export const patientAPI = {
+    uploadDocument: async (formData) => {
+        const token = getToken();
+        const response = await fetch(`${API_URL}/patient/upload`, {
+            method: 'POST',
+            headers: {
+                ...(token && { 'Authorization': `Bearer ${token}` }),
+            },
+            body: formData, // FormData, not JSON
+        });
+        
+        const data = await response.json();
+        
+        if (!response.ok) {
+            throw new Error(data.error || 'Upload failed');
+        }
+        
+        return data;
+    },
+
+    getMyDocuments: async () => {
+        return apiRequest('/patient/documents');
+    },
+
+    viewDocument: async (fileId) => {
+        return apiRequest(`/patient/documents/${fileId}`);
+    },
+
+    getMyDoctor: async () => {
+        return apiRequest('/patient/my-doctor');
+    },
+};
+
+// Pharmacist API
+export const pharmacistAPI = {
+    addMedicine: async (medicineData) => {
+        return apiRequest('/pharmacist/add-medicine', {
+            method: 'POST',
+            body: JSON.stringify(medicineData),
+        });
+    },
+
+    getInventory: async () => {
+        return apiRequest('/pharmacist/inventory');
+    },
+
+    updateMedicine: async (medicineId, medicineData) => {
+        return apiRequest(`/pharmacist/medicine/${medicineId}`, {
+            method: 'PUT',
+            body: JSON.stringify(medicineData),
+        });
+    },
+
+    issueMedicine: async (issueData) => {
+        return apiRequest('/pharmacist/issue-medicine', {
+            method: 'POST',
+            body: JSON.stringify(issueData),
+        });
+    },
+
+    getIssuedHistory: async (patientId = null) => {
+        const url = patientId ? `/pharmacist/issued?patientId=${patientId}` : '/pharmacist/issued';
+        return apiRequest(url);
+    },
+
+    getLowStock: async (threshold = 10) => {
+        return apiRequest(`/pharmacist/low-stock?threshold=${threshold}`);
+    },
+};
+
+// ML API
+export const mlAPI = {
+    processData: async (data, type) => {
+        return apiRequest('/ml/process', {
+            method: 'POST',
+            body: JSON.stringify({ data, type }),
+        });
+    },
+
+    analyzeDocument: async (fileId, s3Key) => {
+        return apiRequest('/ml/analyze-document', {
+            method: 'POST',
+            body: JSON.stringify({ fileId, s3Key }),
+        });
+    },
+
+    predictHealth: async (symptoms, patientData) => {
+        return apiRequest('/ml/predict-health', {
+            method: 'POST',
+            body: JSON.stringify({ symptoms, patientData }),
+        });
+    },
+
+    checkHealth: async () => {
+        return apiRequest('/ml/health');
     },
 };
 
@@ -152,4 +242,7 @@ export default {
     auth: authAPI,
     admin: adminAPI,
     doctor: doctorAPI,
+    patient: patientAPI,
+    pharmacist: pharmacistAPI,
+    ml: mlAPI,
 };

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { adminAPI } from '../services/api';
+import { authAPI } from '../services/api';
 import authService from '../services/authService';
 
 const SignUp = () => {
@@ -88,25 +88,22 @@ const SignUp = () => {
         setIsLoading(true);
         
         try {
-            // Split full name into first and last name
-            const nameParts = formData.fullName.trim().split(' ');
-            const firstName = nameParts[0];
-            const lastName = nameParts.slice(1).join(' ') || nameParts[0];
+            // Register user via API
+            const response = await authAPI.signUp(
+                formData.fullName,
+                formData.email,
+                formData.password
+            );
             
-            // Register admin via API
-            const response = await adminAPI.registerAdmin({
-                firstName: firstName,
-                lastName: lastName,
-                email: formData.email,
-                password: formData.password
-            });
-            
-            if (response.success) {
-                alert(`Admin account created successfully!\n\nYour ID: ${response.data.uniqueId}\n\nPlease sign in with your credentials.`);
+            if (response.status === 'success') {
+                alert(`Account created successfully!\n\nYour ID: ${response.user.id}\n\nPlease sign in with your credentials.`);
                 navigate('/sign-in');
+            } else {
+                setErrors({ general: response.message || 'Registration failed' });
             }
             
         } catch (error) {
+            console.error('Registration error:', error);
             setErrors({ general: error.message || 'Registration failed. Please try again.' });
         } finally {
             setIsLoading(false);
