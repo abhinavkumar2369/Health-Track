@@ -57,32 +57,53 @@ export const authAPI = {
     },
 };
 
-// Admin API
-export const adminAPI = {
-    // Add doctor or pharmacist
-    addUser: async (fullname, email, password, role, specialization = '') => {
-        const token = getToken();
-        const body = { token, fullname, email, password, role };
-        if (role === 'doctor' && specialization) {
-            body.specialization = specialization;
-        }
-        
-        const response = await apiRequest('/admin/add-user', {
-            method: 'POST',
-            body: JSON.stringify(body),
-        });
-        return response;
-    },
+// Admin API helpers
+const ensureToken = () => {
+    const token = getToken();
+    if (!token) {
+        throw new Error('Authentication required. Please sign in again.');
+    }
+    return token;
+};
 
-    // Remove doctor or pharmacist
-    removeUser: async (userId, role) => {
-        const token = getToken();
-        const response = await apiRequest(`/admin/remove-user/${userId}`, {
-            method: 'DELETE',
-            body: JSON.stringify({ token, role }),
-        });
-        return response;
-    },
+const addAdminUser = async ({ fullname, email, password, role, specialization }) => {
+    const token = ensureToken();
+    const body = { token, fullname, email, password, role };
+
+    if (role === 'doctor' && specialization) {
+        body.specialization = specialization;
+    }
+
+    return apiRequest('/admin/add-user', {
+        method: 'POST',
+        body: JSON.stringify(body),
+    });
+};
+
+const removeAdminUser = async (userId, role) => {
+    const token = ensureToken();
+    return apiRequest(`/admin/remove-user/${userId}`, {
+        method: 'DELETE',
+        body: JSON.stringify({ token, role }),
+    });
+};
+
+const getAdminUsers = async (role) => {
+    const token = ensureToken();
+    const params = new URLSearchParams({ token });
+    if (role) {
+        params.append('role', role);
+    }
+    return apiRequest(`/admin/users?${params.toString()}`);
+};
+
+export const adminAPI = {
+    addDoctor: async ({ fullname, email, password, specialization }) =>
+        addAdminUser({ fullname, email, password, role: 'doctor', specialization }),
+    addPharmacist: async ({ fullname, email, password }) =>
+        addAdminUser({ fullname, email, password, role: 'pharmacist' }),
+    getUsers: getAdminUsers,
+    removeUser: removeAdminUser,
 };
 
 // Doctor API

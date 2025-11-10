@@ -97,8 +97,8 @@ const SignUp = () => {
             
             // Backend returns { token, user: { id, email, role } }
             if (response.token && response.user) {
-                alert(`Account created successfully!\n\nYour ID: ${response.user.id}\n\nPlease sign in with your credentials.`);
-                navigate('/sign-in');
+                authService.login(response.token, response.user);
+                navigate('/admin-dashboard', { replace: true });
             } else {
                 setErrors({ general: response.message || 'Registration failed' });
             }
