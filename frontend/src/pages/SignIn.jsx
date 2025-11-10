@@ -66,16 +66,13 @@ const SignIn = () => {
         setIsLoading(true);
         
         try {
-            // Call API to login with profession
+            // Call backend API to login
             const response = await authAPI.login(formData.email, formData.password, formData.role);
             
-            if (response.status === 'success') {
+            // Backend returns { token, user: { id, email, role } }
+            if (response.token && response.user) {
                 // Store token and user info
-                const user = {
-                    ...response.user,
-                    role: response.user.profession // Map profession to role for consistency
-                };
-                authService.login(response.token, user);
+                authService.login(response.token, response.user);
                 
                 // Redirect to appropriate dashboard based on user role
                 const dashboardRoutes = {
@@ -85,7 +82,7 @@ const SignIn = () => {
                     pharmacist: '/pharmacist-dashboard'
                 };
                 
-                navigate(dashboardRoutes[response.user.profession]);
+                navigate(dashboardRoutes[response.user.role]);
             } else {
                 setErrors({ general: 'Invalid credentials' });
             }
