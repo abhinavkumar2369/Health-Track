@@ -3,17 +3,32 @@
   "version": "1.0.0",
   "description": "The Server for the health-track",
   "main": "server.js",
+  "type": "module",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "nodemon server.js"
+    "start": "nodemon server.js",
+    "dev": "nodemon server.js"
   },
   "repository": {
     "type": "git",
     "url": "https://github.com/abhinavkumar2369/Health-Track/backend"
   },
   "keywords": [
-    "server"
+    "server",
+    "health-track",
+    "api"
   ],
   "author": "Abhinav Kumar",
-  "license": "Apache-2.0"
+  "license": "Apache-2.0",
+  "dependencies": {
+    "express": "^4.18.2",
+    "mongoose": "^8.0.0",
+    "bcryptjs": "^2.4.3",
+    "jsonwebtoken": "^9.0.2",
+    "dotenv": "^16.3.1",
+    "cors": "^2.8.5"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  }
 }

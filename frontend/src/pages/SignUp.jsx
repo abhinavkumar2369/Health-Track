@@ -88,14 +88,15 @@ const SignUp = () => {
         setIsLoading(true);
         
         try {
-            // Register user via API
+            // Register admin via API
             const response = await authAPI.signUp(
                 formData.fullName,
                 formData.email,
                 formData.password
             );
             
-            if (response.status === 'success') {
+            // Backend returns { token, user: { id, email, role } }
+            if (response.token && response.user) {
                 alert(`Account created successfully!\n\nYour ID: ${response.user.id}\n\nPlease sign in with your credentials.`);
                 navigate('/sign-in');
             } else {
