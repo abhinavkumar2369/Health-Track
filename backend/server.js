@@ -5,6 +5,7 @@ import { connectDB } from "./db.js";
 import authRoutes from "./routes/authRoutes.js";
 import adminRoutes from "./routes/adminRoutes.js";
 import doctorRoutes from "./routes/doctorRoutes.js";
+import pharmacistRoutes from "./routes/pharmacistRoutes.js";
 
 dotenv.config();
 connectDB();
@@ -16,6 +17,7 @@ app.use(express.json());
 app.use("/auth", authRoutes);
 app.use("/admin", adminRoutes);
 app.use("/doctor", doctorRoutes);
+app.use("/pharmacist", pharmacistRoutes);
 
 app.listen(process.env.PORT, () =>
   console.log(`🚀 Server running on port ${process.env.PORT}`)

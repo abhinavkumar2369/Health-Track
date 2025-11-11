@@ -141,9 +141,61 @@ export const patientAPI = {
     // Add patient-specific endpoints here when backend is ready
 };
 
-// Pharmacist API (placeholder for future endpoints)
+// Pharmacist API
 export const pharmacistAPI = {
-    // Add pharmacist-specific endpoints here when backend is ready
+    // Get all medicines in inventory
+    getMedicines: async () => {
+        const token = ensureToken();
+        const response = await apiRequest(`/pharmacist/medicines?token=${token}`);
+        return response;
+    },
+
+    // Add new medicine to inventory
+    addMedicine: async (medicineData) => {
+        const token = ensureToken();
+        const response = await apiRequest('/pharmacist/add-medicine', {
+            method: 'POST',
+            body: JSON.stringify({ token, ...medicineData }),
+        });
+        return response;
+    },
+
+    // Update medicine in inventory
+    updateMedicine: async (medicineId, medicineData) => {
+        const token = ensureToken();
+        const response = await apiRequest(`/pharmacist/update-medicine/${medicineId}`, {
+            method: 'PUT',
+            body: JSON.stringify({ token, ...medicineData }),
+        });
+        return response;
+    },
+
+    // Issue medicine to patient
+    issueMedicine: async (issueData) => {
+        const token = ensureToken();
+        const response = await apiRequest('/pharmacist/issue-medicine', {
+            method: 'POST',
+            body: JSON.stringify({ token, ...issueData }),
+        });
+        return response;
+    },
+
+    // Remove medicine from inventory
+    removeMedicine: async (medicineId) => {
+        const token = ensureToken();
+        const response = await apiRequest(`/pharmacist/remove-medicine/${medicineId}`, {
+            method: 'DELETE',
+            body: JSON.stringify({ token }),
+        });
+        return response;
+    },
+
+    // Get inventory statistics
+    getInventoryStats: async () => {
+        const token = ensureToken();
+        const response = await apiRequest(`/pharmacist/inventory-stats?token=${token}`);
+        return response;
+    },
 };
 
 export default {

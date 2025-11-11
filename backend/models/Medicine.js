@@ -5,6 +5,9 @@ const medicineSchema = new mongoose.Schema(
     name: { type: String, required: true },
     description: String,
     quantity: { type: Number, default: 0 },
+    category: { type: String },
+    expiryDate: { type: Date },
+    price: { type: Number },
     patient_id: { type: mongoose.Schema.Types.ObjectId, ref: "Patient" },
     doctor_id: { type: mongoose.Schema.Types.ObjectId, ref: "Doctor" },
     pharmacist_id: { type: mongoose.Schema.Types.ObjectId, ref: "Pharmacist" }
