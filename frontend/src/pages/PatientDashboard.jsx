@@ -27,55 +27,6 @@ const PatientDashboard = () => {
         navigate('/');
     };
 
-    const healthMetrics = [
-        { 
-            label: 'Blood Pressure', 
-            value: '120/80', 
-            status: 'normal', 
-            icon: <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" /></svg>, 
-            color: 'from-emerald-500 to-emerald-600' 
-        },
-        { 
-            label: 'Heart Rate', 
-            value: '72 bpm', 
-            status: 'normal', 
-            icon: <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19V6l3-3 3 3v13" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19c-4.418 0-8-3.582-8-8 0-1.657.507-3.19 1.374-4.462" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19c4.418 0 8-3.582 8-8 0-1.657-.507-3.19-1.374-4.462" /></svg>, 
-            color: 'from-rose-500 to-rose-600' 
-        },
-        { 
-            label: 'Blood Sugar', 
-            value: '95 mg/dL', 
-            status: 'normal', 
-            icon: <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" /></svg>, 
-            color: 'from-sky-500 to-sky-600' 
-        },
-        { 
-            label: 'BMI', 
-            value: '23.4', 
-            status: 'normal', 
-            icon: <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3" /></svg>, 
-            color: 'from-violet-500 to-violet-600' 
-        }
-    ];
-
-    const upcomingAppointments = [
-        { id: 1, doctor: 'Dr. Sarah Johnson', specialty: 'Cardiology', date: '2024-01-20', time: '10:00 AM', type: 'Follow-up' },
-        { id: 2, doctor: 'Dr. Mike Davis', specialty: 'General Practice', date: '2024-01-25', time: '2:30 PM', type: 'Check-up' },
-        { id: 3, doctor: 'Dr. Emily Chen', specialty: 'Dermatology', date: '2024-02-01', time: '11:00 AM', type: 'Consultation' }
-    ];
-
-    const recentPrescriptions = [
-        { id: 1, medication: 'Lisinopril 10mg', prescriber: 'Dr. Johnson', date: '2024-01-15', frequency: 'Once daily', status: 'active' },
-        { id: 2, medication: 'Metformin 500mg', prescriber: 'Dr. Davis', date: '2024-01-10', frequency: 'Twice daily', status: 'active' },
-        { id: 3, medication: 'Vitamin D3', prescriber: 'Dr. Chen', date: '2024-01-05', frequency: 'Once daily', status: 'completed' }
-    ];
-
-    const labResults = [
-        { id: 1, test: 'Complete Blood Count', date: '2024-01-14', status: 'normal', doctor: 'Dr. Johnson' },
-        { id: 2, test: 'Lipid Panel', date: '2024-01-12', status: 'normal', doctor: 'Dr. Davis' },
-        { id: 3, test: 'Thyroid Function', date: '2024-01-08', status: 'pending', doctor: 'Dr. Chen' }
-    ];
-
     if (!user) {
         return (
             <div className="min-h-screen bg-gray-100 flex items-center justify-center">
@@ -174,27 +125,13 @@ const PatientDashboard = () => {
             <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
                 {activeTab === 'overview' && (
                     <div className="space-y-6 sm:space-y-8">
-                        {/* Health Metrics */}
-                        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
-                            {healthMetrics.map((metric, index) => (
-                                <div key={index} className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 sm:p-6 hover:shadow-md transition-shadow duration-200">
-                                    <div className="flex items-center justify-between">
-                                        <div className="min-w-0 flex-1">
-                                            <p className="text-xs sm:text-sm font-medium text-gray-600 truncate">{metric.label}</p>
-                                            <p className="text-lg sm:text-2xl font-bold text-gray-900">{metric.value}</p>
-                                            <p className={`text-xs sm:text-sm font-medium ${
-                                                metric.status === 'normal' ? 'text-green-600' : 
-                                                metric.status === 'warning' ? 'text-yellow-600' : 'text-red-600'
-                                            }`}>
-                                                {metric.status.charAt(0).toUpperCase() + metric.status.slice(1)}
-                                            </p>
-                                        </div>
-                                        <div className={`w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br ${metric.color} rounded-lg flex items-center justify-center text-white text-lg sm:text-2xl flex-shrink-0 ml-2`}>
-                                            {metric.icon}
-                                        </div>
-                                    </div>
-                                </div>
-                            ))}
+                        {/* Health Metrics - No Data */}
+                        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-8 text-center">
+                            <svg className="w-16 h-16 mx-auto text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                            </svg>
+                            <h3 className="text-lg font-semibold text-gray-700 mb-2">No Health Metrics Available</h3>
+                            <p className="text-gray-500">Your health metrics will appear here once recorded</p>
                         </div>
 
                         {/* Quick Actions */}
@@ -256,35 +193,15 @@ const PatientDashboard = () => {
                                     Book New Appointment
                                 </button>
                             </div>
-                            <div className="divide-y divide-gray-100">
-                                {upcomingAppointments.map((appointment) => (
-                                    <div key={appointment.id} className="px-6 py-4 hover:bg-gray-50">
-                                        <div className="flex items-center justify-between">
-                                            <div className="flex items-center space-x-4">
-                                                <div className="flex-shrink-0">
-                                                    <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
-                                                        <span className="text-sm font-medium text-purple-600">
-                                                            {appointment.doctor.split(' ')[1][0]}
-                                                        </span>
-                                                    </div>
-                                                </div>
-                                                <div>
-                                                    <p className="text-sm font-medium text-gray-900">{appointment.doctor}</p>
-                                                    <p className="text-sm text-gray-500">{appointment.specialty} • {appointment.type}</p>
-                                                    <p className="text-sm text-gray-500">{appointment.date} at {appointment.time}</p>
-                                                </div>
-                                            </div>
-                                            <div className="flex space-x-2">
-                                                <button className="text-blue-600 hover:text-blue-800 text-sm font-medium">
-                                                    Reschedule
-                                                </button>
-                                                <button className="text-red-600 hover:text-red-800 text-sm font-medium">
-                                                    Cancel
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                ))}
+                            <div className="p-12 text-center">
+                                <svg className="w-16 h-16 mx-auto text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                </svg>
+                                <h3 className="text-lg font-semibold text-gray-700 mb-2">No Appointments Scheduled</h3>
+                                <p className="text-gray-500 mb-4">You don't have any upcoming appointments</p>
+                                <button className="bg-purple-600 text-white px-6 py-2 rounded-lg hover:bg-purple-700">
+                                    Book Your First Appointment
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -299,30 +216,12 @@ const PatientDashboard = () => {
                                     Request Refill
                                 </button>
                             </div>
-                            <div className="divide-y divide-gray-100">
-                                {recentPrescriptions.map((prescription) => (
-                                    <div key={prescription.id} className="px-6 py-4 hover:bg-gray-50">
-                                        <div className="flex items-center justify-between">
-                                            <div>
-                                                <p className="text-sm font-medium text-gray-900">{prescription.medication}</p>
-                                                <p className="text-sm text-gray-500">Prescribed by {prescription.prescriber} • {prescription.date}</p>
-                                                <p className="text-sm text-gray-500">Take {prescription.frequency}</p>
-                                            </div>
-                                            <div className="flex items-center space-x-3">
-                                                <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                                                    prescription.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
-                                                }`}>
-                                                    {prescription.status}
-                                                </span>
-                                                {prescription.status === 'active' && (
-                                                    <button className="text-green-600 hover:text-green-800 text-sm font-medium">
-                                                        Refill
-                                                    </button>
-                                                )}
-                                            </div>
-                                        </div>
-                                    </div>
-                                ))}
+                            <div className="p-12 text-center">
+                                <svg className="w-16 h-16 mx-auto text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
+                                </svg>
+                                <h3 className="text-lg font-semibold text-gray-700 mb-2">No Prescriptions</h3>
+                                <p className="text-gray-500">You don't have any active prescriptions</p>
                             </div>
                         </div>
                     </div>

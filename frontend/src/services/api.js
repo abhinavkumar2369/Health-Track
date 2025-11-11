@@ -110,7 +110,7 @@ export const adminAPI = {
 export const doctorAPI = {
     // Add patient
     addPatient: async (fullname, email, password) => {
-        const token = getToken();
+        const token = ensureToken();
         const response = await apiRequest('/doctor/add-patient', {
             method: 'POST',
             body: JSON.stringify({ token, fullname, email, password }),
@@ -120,7 +120,7 @@ export const doctorAPI = {
 
     // Remove patient
     removePatient: async (patientId) => {
-        const token = getToken();
+        const token = ensureToken();
         const response = await apiRequest(`/doctor/remove-patient/${patientId}`, {
             method: 'DELETE',
             body: JSON.stringify({ token }),
@@ -130,7 +130,7 @@ export const doctorAPI = {
 
     // Get my patients
     getMyPatients: async () => {
-        const token = getToken();
+        const token = ensureToken();
         const response = await apiRequest(`/doctor/my-patients?token=${token}`);
         return response;
     },
