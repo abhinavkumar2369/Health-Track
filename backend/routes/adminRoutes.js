@@ -139,6 +139,88 @@ router.get("/users", async (req, res) => {
   }
 });
 
+// 📋 Get all patients
+router.get("/patients", async (req, res) => {
+  try {
+    const { token } = req.query;
+    const decoded = authenticateAdmin(token, res);
+    if (!decoded) return;
+
+    const patients = await Patient.find({ admin_id: decoded.id }).sort({ createdAt: -1 });
+    
+    const formattedPatients = patients.map((patient) => {
+      const { firstName, lastName } = splitName(patient.name || "");
+      return {
+        id: patient._id?.toString(),
+        uniqueId: patient._id?.toString(),
+        name: patient.name,
+        firstName,
+        lastName,
+        email: patient.email,
+        role: "patient",
+        doctorId: patient.doctor_id?.toString(),
+        createdAt: patient.createdAt,
+      };
+    });
+
+    return res.json({ success: true, data: formattedPatients });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// ➕ Add Patient (Admin can add patients directly)
+router.post("/add-patient", async (req, res) => {
+  try {
+    const { token, fullname, email, password } = req.body;
+    const decoded = authenticateAdmin(token, res);
+    if (!decoded) return;
+
+    const existingPatient = await Patient.findOne({ email });
+    if (existingPatient) {
+      return res.status(400).json({ message: "Patient already exists" });
+    }
+
+    const hashed = await bcrypt.hash(password, 10);
+
+    const patient = await Patient.create({
+      name: fullname,
+      email,
+      password: hashed,
+      admin_id: decoded.id,
+    });
+
+    const { firstName, lastName } = splitName(patient.name || "");
+
+    return res.status(201).json({
+      id: patient._id?.toString(),
+      uniqueId: patient._id?.toString(),
+      name: patient.name,
+      firstName,
+      lastName,
+      email: patient.email,
+      role: "patient",
+      createdAt: patient.createdAt,
+    });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// ❌ Remove Patient
+router.delete("/remove-patient/:id", async (req, res) => {
+  try {
+    const { token } = req.body;
+    const decoded = authenticateAdmin(token, res);
+    if (!decoded) return;
+
+    await Patient.findByIdAndDelete(req.params.id);
+    return res.json({ message: "Patient removed successfully" });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
 // ❌ Remove Doctor/Pharmacist
 router.delete("/remove-user/:id", async (req, res) => {
   try {

@@ -27,6 +27,7 @@ const AdminDashboard = () => {
     const [modalInfo, setModalInfo] = useState('');
     const [doctors, setDoctors] = useState([]);
     const [pharmacists, setPharmacists] = useState([]);
+    const [patients, setPatients] = useState([]);
     const [patientCount, setPatientCount] = useState(0);
     const [users, setUsers] = useState([]);
     const [loading, setLoading] = useState(false);
@@ -63,14 +64,23 @@ const AdminDashboard = () => {
         setLoading(true);
         setError('');
         try {
-            const response = await adminAPI.getUsers(role);
-            if (response.success) {
-                const list = response.data || [];
-                setUsers(list);
-                if (role === 'doctor') {
-                    setDoctors(list);
-                } else if (role === 'pharmacist') {
-                    setPharmacists(list);
+            if (role === 'patient') {
+                const response = await adminAPI.getPatients();
+                if (response.success) {
+                    const list = response.data || [];
+                    setUsers(list);
+                    setPatients(list);
+                }
+            } else {
+                const response = await adminAPI.getUsers(role);
+                if (response.success) {
+                    const list = response.data || [];
+                    setUsers(list);
+                    if (role === 'doctor') {
+                        setDoctors(list);
+                    } else if (role === 'pharmacist') {
+                        setPharmacists(list);
+                    }
                 }
             }
         } catch (fetchError) {
@@ -94,8 +104,6 @@ const AdminDashboard = () => {
         if (!user) return;
         if (activeTab === 'overview') {
             loadOverview();
-        } else if (activeTab === 'patients') {
-            setUsers([]);
         } else {
             loadRole(activeTab.slice(0, -1));
         }
@@ -113,11 +121,6 @@ const AdminDashboard = () => {
         setError('');
         setSuccessMessage('');
         setModalInfo('');
-
-        if (type === 'patient') {
-            setModalInfo('Patient accounts are created by doctors from their dashboards. Ask a doctor to onboard new patients.');
-        }
-
         setShowModal(true);
     };
 
@@ -165,10 +168,6 @@ const AdminDashboard = () => {
 
     const handleSubmit = async (event) => {
         event.preventDefault();
-        if (modalType === 'patient') {
-            closeModal();
-            return;
-        }
 
         if (!validateForm()) {
             return;
@@ -192,6 +191,9 @@ const AdminDashboard = () => {
             } else if (modalType === 'pharmacist') {
                 await adminAPI.addPharmacist(payload);
                 setSuccessMessage('Pharmacist added successfully. Share the temporary password with the pharmacist.');
+            } else if (modalType === 'patient') {
+                await adminAPI.addPatient(payload);
+                setSuccessMessage('Patient added successfully. Share the temporary password with the patient.');
             }
 
             setFormData(initialFormState);
@@ -201,6 +203,8 @@ const AdminDashboard = () => {
                 await loadRole('doctor');
             } else if (activeTab === 'pharmacists') {
                 await loadRole('pharmacist');
+            } else if (activeTab === 'patients') {
+                await loadRole('patient');
             }
         } catch (submissionError) {
             console.error('Error adding user:', submissionError);
@@ -215,12 +219,19 @@ const AdminDashboard = () => {
         setSuccessMessage('');
         setLoading(true);
         try {
-            await adminAPI.removeUser(userId, role);
+            if (role === 'patient') {
+                await adminAPI.removePatient(userId);
+            } else {
+                await adminAPI.removeUser(userId, role);
+            }
+            
             await loadOverview();
             if (role === 'doctor' && activeTab === 'doctors') {
                 await loadRole('doctor');
             } else if (role === 'pharmacist' && activeTab === 'pharmacists') {
                 await loadRole('pharmacist');
+            } else if (role === 'patient' && activeTab === 'patients') {
+                await loadRole('patient');
             } else {
                 setUsers((prev) => prev.filter((item) => item.id !== userId));
             }
@@ -396,8 +407,72 @@ const AdminDashboard = () => {
                         )}
 
                         {activeTab === 'patients' && (
-                            <div className="text-center py-12 text-gray-600">
-                                Patient management is handled by doctors. Invite a doctor to add patients from their dashboard.
+                            <div>
+                                <div className="flex justify-between items-center mb-4">
+                                    <h2 className="text-xl font-bold text-gray-900">Patients</h2>
+                                    <button
+                                        onClick={() => openAddUserModal('patient')}
+                                        className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium"
+                                    >
+                                        + Add Patient
+                                    </button>
+                                </div>
+
+                                {loading ? (
+                                    <div className="text-center py-12">
+                                        <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
+                                        <p className="text-gray-600 mt-4">Loading...</p>
+                                    </div>
+                                ) : (
+                                    <div className="overflow-x-auto">
+                                        <table className="w-full">
+                                            <thead className="bg-gray-50 border-b border-gray-200">
+                                                <tr>
+                                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
+                                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
+                                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created</th>
+                                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody className="bg-white divide-y divide-gray-200">
+                                                {users.map((member) => (
+                                                    <tr key={member.id} className="hover:bg-gray-50">
+                                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                                            {member.uniqueId || member.id}
+                                                        </td>
+                                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                                            {member.name || '—'}
+                                                        </td>
+                                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                                                            {member.email || '—'}
+                                                        </td>
+                                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                                                            Patient
+                                                        </td>
+                                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                                                            {formatDisplayDate(member.createdAt)}
+                                                        </td>
+                                                        <td className="px-6 py-4 whitespace-nowrap text-sm">
+                                                            <button
+                                                                onClick={() => handleRemoveUser(member.id, 'patient')}
+                                                                className="text-red-600 hover:text-red-800 font-medium"
+                                                            >
+                                                                Remove
+                                                            </button>
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                        {users.length === 0 && (
+                                            <div className="text-center py-12 text-gray-500">
+                                                No patients found.
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
                             </div>
                         )}
 
@@ -491,7 +566,7 @@ const AdminDashboard = () => {
                                     ? 'Add Doctor'
                                     : modalType === 'pharmacist'
                                         ? 'Add Pharmacist'
-                                        : 'Patient Management'}
+                                        : 'Add Patient'}
                             </h3>
                             <button onClick={closeModal} className="text-gray-400 hover:text-gray-600">
                                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -512,23 +587,7 @@ const AdminDashboard = () => {
                             </div>
                         )}
 
-                        {modalType === 'patient' ? (
-                            <div className="space-y-4">
-                                <p className="text-sm text-gray-600">
-                                    Patients are onboarded by doctors. Ensure your doctors have access to their dashboard to manage patient profiles.
-                                </p>
-                                <div className="flex justify-end">
-                                    <button
-                                        type="button"
-                                        onClick={closeModal}
-                                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-                                    >
-                                        Close
-                                    </button>
-                                </div>
-                            </div>
-                        ) : (
-                            <form onSubmit={handleSubmit} className="space-y-4">
+                        <form onSubmit={handleSubmit} className="space-y-4">
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 mb-1">First name</label>
@@ -635,7 +694,6 @@ const AdminDashboard = () => {
                                     </button>
                                 </div>
                             </form>
-                        )}
                     </div>
                 </div>
             )}

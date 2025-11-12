@@ -1,10 +1,25 @@
 import express from "express";
+import jwt from "jsonwebtoken";
 import { Medicine } from "../models/Medicine.js";
-import { verifyToken } from "../middleware/authMiddleware.js";
+import { Transaction } from "../models/Transaction.js";
 import dotenv from "dotenv";
 
 dotenv.config();
 const router = express.Router();
+
+// Helper function to verify token from request body
+const verifyToken = (token) => {
+  if (!token) {
+    throw new Error("Access denied: token required");
+  }
+  
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    return decoded;
+  } catch (err) {
+    throw new Error("Invalid or expired token");
+  }
+};
 
 /**
  * 📦 ADD MEDICINE TO INVENTORY
@@ -23,6 +38,19 @@ router.post("/add-medicine", async (req, res) => {
       expiryDate,
       price,
       pharmacist_id: decoded.id,
+    });
+
+    // Create transaction record
+    await Transaction.create({
+      type: 'add',
+      medicineName: name,
+      medicineId: medicine._id,
+      quantity: quantity || 0,
+      price: price || 0,
+      totalAmount: (quantity || 0) * (price || 0),
+      pharmacist_id: decoded.id,
+      newQuantity: quantity || 0,
+      notes: `Added new medicine: ${name}`
     });
 
     res.status(201).json({
@@ -92,6 +120,9 @@ router.put("/update-medicine/:id", async (req, res) => {
       return res.status(404).json({ message: "Medicine not found" });
     }
 
+    const previousQuantity = medicine.quantity;
+    const previousPrice = medicine.price;
+
     // Update fields
     if (name !== undefined) medicine.name = name;
     if (description !== undefined) medicine.description = description;
@@ -101,6 +132,25 @@ router.put("/update-medicine/:id", async (req, res) => {
     if (price !== undefined) medicine.price = price;
 
     await medicine.save();
+
+    // Create transaction record if quantity changed
+    if (quantity !== undefined && quantity !== previousQuantity) {
+      const quantityDiff = quantity - previousQuantity;
+      await Transaction.create({
+        type: 'update',
+        medicineName: medicine.name,
+        medicineId: medicine._id,
+        quantity: Math.abs(quantityDiff),
+        price: medicine.price || 0,
+        totalAmount: Math.abs(quantityDiff) * (medicine.price || 0),
+        pharmacist_id: decoded.id,
+        previousQuantity,
+        newQuantity: quantity,
+        notes: quantityDiff > 0 
+          ? `Restocked ${Math.abs(quantityDiff)} units` 
+          : `Reduced stock by ${Math.abs(quantityDiff)} units`
+      });
+    }
 
     res.json({
       message: "Medicine updated successfully",
@@ -144,9 +194,26 @@ router.post("/issue-medicine", async (req, res) => {
       });
     }
 
+    const previousQuantity = medicine.quantity;
+
     // Decrease quantity
     medicine.quantity -= quantity;
     await medicine.save();
+
+    // Create transaction record
+    await Transaction.create({
+      type: 'issue',
+      medicineName: medicine.name,
+      medicineId: medicine._id,
+      quantity,
+      price: medicine.price || 0,
+      totalAmount: quantity * (medicine.price || 0),
+      patientName: patientName || 'Unknown',
+      notes: notes || `Issued ${quantity} units to ${patientName || 'patient'}`,
+      pharmacist_id: decoded.id,
+      previousQuantity,
+      newQuantity: medicine.quantity
+    });
 
     res.json({
       message: "Medicine issued successfully",
@@ -178,7 +245,7 @@ router.delete("/remove-medicine/:id", async (req, res) => {
 
     const decoded = verifyToken(token);
 
-    const medicine = await Medicine.findOneAndDelete({
+    const medicine = await Medicine.findOne({
       _id: id,
       pharmacist_id: decoded.id,
     });
@@ -186,6 +253,22 @@ router.delete("/remove-medicine/:id", async (req, res) => {
     if (!medicine) {
       return res.status(404).json({ message: "Medicine not found" });
     }
+
+    // Create transaction record before deletion
+    await Transaction.create({
+      type: 'remove',
+      medicineName: medicine.name,
+      medicineId: medicine._id,
+      quantity: medicine.quantity,
+      price: medicine.price || 0,
+      totalAmount: medicine.quantity * (medicine.price || 0),
+      pharmacist_id: decoded.id,
+      previousQuantity: medicine.quantity,
+      newQuantity: 0,
+      notes: `Removed ${medicine.name} from inventory (${medicine.quantity} units)`
+    });
+
+    await Medicine.findByIdAndDelete(id);
 
     res.json({
       message: "Medicine removed successfully",
@@ -222,6 +305,40 @@ router.get("/inventory-stats", async (req, res) => {
         lowStock,
         outOfStock,
       },
+    });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+/**
+ * 📋 GET ALL TRANSACTIONS
+ */
+router.get("/transactions", async (req, res) => {
+  try {
+    const { token } = req.query;
+
+    const decoded = verifyToken(token);
+
+    const transactions = await Transaction.find({ pharmacist_id: decoded.id })
+      .sort({ createdAt: -1 })
+      .limit(100); // Limit to last 100 transactions
+
+    res.json({
+      transactions: transactions.map((txn) => ({
+        id: txn._id,
+        type: txn.type,
+        medicineName: txn.medicineName,
+        medicineId: txn.medicineId,
+        quantity: txn.quantity,
+        price: txn.price,
+        totalAmount: txn.totalAmount,
+        patientName: txn.patientName,
+        notes: txn.notes,
+        previousQuantity: txn.previousQuantity,
+        newQuantity: txn.newQuantity,
+        createdAt: txn.createdAt,
+      })),
     });
   } catch (err) {
     res.status(500).json({ message: err.message });

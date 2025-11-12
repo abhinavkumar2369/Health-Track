@@ -102,8 +102,26 @@ export const adminAPI = {
         addAdminUser({ fullname, email, password, role: 'doctor', specialization }),
     addPharmacist: async ({ fullname, email, password }) =>
         addAdminUser({ fullname, email, password, role: 'pharmacist' }),
+    addPatient: async ({ fullname, email, password }) => {
+        const token = ensureToken();
+        return apiRequest('/admin/add-patient', {
+            method: 'POST',
+            body: JSON.stringify({ token, fullname, email, password }),
+        });
+    },
     getUsers: getAdminUsers,
+    getPatients: async () => {
+        const token = ensureToken();
+        return apiRequest(`/admin/patients?token=${token}`);
+    },
     removeUser: removeAdminUser,
+    removePatient: async (patientId) => {
+        const token = ensureToken();
+        return apiRequest(`/admin/remove-patient/${patientId}`, {
+            method: 'DELETE',
+            body: JSON.stringify({ token }),
+        });
+    },
 };
 
 // Doctor API
@@ -194,6 +212,13 @@ export const pharmacistAPI = {
     getInventoryStats: async () => {
         const token = ensureToken();
         const response = await apiRequest(`/pharmacist/inventory-stats?token=${token}`);
+        return response;
+    },
+
+    // Get all transactions
+    getTransactions: async () => {
+        const token = ensureToken();
+        const response = await apiRequest(`/pharmacist/transactions?token=${token}`);
         return response;
     },
 };

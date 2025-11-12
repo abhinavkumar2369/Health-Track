@@ -7,6 +7,7 @@ const PharmacistDashboard = () => {
     const [user, setUser] = useState(null);
     const [activeTab, setActiveTab] = useState('overview');
     const [medicines, setMedicines] = useState([]);
+    const [transactions, setTransactions] = useState([]);
     const [stats, setStats] = useState(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
@@ -51,6 +52,7 @@ const PharmacistDashboard = () => {
         setUser(parsedUser);
         fetchMedicines();
         fetchStats();
+        fetchTransactions();
     }, [navigate]);
 
     const fetchMedicines = async () => {
@@ -74,6 +76,15 @@ const PharmacistDashboard = () => {
         }
     };
 
+    const fetchTransactions = async () => {
+        try {
+            const response = await pharmacistAPI.getTransactions();
+            setTransactions(response.transactions || []);
+        } catch (err) {
+            console.error('Failed to fetch transactions:', err);
+        }
+    };
+
     const handleAddMedicine = async (e) => {
         e.preventDefault();
         try {
@@ -85,6 +96,7 @@ const PharmacistDashboard = () => {
             resetMedicineForm();
             fetchMedicines();
             fetchStats();
+            fetchTransactions(); // Refresh transactions
             setTimeout(() => setSuccess(''), 3000);
         } catch (err) {
             setError(err.message || 'Failed to add medicine');
@@ -104,6 +116,7 @@ const PharmacistDashboard = () => {
             resetMedicineForm();
             fetchMedicines();
             fetchStats();
+            fetchTransactions(); // Refresh transactions
             setTimeout(() => setSuccess(''), 3000);
         } catch (err) {
             setError(err.message || 'Failed to update medicine');
@@ -123,6 +136,7 @@ const PharmacistDashboard = () => {
             resetIssueForm();
             fetchMedicines();
             fetchStats();
+            fetchTransactions(); // Refresh transactions
             setTimeout(() => setSuccess(''), 3000);
         } catch (err) {
             setError(err.message || 'Failed to issue medicine');
@@ -142,6 +156,7 @@ const PharmacistDashboard = () => {
             setSuccess('Medicine removed successfully!');
             fetchMedicines();
             fetchStats();
+            fetchTransactions(); // Refresh transactions
             setTimeout(() => setSuccess(''), 3000);
         } catch (err) {
             setError(err.message || 'Failed to remove medicine');
@@ -311,61 +326,272 @@ const PharmacistDashboard = () => {
             {/* Main Content */}
             <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
                 {activeTab === 'overview' && (
-                    <div className="space-y-6 sm:space-y-8">
-                        {/* Inventory Alerts */}
-                        <div className="bg-white rounded-xl shadow-sm border border-gray-100">
-                            <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center">
-                                <h3 className="text-lg font-semibold text-gray-900">Inventory Alerts</h3>
-                                <button 
-                                    onClick={() => setActiveTab('inventory')}
-                                    className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-700"
-                                >
-                                    View Inventory
-                                </button>
-                            </div>
-                            {inventoryAlerts.length === 0 ? (
-                                <div className="px-6 py-8 text-center text-gray-500">
-                                    No low stock items
+                    <div className="space-y-8">
+                        {/* Data Visualization Graphs */}
+                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                            {/* Quick Stats Summary */}
+                            <div>
+                                <h3 className="text-2xl font-bold text-gray-900 mb-6">Inventory Summary</h3>
+                                <div className="space-y-3">
+                                    <div className="flex items-center justify-between p-3 rounded-lg bg-blue-50">
+                                        <div className="flex items-center">
+                                            <div className="w-4 h-4 bg-blue-500 rounded-full mr-3"></div>
+                                            <span className="text-sm font-medium text-gray-700">Total Medicines</span>
+                                        </div>
+                                        <span className="text-lg font-bold text-gray-900">{stats?.totalItems || 0}</span>
+                                    </div>
+                                    <div className="flex items-center justify-between p-3 rounded-lg bg-green-50">
+                                        <div className="flex items-center">
+                                            <div className="w-4 h-4 bg-green-500 rounded-full mr-3"></div>
+                                            <span className="text-sm font-medium text-gray-700">Total Stock Units</span>
+                                        </div>
+                                        <span className="text-lg font-bold text-gray-900">{stats?.totalQuantity || 0}</span>
+                                    </div>
+                                    <div className="flex items-center justify-between p-3 rounded-lg bg-yellow-50">
+                                        <div className="flex items-center">
+                                            <div className="w-4 h-4 bg-yellow-500 rounded-full mr-3"></div>
+                                            <span className="text-sm font-medium text-gray-700">Low Stock Items</span>
+                                        </div>
+                                        <span className="text-lg font-bold text-gray-900">{stats?.lowStock || 0}</span>
+                                    </div>
+                                    <div className="flex items-center justify-between p-3 rounded-lg bg-red-50">
+                                        <div className="flex items-center">
+                                            <div className="w-4 h-4 bg-red-500 rounded-full mr-3"></div>
+                                            <span className="text-sm font-medium text-gray-700">Out of Stock</span>
+                                        </div>
+                                        <span className="text-lg font-bold text-gray-900">{stats?.outOfStock || 0}</span>
+                                    </div>
                                 </div>
-                            ) : (
-                                <div className="divide-y divide-gray-100">
-                                    {inventoryAlerts.map((item) => (
-                                        <div key={item.id} className="px-6 py-4 hover:bg-gray-50">
-                                            <div className="flex items-center justify-between">
-                                                <div>
-                                                    <p className="text-sm font-medium text-gray-900">{item.name}</p>
-                                                    <p className="text-sm text-gray-500">Current: {item.quantity} units • Minimum: 50 units</p>
-                                                </div>
-                                                <div className="flex items-center space-x-3">
-                                                    <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                                                        item.quantity === 0 ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800'
-                                                    }`}>
-                                                        {item.quantity === 0 ? 'critical' : 'low'}
-                                                    </span>
-                                                    <button 
-                                                        onClick={() => openEditModal(item)}
-                                                        className="bg-orange-600 text-white px-3 py-1 rounded text-xs hover:bg-orange-700"
-                                                    >
-                                                        Restock
-                                                    </button>
+                            </div>
+
+                            {/* Stock Status Chart */}
+                            <div className="lg:col-span-2 min-h-[260px] flex flex-col justify-center">
+                                {/* Removed Stock Distribution heading for cleaner look */}
+                                {medicines.length === 0 ? (
+                                    <div className="text-center text-gray-400 py-20">
+                                        <svg className="w-20 h-20 mx-auto mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                                        </svg>
+                                        <p className="text-lg">No inventory data available</p>
+                                    </div>
+                                ) : (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                        {/* Donut Chart */}
+                                        <div className="flex items-center justify-center">
+                                            <div className="relative w-48 h-48">
+                                                <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+                                                    {(() => {
+                                                        const goodStock = medicines.filter(m => m.quantity >= 50).length;
+                                                        const lowStock = medicines.filter(m => m.quantity > 0 && m.quantity < 50).length;
+                                                        const outOfStock = medicines.filter(m => m.quantity === 0).length;
+                                                        const total = medicines.length || 1;
+                                                        
+                                                        const goodPercent = (goodStock / total) * 100;
+                                                        const lowPercent = (lowStock / total) * 100;
+                                                        const outPercent = (outOfStock / total) * 100;
+                                                        
+                                                        let offset = 0;
+                                                        const radius = 40;
+                                                        const circumference = 2 * Math.PI * radius;
+                                                        
+                                                        return (
+                                                            <>
+                                                                {goodPercent > 0 && (
+                                                                    <circle cx="50" cy="50" r={radius} fill="none" stroke="#10b981" strokeWidth="20"
+                                                                        strokeDasharray={`${(goodPercent / 100) * circumference} ${circumference}`}
+                                                                        strokeDashoffset={-offset} />
+                                                                )}
+                                                                {(() => { offset += (goodPercent / 100) * circumference; return null; })()}
+                                                                {lowPercent > 0 && (
+                                                                    <circle cx="50" cy="50" r={radius} fill="none" stroke="#f59e0b" strokeWidth="20"
+                                                                        strokeDasharray={`${(lowPercent / 100) * circumference} ${circumference}`}
+                                                                        strokeDashoffset={-offset} />
+                                                                )}
+                                                                {(() => { offset += (lowPercent / 100) * circumference; return null; })()}
+                                                                {outPercent > 0 && (
+                                                                    <circle cx="50" cy="50" r={radius} fill="none" stroke="#ef4444" strokeWidth="20"
+                                                                        strokeDasharray={`${(outPercent / 100) * circumference} ${circumference}`}
+                                                                        strokeDashoffset={-offset} />
+                                                                )}
+                                                            </>
+                                                        );
+                                                    })()}
+                                                </svg>
+                                                <div className="absolute inset-0 flex items-center justify-center">
+                                                    <div className="text-center">
+                                                        <p className="text-4xl font-bold text-gray-900">{medicines.length}</p>
+                                                        <p className="text-sm text-gray-500">Total Items</p>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
-                                    ))}
+
+                                        {/* Legend & Categories */}
+                                        <div className="space-y-6">
+                                            <div className="space-y-3">
+                                                {/* Removed Stock Status heading for cleaner look */}
+                                                <div className="space-y-2">
+                                                    <div className="flex items-center justify-between p-3 rounded-lg bg-green-50">
+                                                        <div className="flex items-center">
+                                                            <div className="w-4 h-4 bg-green-500 rounded-full mr-3"></div>
+                                                            <span className="text-sm font-medium text-gray-700">Good Stock</span>
+                                                        </div>
+                                                        <span className="text-lg font-bold text-gray-900">{medicines.filter(m => m.quantity >= 50).length}</span>
+                                                    </div>
+                                                    <div className="flex items-center justify-between p-3 rounded-lg bg-yellow-50">
+                                                        <div className="flex items-center">
+                                                            <div className="w-4 h-4 bg-yellow-500 rounded-full mr-3"></div>
+                                                            <span className="text-sm font-medium text-gray-700">Low Stock</span>
+                                                        </div>
+                                                        <span className="text-lg font-bold text-gray-900">{medicines.filter(m => m.quantity > 0 && m.quantity < 50).length}</span>
+                                                    </div>
+                                                    <div className="flex items-center justify-between p-3 rounded-lg bg-red-50">
+                                                        <div className="flex items-center">
+                                                            <div className="w-4 h-4 bg-red-500 rounded-full mr-3"></div>
+                                                            <span className="text-sm font-medium text-gray-700">Out of Stock</span>
+                                                        </div>
+                                                        <span className="text-lg font-bold text-gray-900">{medicines.filter(m => m.quantity === 0).length}</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Categories */}
+                        <div className="mt-12">
+                            <h3 className="text-2xl font-bold text-gray-900 mb-6">Categories</h3>
+                            {medicines.length === 0 ? (
+                                <div className="text-center text-gray-400 py-12">
+                                    <p className="text-lg">No category data available</p>
+                                </div>
+                            ) : (
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                    {(() => {
+                                        const categories = {};
+                                        medicines.forEach(med => {
+                                            const cat = med.category || 'Uncategorized';
+                                            categories[cat] = (categories[cat] || 0) + 1;
+                                        });
+                                        const total = medicines.length;
+                                        const colors = [
+                                            { bg: 'bg-blue-500', light: 'bg-blue-50' },
+                                            { bg: 'bg-green-500', light: 'bg-green-50' },
+                                            { bg: 'bg-purple-500', light: 'bg-purple-50' },
+                                            { bg: 'bg-pink-500', light: 'bg-pink-50' },
+                                            { bg: 'bg-indigo-500', light: 'bg-indigo-50' },
+                                            { bg: 'bg-orange-500', light: 'bg-orange-50' }
+                                        ];
+                                        
+                                        return Object.entries(categories)
+                                            .sort(([, a], [, b]) => b - a)
+                                            .map(([category, count], index) => {
+                                                const percentage = (count / total) * 100;
+                                                const color = colors[index % colors.length];
+                                                return (
+                                                    <div key={category} className={`${color.light} rounded-xl p-5`}>
+                                                        <div className="flex justify-between items-start mb-3">
+                                                            <span className="text-base font-semibold text-gray-800">{category}</span>
+                                                            <span className="text-2xl font-bold text-gray-900">{count}</span>
+                                                        </div>
+                                                        <div className="w-full bg-white rounded-full h-2.5 overflow-hidden">
+                                                            <div 
+                                                                className={`h-2.5 ${color.bg} transition-all`}
+                                                                style={{ width: `${percentage}%` }}
+                                                            ></div>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            });
+                                    })()}
                                 </div>
                             )}
                         </div>
+
+
                     </div>
                 )}
 
                 {activeTab === 'transactions' && (
                     <div className="space-y-6">
-                        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-12 text-center">
-                            <svg className="w-16 h-16 mx-auto text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
-                            </svg>
-                            <h3 className="text-lg font-semibold text-gray-700 mb-2">No Transactions Available</h3>
-                            <p className="text-gray-500">Transaction history will appear here</p>
+                        <div className="bg-white rounded-xl shadow-sm border border-gray-100">
+                            <div className="px-6 py-4 border-b border-gray-100">
+                                <h3 className="text-lg font-semibold text-gray-900">Transaction History</h3>
+                                <p className="text-sm text-gray-500 mt-1">View all pharmacy inventory transactions</p>
+                            </div>
+                            
+                            {loading && transactions.length === 0 ? (
+                                <div className="p-12 text-center">
+                                    <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                                    <p className="text-gray-600">Loading transactions...</p>
+                                </div>
+                            ) : transactions.length === 0 ? (
+                                <div className="p-12 text-center">
+                                    <svg className="w-16 h-16 mx-auto text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
+                                    </svg>
+                                    <h3 className="text-lg font-semibold text-gray-700 mb-2">No Transactions Yet</h3>
+                                    <p className="text-gray-500">Transaction history will appear here when you add, issue, or remove medicines</p>
+                                </div>
+                            ) : (
+                                <div className="overflow-x-auto">
+                                    <table className="w-full">
+                                        <thead className="bg-gray-50 border-b border-gray-200">
+                                            <tr>
+                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date & Time</th>
+                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Medicine</th>
+                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Quantity</th>
+                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
+                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Patient/Details</th>
+                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Notes</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="bg-white divide-y divide-gray-200">
+                                            {transactions.map((txn) => (
+                                                <tr key={txn.id} className="hover:bg-gray-50">
+                                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                                        {new Date(txn.createdAt).toLocaleString('en-IN', {
+                                                            year: 'numeric',
+                                                            month: 'short',
+                                                            day: 'numeric',
+                                                            hour: '2-digit',
+                                                            minute: '2-digit'
+                                                        })}
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap">
+                                                        <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                                                            txn.type === 'add' ? 'bg-blue-100 text-blue-800' :
+                                                            txn.type === 'issue' ? 'bg-green-100 text-green-800' :
+                                                            txn.type === 'update' ? 'bg-yellow-100 text-yellow-800' :
+                                                            'bg-red-100 text-red-800'
+                                                        }`}>
+                                                            {txn.type.charAt(0).toUpperCase() + txn.type.slice(1)}
+                                                        </span>
+                                                    </td>
+                                                    <td className="px-6 py-4 text-sm text-gray-900">
+                                                        {txn.medicineName}
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                                        {txn.quantity} units
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                                        ₹{txn.totalAmount ? txn.totalAmount.toFixed(2) : '0.00'}
+                                                    </td>
+                                                    <td className="px-6 py-4 text-sm text-gray-600">
+                                                        {txn.patientName || '-'}
+                                                    </td>
+                                                    <td className="px-6 py-4 text-sm text-gray-500">
+                                                        {txn.notes || '-'}
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            )}
                         </div>
                     </div>
                 )}
@@ -494,7 +720,7 @@ const PharmacistDashboard = () => {
                                                             {medicine.quantity} units
                                                         </span>
                                                     </td>
-                                                    <td className="px-6 py-4 text-sm text-gray-900">${medicine.price || '0.00'}</td>
+                                                    <td className="px-6 py-4 text-sm text-gray-900">₹{medicine.price || '0.00'}</td>
                                                     <td className="px-6 py-4 text-sm text-gray-900">
                                                         {medicine.expiryDate ? new Date(medicine.expiryDate).toLocaleDateString() : 'N/A'}
                                                     </td>
@@ -608,7 +834,7 @@ const PharmacistDashboard = () => {
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Price ($)</label>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Price (₹)</label>
                                     <input
                                         type="number"
                                         min="0"
@@ -713,7 +939,7 @@ const PharmacistDashboard = () => {
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Price ($)</label>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Price (₹)</label>
                                     <input
                                         type="number"
                                         min="0"
