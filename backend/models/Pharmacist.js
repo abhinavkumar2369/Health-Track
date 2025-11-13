@@ -5,6 +5,8 @@ const pharmacistSchema = new mongoose.Schema(
     name: { type: String, required: true },
     email: { type: String, unique: true, required: true },
     password: { type: String, required: true },
+    gender: { type: String, enum: ['male', 'female', 'other', ''], default: '' },
+    phone: { type: String },
     inventory: { type: [String], default: [] },
     admin_id: { type: mongoose.Schema.Types.ObjectId, ref: "Admin", required: true },
     role: { type: String, default: "pharmacist" }
