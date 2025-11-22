@@ -23,7 +23,12 @@
   "dependencies": {
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
     "aws-sdk": "^2.1692.0",
+=======
+    "@aws-sdk/client-s3": "^3.930.0",
+    "@aws-sdk/lib-storage": "^3.930.0",
+>>>>>>> 7bd1557eb57d977c8f10465cdcc914f7b3230526
 =======
     "@aws-sdk/client-s3": "^3.930.0",
     "@aws-sdk/lib-storage": "^3.930.0",
@@ -40,7 +45,12 @@
     "mongoose": "^8.0.0",
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
     "multer": "^2.0.2"
+=======
+    "multer": "^2.0.2",
+    "multer-s3": "^3.0.1"
+>>>>>>> 7bd1557eb57d977c8f10465cdcc914f7b3230526
 =======
     "multer": "^2.0.2",
     "multer-s3": "^3.0.1"
