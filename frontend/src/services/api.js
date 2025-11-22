@@ -221,6 +221,33 @@ export const pharmacistAPI = {
         const response = await apiRequest(`/pharmacist/transactions?token=${token}`);
         return response;
     },
+
+    // Get pharmacist profile
+    getProfile: async () => {
+        const token = ensureToken();
+        const response = await apiRequest(`/pharmacist/profile?token=${token}`);
+        return response;
+    },
+
+    // Update pharmacist profile
+    updateProfile: async (profileData) => {
+        const token = ensureToken();
+        const response = await apiRequest('/pharmacist/profile', {
+            method: 'PUT',
+            body: JSON.stringify({ token, ...profileData }),
+        });
+        return response;
+    },
+
+    // Update password
+    updatePassword: async (passwordData) => {
+        const token = ensureToken();
+        const response = await apiRequest('/pharmacist/update-password', {
+            method: 'PUT',
+            body: JSON.stringify({ token, ...passwordData }),
+        });
+        return response;
+    },
 };
 
 export default {

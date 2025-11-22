@@ -36,6 +36,19 @@ const PharmacistDashboard = () => {
         notes: ''
     });
 
+    // Profile form states
+    const [profileForm, setProfileForm] = useState({
+        name: '',
+        gender: '',
+        phone: ''
+    });
+
+    const [passwordForm, setPasswordForm] = useState({
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: ''
+    });
+
     useEffect(() => {
         const userData = localStorage.getItem('user');
         if (!userData) {
@@ -53,7 +66,23 @@ const PharmacistDashboard = () => {
         fetchMedicines();
         fetchStats();
         fetchTransactions();
+        fetchProfile();
     }, [navigate]);
+
+    const fetchProfile = async () => {
+        try {
+            const response = await pharmacistAPI.getProfile();
+            if (response.profile) {
+                setProfileForm({
+                    name: response.profile.name || '',
+                    gender: response.profile.gender || '',
+                    phone: response.profile.phone || ''
+                });
+            }
+        } catch (err) {
+            console.error('Failed to fetch profile:', err);
+        }
+    };
 
     const fetchMedicines = async () => {
         try {
@@ -210,6 +239,62 @@ const PharmacistDashboard = () => {
         setShowIssueModal(true);
     };
 
+    const handleUpdateProfile = async (e) => {
+        e.preventDefault();
+        try {
+            setLoading(true);
+            setError('');
+            const response = await pharmacistAPI.updateProfile(profileForm);
+            setSuccess('Profile updated successfully!');
+            
+            // Update user in localStorage
+            const userData = JSON.parse(localStorage.getItem('user'));
+            userData.fullName = profileForm.name;
+            localStorage.setItem('user', JSON.stringify(userData));
+            setUser(userData);
+            
+            setTimeout(() => setSuccess(''), 3000);
+        } catch (err) {
+            setError(err.message || 'Failed to update profile');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleUpdatePassword = async (e) => {
+        e.preventDefault();
+        
+        if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+            setError('New passwords do not match');
+            return;
+        }
+
+        if (passwordForm.newPassword.length < 6) {
+            setError('Password must be at least 6 characters long');
+            return;
+        }
+
+        try {
+            setLoading(true);
+            setError('');
+            await pharmacistAPI.updatePassword({
+                currentPassword: passwordForm.currentPassword,
+                newPassword: passwordForm.newPassword
+            });
+            setSuccess('Password updated successfully!');
+            setPasswordForm({
+                currentPassword: '',
+                newPassword: '',
+                confirmPassword: ''
+            });
+            setTimeout(() => setSuccess(''), 3000);
+        } catch (err) {
+            setError(err.message || 'Failed to update password');
+        } finally {
+            setLoading(false);
+        }
+    };
+
     const handleLogout = () => {
         localStorage.removeItem('user');
         localStorage.removeItem('token');
@@ -262,18 +347,34 @@ const PharmacistDashboard = () => {
                 </div>
             </header>
 
-            {/* Success/Error Messages */}
+            {/* Success/Error Messages - Toast Notifications */}
             {success && (
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-4">
-                    <div className="bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-lg">
-                        {success}
+                <div className="fixed bottom-4 right-4 z-50 animate-slide-in">
+                    <div className="bg-green-50 border border-green-200 text-green-800 px-6 py-4 rounded-lg shadow-lg flex items-center gap-3 min-w-[300px]">
+                        <svg className="w-5 h-5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                        </svg>
+                        <span className="flex-1">{success}</span>
+                        <button onClick={() => setSuccess('')} className="text-green-600 hover:text-green-800">
+                            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                            </svg>
+                        </button>
                     </div>
                 </div>
             )}
             {error && (
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-4">
-                    <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg">
-                        {error}
+                <div className="fixed bottom-4 right-4 z-50 animate-slide-in">
+                    <div className="bg-red-50 border border-red-200 text-red-800 px-6 py-4 rounded-lg shadow-lg flex items-center gap-3 min-w-[300px]">
+                        <svg className="w-5 h-5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                        </svg>
+                        <span className="flex-1">{error}</span>
+                        <button onClick={() => setError('')} className="text-red-600 hover:text-red-800">
+                            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                            </svg>
+                        </button>
                     </div>
                 </div>
             )}
@@ -303,6 +404,11 @@ const PharmacistDashboard = () => {
                                 id: 'reports', 
                                 label: 'Reports', 
                                 icon: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
+                            },
+                            { 
+                                id: 'personal-details', 
+                                label: 'Personal Details', 
+                                icon: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
                             }
                         ].map((tab) => (
                             <button
@@ -600,53 +706,53 @@ const PharmacistDashboard = () => {
                     <div className="space-y-6">
                         {/* Inventory Header with Stats */}
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                            <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-4">
+                            <div className="bg-white rounded-lg shadow-sm p-4">
                                 <div className="flex items-center justify-between">
                                     <div>
-                                        <p className="text-sm text-gray-600">Total Items</p>
-                                        <p className="text-2xl font-bold text-gray-900">{stats?.totalItems || 0}</p>
+                                        <p className="text-xs text-gray-500 font-medium">Total Items</p>
+                                        <p className="text-2xl font-bold text-gray-900 mt-1">{stats?.totalItems || 0}</p>
                                     </div>
-                                    <div className="w-12 h-12 bg-blue-50 rounded-lg flex items-center justify-center">
-                                        <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
+                                        <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
                                         </svg>
                                     </div>
                                 </div>
                             </div>
-                            <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-4">
+                            <div className="bg-white rounded-lg shadow-sm p-4">
                                 <div className="flex items-center justify-between">
                                     <div>
-                                        <p className="text-sm text-gray-600">Total Stock</p>
-                                        <p className="text-2xl font-bold text-gray-900">{stats?.totalQuantity || 0}</p>
+                                        <p className="text-xs text-gray-500 font-medium">Total Stock</p>
+                                        <p className="text-2xl font-bold text-gray-900 mt-1">{stats?.totalQuantity || 0}</p>
                                     </div>
-                                    <div className="w-12 h-12 bg-green-50 rounded-lg flex items-center justify-center">
-                                        <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
+                                        <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                                         </svg>
                                     </div>
                                 </div>
                             </div>
-                            <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-4">
+                            <div className="bg-white rounded-lg shadow-sm p-4">
                                 <div className="flex items-center justify-between">
                                     <div>
-                                        <p className="text-sm text-gray-600">Low Stock</p>
-                                        <p className="text-2xl font-bold text-yellow-600">{stats?.lowStock || 0}</p>
+                                        <p className="text-xs text-gray-500 font-medium">Low Stock</p>
+                                        <p className="text-2xl font-bold text-gray-900 mt-1">{stats?.lowStock || 0}</p>
                                     </div>
-                                    <div className="w-12 h-12 bg-yellow-50 rounded-lg flex items-center justify-center">
-                                        <svg className="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
+                                        <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                                         </svg>
                                     </div>
                                 </div>
                             </div>
-                            <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-4">
+                            <div className="bg-white rounded-lg shadow-sm p-4">
                                 <div className="flex items-center justify-between">
                                     <div>
-                                        <p className="text-sm text-gray-600">Out of Stock</p>
-                                        <p className="text-2xl font-bold text-red-600">{stats?.outOfStock || 0}</p>
+                                        <p className="text-xs text-gray-500 font-medium">Out of Stock</p>
+                                        <p className="text-2xl font-bold text-gray-900 mt-1">{stats?.outOfStock || 0}</p>
                                     </div>
-                                    <div className="w-12 h-12 bg-red-50 rounded-lg flex items-center justify-center">
-                                        <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
+                                        <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                                         </svg>
                                     </div>
@@ -655,14 +761,17 @@ const PharmacistDashboard = () => {
                         </div>
 
                         {/* Medicines List */}
-                        <div className="bg-white rounded-xl shadow-sm border border-gray-100">
-                            <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center">
-                                <h3 className="text-lg font-semibold text-gray-900">Medicine Inventory</h3>
+                        <div className="bg-white rounded-xl shadow-lg">
+                            <div className="px-6 py-5 border-b border-gray-200 flex justify-between items-center">
+                                <div>
+                                    <h3 className="text-xl font-bold text-gray-900">Medicine Inventory</h3>
+                                    <p className="text-sm text-gray-500 mt-1">Manage your pharmacy stock</p>
+                                </div>
                                 <button 
                                     onClick={() => setShowAddModal(true)}
-                                    className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-700 flex items-center space-x-2"
+                                    className="bg-blue-600 text-white px-5 py-2.5 rounded-lg text-sm font-medium hover:bg-blue-700 flex items-center space-x-2 shadow-md hover:shadow-lg transition-all transform hover:scale-105"
                                 >
-                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                                     </svg>
                                     <span>Add Medicine</span>
@@ -691,28 +800,32 @@ const PharmacistDashboard = () => {
                             ) : (
                                 <div className="overflow-x-auto">
                                     <table className="w-full">
-                                        <thead className="bg-gray-50 border-b border-gray-200">
+                                        <thead className="bg-gray-50">
                                             <tr>
-                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Medicine</th>
-                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
-                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Quantity</th>
-                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
-                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Expiry</th>
-                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                                                <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Medicine</th>
+                                                <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Category</th>
+                                                <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Quantity</th>
+                                                <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Price</th>
+                                                <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Expiry</th>
+                                                <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Actions</th>
                                             </tr>
                                         </thead>
-                                        <tbody className="bg-white divide-y divide-gray-200">
+                                        <tbody className="bg-white divide-y divide-gray-100">
                                             {medicines.map((medicine) => (
-                                                <tr key={medicine.id} className="hover:bg-gray-50">
+                                                <tr key={medicine.id} className="hover:bg-gray-50 transition-colors">
                                                     <td className="px-6 py-4">
                                                         <div>
-                                                            <p className="text-sm font-medium text-gray-900">{medicine.name}</p>
-                                                            <p className="text-sm text-gray-500">{medicine.description}</p>
+                                                            <p className="text-sm font-semibold text-gray-900">{medicine.name}</p>
+                                                            <p className="text-xs text-gray-500 mt-1">{medicine.description}</p>
                                                         </div>
                                                     </td>
-                                                    <td className="px-6 py-4 text-sm text-gray-900">{medicine.category || 'N/A'}</td>
                                                     <td className="px-6 py-4">
-                                                        <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                                                        <span className="px-3 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-700">
+                                                            {medicine.category || 'N/A'}
+                                                        </span>
+                                                    </td>
+                                                    <td className="px-6 py-4">
+                                                        <span className={`px-3 py-1.5 text-xs font-bold rounded-full ${
                                                             medicine.quantity === 0 ? 'bg-red-100 text-red-800' :
                                                             medicine.quantity < 50 ? 'bg-yellow-100 text-yellow-800' :
                                                             'bg-green-100 text-green-800'
@@ -720,30 +833,34 @@ const PharmacistDashboard = () => {
                                                             {medicine.quantity} units
                                                         </span>
                                                     </td>
-                                                    <td className="px-6 py-4 text-sm text-gray-900">₹{medicine.price || '0.00'}</td>
-                                                    <td className="px-6 py-4 text-sm text-gray-900">
+                                                    <td className="px-6 py-4">
+                                                        <span className="text-sm font-semibold text-gray-900">₹{medicine.price || '0.00'}</span>
+                                                    </td>
+                                                    <td className="px-6 py-4 text-sm text-gray-600">
                                                         {medicine.expiryDate ? new Date(medicine.expiryDate).toLocaleDateString() : 'N/A'}
                                                     </td>
-                                                    <td className="px-6 py-4 text-sm space-x-2">
-                                                        <button 
-                                                            onClick={() => openIssueModal(medicine)}
-                                                            className="bg-green-600 text-white px-3 py-1 rounded text-xs hover:bg-green-700"
-                                                            disabled={medicine.quantity === 0}
-                                                        >
-                                                            Issue
-                                                        </button>
-                                                        <button 
-                                                            onClick={() => openEditModal(medicine)}
-                                                            className="bg-blue-600 text-white px-3 py-1 rounded text-xs hover:bg-blue-700"
-                                                        >
-                                                            Edit
-                                                        </button>
-                                                        <button 
-                                                            onClick={() => handleRemoveMedicine(medicine.id, medicine.name)}
-                                                            className="bg-red-600 text-white px-3 py-1 rounded text-xs hover:bg-red-700"
-                                                        >
-                                                            Remove
-                                                        </button>
+                                                    <td className="px-6 py-4">
+                                                        <div className="flex space-x-2">
+                                                            <button 
+                                                                onClick={() => openIssueModal(medicine)}
+                                                                className="bg-blue-600 text-white px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-blue-700 shadow-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                                                disabled={medicine.quantity === 0}
+                                                            >
+                                                                Issue
+                                                            </button>
+                                                            <button 
+                                                                onClick={() => openEditModal(medicine)}
+                                                                className="bg-blue-600 text-white px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-blue-700 shadow-sm transition-all"
+                                                            >
+                                                                Edit
+                                                            </button>
+                                                            <button 
+                                                                onClick={() => handleRemoveMedicine(medicine.id, medicine.name)}
+                                                                className="bg-blue-600 text-white px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-blue-700 shadow-sm transition-all"
+                                                            >
+                                                                Remove
+                                                            </button>
+                                                        </div>
                                                     </td>
                                                 </tr>
                                             ))}
@@ -757,12 +874,128 @@ const PharmacistDashboard = () => {
 
                 {activeTab === 'reports' && (
                     <div className="space-y-6">
-                        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-12 text-center">
-                            <svg className="w-16 h-16 mx-auto text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                            </svg>
-                            <h3 className="text-lg font-semibold text-gray-700 mb-2">No Reports Available</h3>
-                            <p className="text-gray-500">Report generation features will be available here</p>
+                        {/* Reports content will go here */}
+                    </div>
+                )}
+
+                {activeTab === 'personal-details' && (
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        {/* Profile Information - Left Side */}
+                        <div className="bg-white rounded-xl shadow-sm">
+                            <div className="px-6 py-4 border-b border-gray-100">
+                                <h3 className="text-lg font-semibold text-gray-900">Personal Information</h3>
+                                <p className="text-sm text-gray-500 mt-1">Update your personal details</p>
+                            </div>
+                            <form onSubmit={handleUpdateProfile} className="p-6 space-y-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Full Name *</label>
+                                    <input
+                                        type="text"
+                                        required
+                                        value={profileForm.name}
+                                        onChange={(e) => setProfileForm({...profileForm, name: e.target.value})}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        placeholder="Enter your full name"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                                    <input
+                                        type="email"
+                                        disabled
+                                        value={user.email}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-500 cursor-not-allowed"
+                                    />
+                                    <p className="text-xs text-gray-500 mt-1">Email cannot be changed</p>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Gender</label>
+                                    <select
+                                        value={profileForm.gender}
+                                        onChange={(e) => setProfileForm({...profileForm, gender: e.target.value})}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    >
+                                        <option value="">Select gender</option>
+                                        <option value="male">Male</option>
+                                        <option value="female">Female</option>
+                                        <option value="other">Other</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
+                                    <input
+                                        type="tel"
+                                        value={profileForm.phone}
+                                        onChange={(e) => setProfileForm({...profileForm, phone: e.target.value})}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        placeholder="Enter phone number"
+                                    />
+                                </div>
+                                <div className="pt-4">
+                                    <button
+                                        type="submit"
+                                        disabled={loading}
+                                        className="w-full bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    >
+                                        {loading ? 'Updating...' : 'Update Profile'}
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+
+                        {/* Change Password - Right Side */}
+                        <div className="bg-white rounded-xl shadow-sm">
+                            <div className="px-6 py-4 border-b border-gray-100">
+                                <h3 className="text-lg font-semibold text-gray-900">Change Password</h3>
+                                <p className="text-sm text-gray-500 mt-1">Update your password to keep your account secure</p>
+                            </div>
+                            <form onSubmit={handleUpdatePassword} className="p-6 space-y-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Current Password *</label>
+                                    <input
+                                        type="password"
+                                        required
+                                        value={passwordForm.currentPassword}
+                                        onChange={(e) => setPasswordForm({...passwordForm, currentPassword: e.target.value})}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        placeholder="Enter current password"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">New Password *</label>
+                                    <input
+                                        type="password"
+                                        required
+                                        value={passwordForm.newPassword}
+                                        onChange={(e) => setPasswordForm({...passwordForm, newPassword: e.target.value})}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        placeholder="Enter new password"
+                                        minLength="6"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Confirm New Password *</label>
+                                    <input
+                                        type="password"
+                                        required
+                                        value={passwordForm.confirmPassword}
+                                        onChange={(e) => setPasswordForm({...passwordForm, confirmPassword: e.target.value})}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        placeholder="Confirm new password"
+                                        minLength="6"
+                                    />
+                                </div>
+                                <p className="text-xs text-gray-500">Password must be at least 6 characters long</p>
+                                <div className="pt-4">
+                                    <button
+                                        type="submit"
+                                        disabled={loading}
+                                        className="w-full bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    >
+                                        {loading ? 'Updating...' : 'Change Password'}
+                                    </button>
+                                </div>
+                            </form>
                         </div>
                     </div>
                 )}

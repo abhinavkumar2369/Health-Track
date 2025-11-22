@@ -6,6 +6,7 @@ import authRoutes from "./routes/authRoutes.js";
 import adminRoutes from "./routes/adminRoutes.js";
 import doctorRoutes from "./routes/doctorRoutes.js";
 import pharmacistRoutes from "./routes/pharmacistRoutes.js";
+import documentRoutes from "./routes/documentRoutes.js";
 
 dotenv.config();
 connectDB();
@@ -18,6 +19,7 @@ app.use("/auth", authRoutes);
 app.use("/admin", adminRoutes);
 app.use("/doctor", doctorRoutes);
 app.use("/pharmacist", pharmacistRoutes);
+app.use("/api/documents", documentRoutes);
 
 app.listen(process.env.PORT, () =>
   console.log(`🚀 Server running on port ${process.env.PORT}`)

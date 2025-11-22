@@ -1,7 +1,9 @@
 import express from "express";
 import jwt from "jsonwebtoken";
+import bcrypt from "bcryptjs";
 import { Medicine } from "../models/Medicine.js";
 import { Transaction } from "../models/Transaction.js";
+import { Pharmacist } from "../models/Pharmacist.js";
 import dotenv from "dotenv";
 
 dotenv.config();
@@ -339,6 +341,110 @@ router.get("/transactions", async (req, res) => {
         newQuantity: txn.newQuantity,
         createdAt: txn.createdAt,
       })),
+    });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+/**
+ * 👤 GET PHARMACIST PROFILE
+ */
+router.get("/profile", async (req, res) => {
+  try {
+    const { token } = req.query;
+
+    const decoded = verifyToken(token);
+
+    const pharmacist = await Pharmacist.findById(decoded.id).select('-password');
+
+    if (!pharmacist) {
+      return res.status(404).json({ message: "Pharmacist not found" });
+    }
+
+    res.json({
+      profile: {
+        id: pharmacist._id,
+        name: pharmacist.name,
+        email: pharmacist.email,
+        gender: pharmacist.gender || '',
+        phone: pharmacist.phone || '',
+        role: pharmacist.role,
+        createdAt: pharmacist.createdAt,
+        updatedAt: pharmacist.updatedAt,
+      },
+    });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+/**
+ * ✏️ UPDATE PHARMACIST PROFILE
+ */
+router.put("/profile", async (req, res) => {
+  try {
+    const { token, name, gender, phone } = req.body;
+
+    const decoded = verifyToken(token);
+
+    const pharmacist = await Pharmacist.findById(decoded.id);
+
+    if (!pharmacist) {
+      return res.status(404).json({ message: "Pharmacist not found" });
+    }
+
+    // Update fields
+    if (name !== undefined) pharmacist.name = name;
+    if (gender !== undefined) pharmacist.gender = gender;
+    if (phone !== undefined) pharmacist.phone = phone;
+
+    await pharmacist.save();
+
+    res.json({
+      message: "Profile updated successfully",
+      profile: {
+        id: pharmacist._id,
+        name: pharmacist.name,
+        email: pharmacist.email,
+        gender: pharmacist.gender,
+        phone: pharmacist.phone,
+      },
+    });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+/**
+ * 🔒 UPDATE PASSWORD
+ */
+router.put("/update-password", async (req, res) => {
+  try {
+    const { token, currentPassword, newPassword } = req.body;
+
+    const decoded = verifyToken(token);
+
+    const pharmacist = await Pharmacist.findById(decoded.id);
+
+    if (!pharmacist) {
+      return res.status(404).json({ message: "Pharmacist not found" });
+    }
+
+    // Verify current password
+    const isValidPassword = await bcrypt.compare(currentPassword, pharmacist.password);
+    if (!isValidPassword) {
+      return res.status(401).json({ message: "Current password is incorrect" });
+    }
+
+    // Hash new password
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    pharmacist.password = hashedPassword;
+
+    await pharmacist.save();
+
+    res.json({
+      message: "Password updated successfully",
     });
   } catch (err) {
     res.status(500).json({ message: err.message });

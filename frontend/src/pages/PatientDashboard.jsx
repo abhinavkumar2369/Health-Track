@@ -1,10 +1,20 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
+
+const API_URL = 'http://localhost:5000/api/documents';
 
 const PatientDashboard = () => {
     const navigate = useNavigate();
     const [user, setUser] = useState(null);
     const [activeTab, setActiveTab] = useState('overview');
+    
+    // Medical records state
+    const [medicalRecords, setMedicalRecords] = useState([]);
+    const [uploading, setUploading] = useState(false);
+    const [selectedFile, setSelectedFile] = useState(null);
+    const [uploadMessage, setUploadMessage] = useState({ type: '', text: '' });
+    const [isDragging, setIsDragging] = useState(false);
 
     useEffect(() => {
         const userData = localStorage.getItem('user');
@@ -20,7 +30,181 @@ const PatientDashboard = () => {
         }
         
         setUser(parsedUser);
+        fetchMedicalRecords();
     }, [navigate]);
+
+    const fetchMedicalRecords = async () => {
+        try {
+            const token = localStorage.getItem('token');
+            if (!token) return;
+            
+            const response = await axios.post(`${API_URL}/list`, { token });
+            
+            if (response.data.success) {
+                setMedicalRecords(response.data.documents);
+            }
+        } catch (error) {
+            console.error('Error fetching medical records:', error);
+        }
+    };
+
+    const handleFileSelect = (e) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            if (file.size > 25 * 1024 * 1024) {
+                setUploadMessage({ type: 'error', text: 'File size must be less than 25MB' });
+                return;
+            }
+            
+            const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+            if (!allowedTypes.includes(file.type)) {
+                setUploadMessage({ type: 'error', text: 'Only PDF, JPG, PNG, and DOC files are allowed' });
+                return;
+            }
+            
+            setSelectedFile(file);
+            setUploadMessage({ type: '', text: '' });
+        }
+    };
+
+    const handleDragOver = (e) => {
+        e.preventDefault();
+        setIsDragging(true);
+    };
+
+    const handleDragLeave = (e) => {
+        e.preventDefault();
+        setIsDragging(false);
+    };
+
+    const handleDrop = (e) => {
+        e.preventDefault();
+        setIsDragging(false);
+        
+        const file = e.dataTransfer.files?.[0];
+        if (file) {
+            if (file.size > 25 * 1024 * 1024) {
+                setUploadMessage({ type: 'error', text: 'File size must be less than 25MB' });
+                return;
+            }
+            
+            const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+            if (!allowedTypes.includes(file.type)) {
+                setUploadMessage({ type: 'error', text: 'Only PDF, JPG, PNG, and DOC files are allowed' });
+                return;
+            }
+            
+            setSelectedFile(file);
+            setUploadMessage({ type: '', text: '' });
+        }
+    };
+
+    const handleFileUpload = async () => {
+        if (!selectedFile) {
+            setUploadMessage({ type: 'error', text: 'Please select a file first' });
+            return;
+        }
+
+        setUploading(true);
+        setUploadMessage({ type: '', text: '' });
+
+        try {
+            const token = localStorage.getItem('token');
+            
+            const formData = new FormData();
+            formData.append('document', selectedFile);
+            formData.append('token', token);
+            formData.append('category', 'other');
+            formData.append('description', `Uploaded ${selectedFile.name}`);
+
+            const response = await axios.post(`${API_URL}/upload`, formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                },
+            });
+
+            if (response.data.success) {
+                setUploadMessage({ type: 'success', text: 'Document uploaded successfully!' });
+                setSelectedFile(null);
+                const fileInput = document.getElementById('file-upload');
+                if (fileInput) fileInput.value = '';
+                await fetchMedicalRecords();
+            }
+        } catch (error) {
+            console.error('Upload error:', error);
+            setUploadMessage({ 
+                type: 'error', 
+                text: error.response?.data?.message || 'Failed to upload document' 
+            });
+        } finally {
+            setUploading(false);
+        }
+    };
+
+    const handleViewDocument = async (documentId) => {
+        try {
+            const token = localStorage.getItem('token');
+            const response = await axios.post(`${API_URL}/view/${documentId}`, { token });
+            
+            if (response.data.success) {
+                window.open(response.data.url, '_blank');
+            }
+        } catch (error) {
+            console.error('View error:', error);
+            setUploadMessage({ type: 'error', text: 'Failed to view document' });
+        }
+    };
+
+    const handleDownloadDocument = async (documentId) => {
+        try {
+            const token = localStorage.getItem('token');
+            const response = await axios.post(`${API_URL}/download/${documentId}`, { token });
+            
+            if (response.data.success) {
+                window.open(response.data.url, '_blank');
+            }
+        } catch (error) {
+            console.error('Download error:', error);
+            setUploadMessage({ type: 'error', text: 'Failed to download document' });
+        }
+    };
+
+    const handleDeleteDocument = async (documentId) => {
+        if (!window.confirm('Are you sure you want to delete this document?')) {
+            return;
+        }
+
+        try {
+            const token = localStorage.getItem('token');
+            const response = await axios.delete(`${API_URL}/${documentId}`, {
+                data: { token }
+            });
+            
+            if (response.data.success) {
+                setUploadMessage({ type: 'success', text: 'Document deleted successfully' });
+                await fetchMedicalRecords();
+            }
+        } catch (error) {
+            console.error('Delete error:', error);
+            setUploadMessage({ type: 'error', text: 'Failed to delete document' });
+        }
+    };
+
+    const formatFileSize = (bytes) => {
+        if (bytes === 0) return '0 Bytes';
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+    };
+
+    const formatDate = (dateString) => {
+        return new Date(dateString).toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric'
+        });
+    };
 
     const handleLogout = () => {
         localStorage.removeItem('user');
@@ -231,26 +415,69 @@ const PatientDashboard = () => {
                     <div className="space-y-4 sm:space-y-6">
                         {/* Upload New Record Section */}
                         <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-                            <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+                            <div className="px-6 py-4 border-b border-gray-200">
                                 <h3 className="text-lg font-semibold text-gray-900">Upload New Record</h3>
-                                <button className="bg-green-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-green-700 flex items-center space-x-2">
-                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                                    </svg>
-                                    <span>Upload Record</span>
-                                </button>
                             </div>
                             <div className="p-6">
-                                <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-green-400 hover:bg-green-50 transition-colors cursor-pointer">
+                                {uploadMessage.text && (
+                                    <div className={`mb-4 p-4 rounded-lg ${uploadMessage.type === 'success' ? 'bg-green-50 text-green-800' : 'bg-red-50 text-red-800'}`}>
+                                        {uploadMessage.text}
+                                    </div>
+                                )}
+                                
+                                <div 
+                                    className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors cursor-pointer ${
+                                        isDragging ? 'border-green-400 bg-green-50' : 'border-gray-300 hover:border-green-400 hover:bg-green-50'
+                                    }`}
+                                    onDragOver={handleDragOver}
+                                    onDragLeave={handleDragLeave}
+                                    onDrop={handleDrop}
+                                    onClick={() => document.getElementById('file-upload').click()}
+                                >
+                                    <input
+                                        id="file-upload"
+                                        type="file"
+                                        className="hidden"
+                                        accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+                                        onChange={handleFileSelect}
+                                    />
                                     <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
                                         <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                                         </svg>
                                     </div>
-                                    <h4 className="text-lg font-medium text-gray-900 mb-2">Upload Your Medical Record</h4>
-                                    <p className="text-sm text-gray-600 mb-4">Drag and drop your medical record here, or click to browse</p>
+                                    <h4 className="text-lg font-medium text-gray-900 mb-2">
+                                        {selectedFile ? selectedFile.name : 'Upload Your Medical Record'}
+                                    </h4>
+                                    <p className="text-sm text-gray-600 mb-4">
+                                        {selectedFile ? `Size: ${formatFileSize(selectedFile.size)}` : 'Drag and drop your medical record here, or click to browse'}
+                                    </p>
                                     <p className="text-xs text-gray-500">Supports: PDF, JPG, PNG, DOC (Max: 25MB)</p>
                                 </div>
+                                
+                                {selectedFile && (
+                                    <div className="mt-4 flex justify-end">
+                                        <button
+                                            onClick={handleFileUpload}
+                                            disabled={uploading}
+                                            className="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 disabled:bg-gray-400 flex items-center space-x-2"
+                                        >
+                                            {uploading ? (
+                                                <>
+                                                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                                    <span>Uploading...</span>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                                                    </svg>
+                                                    <span>Upload Record</span>
+                                                </>
+                                            )}
+                                        </button>
+                                    </div>
+                                )}
                             </div>
                         </div>
 
@@ -260,86 +487,80 @@ const PatientDashboard = () => {
                                 <h3 className="text-lg font-semibold text-gray-900">My Medical Records</h3>
                             </div>
                             <div className="p-6">
-                                <div className="space-y-4">
-                                    {/* Sample uploaded records */}
-                                    <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-100 hover:shadow-md transition-shadow">
-                                        <div className="flex items-center space-x-4">
-                                            <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                                                <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                                                </svg>
-                                            </div>
-                                            <div>
-                                                <h4 className="font-medium text-gray-900">Annual Health Checkup Report</h4>
-                                                <p className="text-sm text-gray-500">Uploaded on January 15, 2025 • 2.4 MB</p>
-                                                <span className="inline-block px-2 py-1 text-xs bg-green-100 text-green-800 rounded-full">Verified</span>
-                                            </div>
+                                {medicalRecords.length === 0 ? (
+                                    <div className="text-center py-12">
+                                        <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                            <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                            </svg>
                                         </div>
-                                        <div className="flex space-x-2">
-                                            <button className="px-3 py-2 text-sm bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100">
-                                                View
-                                            </button>
-                                            <button className="px-3 py-2 text-sm bg-gray-50 text-gray-600 rounded-lg hover:bg-gray-100">
-                                                Download
-                                            </button>
-                                            <button className="px-3 py-2 text-sm bg-red-50 text-red-600 rounded-lg hover:bg-red-100">
-                                                Delete
-                                            </button>
-                                        </div>
+                                        <h4 className="text-lg font-medium text-gray-900 mb-2">No medical records yet</h4>
+                                        <p className="text-sm text-gray-500">Upload your first medical record to get started</p>
                                     </div>
-
-                                    <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-100 hover:shadow-md transition-shadow">
-                                        <div className="flex items-center space-x-4">
-                                            <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
-                                                <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                                                </svg>
-                                            </div>
-                                            <div>
-                                                <h4 className="font-medium text-gray-900">Cardiology Consultation Report</h4>
-                                                <p className="text-sm text-gray-500">Uploaded on January 10, 2025 • 1.8 MB</p>
-                                                <span className="inline-block px-2 py-1 text-xs bg-yellow-100 text-yellow-800 rounded-full">Under Review</span>
-                                            </div>
-                                        </div>
-                                        <div className="flex space-x-2">
-                                            <button className="px-3 py-2 text-sm bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100">
-                                                View
-                                            </button>
-                                            <button className="px-3 py-2 text-sm bg-gray-50 text-gray-600 rounded-lg hover:bg-gray-100">
-                                                Download
-                                            </button>
-                                            <button className="px-3 py-2 text-sm bg-red-50 text-red-600 rounded-lg hover:bg-red-100">
-                                                Delete
-                                            </button>
-                                        </div>
+                                ) : (
+                                    <div className="space-y-4">
+                                        {medicalRecords.map((record) => {
+                                            const getStatusColor = (status) => {
+                                                switch(status) {
+                                                    case 'verified': return 'bg-green-100 text-green-800';
+                                                    case 'under-review': return 'bg-yellow-100 text-yellow-800';
+                                                    default: return 'bg-gray-100 text-gray-800';
+                                                }
+                                            };
+                                            
+                                            const getIconColor = (category) => {
+                                                switch(category) {
+                                                    case 'lab-report': return 'bg-blue-100 text-blue-600';
+                                                    case 'prescription': return 'bg-purple-100 text-purple-600';
+                                                    case 'scan': return 'bg-pink-100 text-pink-600';
+                                                    case 'consultation': return 'bg-green-100 text-green-600';
+                                                    default: return 'bg-gray-100 text-gray-600';
+                                                }
+                                            };
+                                            
+                                            return (
+                                                <div key={record._id} className="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-100 hover:shadow-md transition-shadow">
+                                                    <div className="flex items-center space-x-4">
+                                                        <div className={`w-12 h-12 ${getIconColor(record.category)} rounded-lg flex items-center justify-center`}>
+                                                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                                            </svg>
+                                                        </div>
+                                                        <div>
+                                                            <h4 className="font-medium text-gray-900">{record.title || record.originalName}</h4>
+                                                            <p className="text-sm text-gray-500">
+                                                                Uploaded on {formatDate(record.createdAt)} • {formatFileSize(record.fileSize)}
+                                                            </p>
+                                                            <span className={`inline-block px-2 py-1 text-xs rounded-full ${getStatusColor(record.status)}`}>
+                                                                {record.status === 'under-review' ? 'Under Review' : record.status.charAt(0).toUpperCase() + record.status.slice(1)}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex space-x-2">
+                                                        <button 
+                                                            onClick={() => handleViewDocument(record._id)}
+                                                            className="px-3 py-2 text-sm bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100"
+                                                        >
+                                                            View
+                                                        </button>
+                                                        <button 
+                                                            onClick={() => handleDownloadDocument(record._id)}
+                                                            className="px-3 py-2 text-sm bg-gray-50 text-gray-600 rounded-lg hover:bg-gray-100"
+                                                        >
+                                                            Download
+                                                        </button>
+                                                        <button 
+                                                            onClick={() => handleDeleteDocument(record._id)}
+                                                            className="px-3 py-2 text-sm bg-red-50 text-red-600 rounded-lg hover:bg-red-100"
+                                                        >
+                                                            Delete
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
                                     </div>
-
-                                    <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200 hover:shadow-md transition-shadow">
-                                        <div className="flex items-center space-x-4">
-                                            <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                                                <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                                                </svg>
-                                            </div>
-                                            <div>
-                                                <h4 className="font-medium text-gray-900">Blood Work Results</h4>
-                                                <p className="text-sm text-gray-500">Uploaded on January 5, 2025 • 985 KB</p>
-                                                <span className="inline-block px-2 py-1 text-xs bg-green-100 text-green-800 rounded-full">Verified</span>
-                                            </div>
-                                        </div>
-                                        <div className="flex space-x-2">
-                                            <button className="px-3 py-2 text-sm bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100">
-                                                View
-                                            </button>
-                                            <button className="px-3 py-2 text-sm bg-gray-50 text-gray-600 rounded-lg hover:bg-gray-100">
-                                                Download
-                                            </button>
-                                            <button className="px-3 py-2 text-sm bg-red-50 text-red-600 rounded-lg hover:bg-red-100">
-                                                Delete
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
+                                )}
                             </div>
                         </div>
                     </div>
