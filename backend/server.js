@@ -13,25 +13,34 @@ connectDB();
 
 const app = express();
 
-// Configure CORS to allow all origins
+// Add CORS headers to ALL responses - this must be first
+app.use((req, res, next) => {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin');
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  
+  // Handle preflight
+  if (req.method === 'OPTIONS') {
+    res.status(200).end();
+    return;
+  }
+  next();
+});
+
+// Configure CORS middleware
 app.use(cors({
   origin: '*',
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
   credentials: true,
   optionsSuccessStatus: 200
 }));
-
-// Handle preflight requests
-app.options('*', cors());
 
 app.use(express.json());
 
 // Health check / API status endpoint
 app.get("/", (req, res) => {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   res.json({
     status: "success",
     message: "Health Track API is running",
@@ -48,9 +57,6 @@ app.get("/", (req, res) => {
 });
 
 app.get("/api/health", (req, res) => {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   res.json({
     status: "healthy",
     uptime: process.uptime(),
@@ -64,6 +70,23 @@ app.use("/admin", adminRoutes);
 app.use("/doctor", doctorRoutes);
 app.use("/pharmacist", pharmacistRoutes);
 app.use("/api/documents", documentRoutes);
+
+// 404 handler
+app.use((req, res) => {
+  res.status(404).json({
+    success: false,
+    message: 'Route not found'
+  });
+});
+
+// Error handler
+app.use((err, req, res, next) => {
+  console.error('Error:', err);
+  res.status(500).json({
+    success: false,
+    message: err.message || 'Internal server error'
+  });
+});
 
 // For local development
 if (process.env.NODE_ENV !== 'production') {

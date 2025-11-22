@@ -1,5 +1,6 @@
 // API configuration and utilities
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+// Remove trailing slash if present to avoid double slashes
+const API_URL = (import.meta.env.VITE_API_URL || 'http://localhost:5000').replace(/\/$/, '');
 
 // Get token from localStorage
 const getToken = () => localStorage.getItem('token');
