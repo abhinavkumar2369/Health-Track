@@ -12,11 +12,26 @@ dotenv.config();
 connectDB();
 
 const app = express();
-app.use(cors());
+
+// Configure CORS to allow all origins
+app.use(cors({
+  origin: '*',
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true,
+  optionsSuccessStatus: 200
+}));
+
+// Handle preflight requests
+app.options('*', cors());
+
 app.use(express.json());
 
 // Health check / API status endpoint
 app.get("/", (req, res) => {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   res.json({
     status: "success",
     message: "Health Track API is running",
@@ -33,6 +48,9 @@ app.get("/", (req, res) => {
 });
 
 app.get("/api/health", (req, res) => {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   res.json({
     status: "healthy",
     uptime: process.uptime(),
