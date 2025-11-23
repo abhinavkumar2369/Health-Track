@@ -123,6 +123,24 @@ export const adminAPI = {
             body: JSON.stringify({ token }),
         });
     },
+    getProfile: async () => {
+        const token = ensureToken();
+        return apiRequest(`/admin/profile?token=${token}`);
+    },
+    updateProfile: async (profileData) => {
+        const token = ensureToken();
+        return apiRequest('/admin/profile', {
+            method: 'PUT',
+            body: JSON.stringify({ token, ...profileData }),
+        });
+    },
+    changePassword: async (passwordData) => {
+        const token = ensureToken();
+        return apiRequest('/admin/change-password', {
+            method: 'PUT',
+            body: JSON.stringify({ token, ...passwordData }),
+        });
+    },
 };
 
 // Doctor API

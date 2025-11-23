@@ -5,6 +5,7 @@ import dotenv from "dotenv";
 import { Doctor } from "../models/Doctor.js";
 import { Pharmacist } from "../models/Pharmacist.js";
 import { Patient } from "../models/Patient.js";
+import { Admin } from "../models/Admin.js";
 
 dotenv.config();
 
@@ -239,6 +240,115 @@ router.delete("/remove-user/:id", async (req, res) => {
 
     await Pharmacist.findByIdAndDelete(req.params.id);
     return res.json({ message: "Pharmacist removed successfully" });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// 📋 Get Admin Profile
+router.get("/profile", async (req, res) => {
+  try {
+    const { token } = req.query;
+    const decoded = authenticateAdmin(token, res);
+    if (!decoded) return;
+
+    const admin = await Admin.findById(decoded.id).select("-password");
+    if (!admin) {
+      return res.status(404).json({ message: "Admin not found" });
+    }
+
+    return res.json({
+      success: true,
+      profile: {
+        id: admin._id.toString(),
+        fullname: admin.fullname || "",
+        email: admin.email || "",
+        role: admin.role || "admin",
+        gender: admin.gender || "",
+        phone: admin.phone || "",
+        createdAt: admin.createdAt,
+      },
+    });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// ✏️ Update Admin Profile
+router.put("/profile", async (req, res) => {
+  try {
+    const { token, fullname, gender, phone } = req.body;
+    const decoded = authenticateAdmin(token, res);
+    if (!decoded) return;
+
+    if (!fullname || !fullname.trim()) {
+      return res.status(400).json({ message: "Full name is required" });
+    }
+
+    const updateData = { fullname: fullname.trim() };
+    if (gender !== undefined) updateData.gender = gender;
+    if (phone !== undefined) updateData.phone = phone;
+
+    const admin = await Admin.findByIdAndUpdate(
+      decoded.id,
+      updateData,
+      { new: true, runValidators: true }
+    ).select("-password");
+
+    if (!admin) {
+      return res.status(404).json({ message: "Admin not found" });
+    }
+
+    return res.json({
+      success: true,
+      message: "Profile updated successfully",
+      profile: {
+        id: admin._id.toString(),
+        fullname: admin.fullname,
+        email: admin.email,
+        role: admin.role,
+        gender: admin.gender,
+        phone: admin.phone,
+      },
+    });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// 🔒 Change Admin Password
+router.put("/change-password", async (req, res) => {
+  try {
+    const { token, currentPassword, newPassword } = req.body;
+    const decoded = authenticateAdmin(token, res);
+    if (!decoded) return;
+
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ message: "Current and new passwords are required" });
+    }
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({ message: "New password must be at least 6 characters" });
+    }
+
+    const admin = await Admin.findById(decoded.id);
+    if (!admin) {
+      return res.status(404).json({ message: "Admin not found" });
+    }
+
+    const isMatch = await bcrypt.compare(currentPassword, admin.password);
+    if (!isMatch) {
+      return res.status(400).json({ message: "Current password is incorrect" });
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    admin.password = hashedPassword;
+    await admin.save();
+
+    return res.json({
+      success: true,
+      message: "Password changed successfully",
+    });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
