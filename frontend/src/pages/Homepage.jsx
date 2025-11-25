@@ -192,13 +192,13 @@ function Homepage() {
             </header>
 
             <main className="pt-[4.5rem] sm:pt-[5rem] lg:pt-[5rem]">
-                <section id="hero" className="relative overflow-hidden bg-gradient-to-br from-slate-950 via-blue-950 to-emerald-900 text-white">
+                <section id="hero" className="relative overflow-hidden bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 sm:from-slate-950 sm:via-blue-950 sm:to-emerald-900 text-white">
                     <div className="absolute inset-0">
                         <div className="absolute inset-0 opacity-20 bg-[radial-gradient(circle_at_top,_#22d3ee,_transparent_50%)]"></div>
-                        <div className="absolute -bottom-20 -left-10 w-80 h-80 bg-emerald-500/20 blur-3xl"></div>
-                        <div className="absolute -top-10 -right-10 w-96 h-96 bg-blue-500/20 blur-3xl"></div>
+                        <div className="absolute -bottom-20 -left-10 w-80 h-80 bg-emerald-500/10 blur-3xl"></div>
+                        <div className="absolute -top-10 -right-10 w-96 h-96 bg-blue-500/10 blur-3xl"></div>
                     </div>
-                    <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24 sm:py-28 lg:py-22 grid lg:grid-cols-2 gap-8 lg:gap-12 items-center">
+                    <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 pt-12 sm:py-28 lg:py-22 grid lg:grid-cols-2 gap-8 lg:gap-12 items-center">
                         <div className="space-y-4 sm:space-y-6">
                             <div className="inline-flex items-center gap-2 px-3 py-1.5 sm:px-4 sm:py-2 rounded-full border border-white/20 text-xs uppercase tracking-[0.15em] sm:tracking-[0.2em] text-slate-200">
                                 Next-gen Healthcare OS
@@ -338,72 +338,72 @@ function Homepage() {
                         </div>
                         
                         {/* Main Feature Categories */}
-                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
+                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 sm:gap-6 lg:gap-8">
                             {/* For Hospitals */}
-                            <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-2xl sm:rounded-3xl p-4 sm:p-6 lg:p-4 border border-blue-200">
-                                <div className="w-12 h-12 sm:w-14 sm:h-14 lg:w-10 lg:h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center mb-3 sm:mb-4 lg:mb-2">
+                            <div className="bg-white rounded-2xl sm:rounded-3xl p-5 sm:p-7 lg:p-6 border-2 border-blue-200 shadow-lg shadow-blue-100/50">
+                                <div className="w-14 h-14 sm:w-16 sm:h-16 lg:w-14 lg:h-14 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center mb-4 sm:mb-5 lg:mb-4 shadow-md">
                                     <HospitalIcon />
                                 </div>
-                                <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-2 sm:mb-3">For Hospitals</h3>
-                                <p className="text-gray-600 mb-3 sm:mb-4 lg:mb-2 leading-relaxed text-sm sm:text-base lg:text-sm">Complete administrative control with advanced analytics and streamlined operations.</p>
-                                <div className="space-y-2 sm:space-y-3">
-                                    <div className="flex items-center gap-2 sm:gap-3 lg:gap-2 p-1.5 sm:p-2 lg:p-1 rounded-lg text-left">
-                                        <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                                        <span className="text-xs sm:text-sm text-gray-700 font-medium">Doctor & Staff Management</span>
+                                <h3 className="text-xl sm:text-2xl lg:text-xl font-bold text-gray-900 mb-3 sm:mb-4">Hospital Operations</h3>
+                                <p className="text-gray-600 mb-4 sm:mb-5 lg:mb-4 leading-relaxed text-sm sm:text-base">Comprehensive administrative control with real-time analytics and intelligent resource management.</p>
+                                <div className="space-y-3 sm:space-y-3.5">
+                                    <div className="flex items-start gap-3 text-left">
+                                        <div className="w-1.5 h-1.5 bg-blue-500 rounded-full mt-1.5 flex-shrink-0"></div>
+                                        <span className="text-sm sm:text-base text-gray-700">Centralized staff & doctor management</span>
                                     </div>
-                                    <div className="flex items-center gap-2 sm:gap-3 p-1.5 sm:p-2 rounded-lg hover:bg-white/50 transition-colors">
-                                        <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
-                                        <span className="text-xs sm:text-sm text-gray-700 font-medium">Resource Optimization</span>
+                                    <div className="flex items-start gap-3 text-left">
+                                        <div className="w-1.5 h-1.5 bg-blue-500 rounded-full mt-1.5 flex-shrink-0"></div>
+                                        <span className="text-sm sm:text-base text-gray-700">Advanced resource optimization</span>
                                     </div>
-                                    <div className="flex items-center gap-2 sm:gap-3 p-1.5 sm:p-2 rounded-lg hover:bg-white/50 transition-colors">
-                                        <div className="w-2 h-2 bg-blue-700 rounded-full"></div>
-                                        <span className="text-xs sm:text-sm text-gray-700 font-medium">Financial Analytics</span>
+                                    <div className="flex items-start gap-3 text-left">
+                                        <div className="w-1.5 h-1.5 bg-blue-500 rounded-full mt-1.5 flex-shrink-0"></div>
+                                        <span className="text-sm sm:text-base text-gray-700">Real-time financial insights</span>
                                     </div>
                                 </div>
                             </div>
                             
                             {/* For Doctors */}
-                            <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-2xl sm:rounded-3xl p-4 sm:p-6 lg:p-4 border border-green-200">
-                                <div className="w-12 h-12 sm:w-14 sm:h-14 lg:w-10 lg:h-10 bg-gradient-to-br from-green-500 to-green-600 rounded-2xl flex items-center justify-center mb-3 sm:mb-4 lg:mb-2">
+                            <div className="bg-white rounded-2xl sm:rounded-3xl p-5 sm:p-7 lg:p-6 border-2 border-green-200 shadow-lg shadow-green-100/50">
+                                <div className="w-14 h-14 sm:w-16 sm:h-16 lg:w-14 lg:h-14 bg-gradient-to-br from-green-500 to-green-600 rounded-2xl flex items-center justify-center mb-4 sm:mb-5 lg:mb-4 shadow-md">
                                     <DoctorIcon />
                                 </div>
-                                <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-2 sm:mb-3">For Doctors</h3>
-                                <p className="text-gray-600 mb-3 sm:mb-4 lg:mb-2 leading-relaxed text-sm sm:text-base lg:text-sm">AI-enhanced clinical tools for better diagnoses and patient care.</p>
-                                <div className="space-y-2 sm:space-y-3">
-                                    <div className="flex items-center gap-2 sm:gap-3 lg:gap-2 p-1.5 sm:p-2 lg:p-1 rounded-lg text-left">
-                                        <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                                        <span className="text-xs sm:text-sm text-gray-700 font-medium">Smart Medical Records</span>
+                                <h3 className="text-xl sm:text-2xl lg:text-xl font-bold text-gray-900 mb-3 sm:mb-4">Clinical Excellence</h3>
+                                <p className="text-gray-600 mb-4 sm:mb-5 lg:mb-4 leading-relaxed text-sm sm:text-base">AI-powered tools designed to enhance diagnostic accuracy and streamline patient care delivery.</p>
+                                <div className="space-y-3 sm:space-y-3.5">
+                                    <div className="flex items-start gap-3 text-left">
+                                        <div className="w-1.5 h-1.5 bg-green-500 rounded-full mt-1.5 flex-shrink-0"></div>
+                                        <span className="text-sm sm:text-base text-gray-700">Intelligent medical record system</span>
                                     </div>
-                                    <div className="flex items-center gap-2 sm:gap-3 p-1.5 sm:p-2 rounded-lg hover:bg-white/50 transition-colors">
-                                        <div className="w-2 h-2 bg-green-600 rounded-full"></div>
-                                        <span className="text-xs sm:text-sm text-gray-700 font-medium">AI Diagnostic Support</span>
+                                    <div className="flex items-start gap-3 text-left">
+                                        <div className="w-1.5 h-1.5 bg-green-500 rounded-full mt-1.5 flex-shrink-0"></div>
+                                        <span className="text-sm sm:text-base text-gray-700">AI-assisted diagnostic insights</span>
                                     </div>
-                                    <div className="flex items-center gap-2 sm:gap-3 p-1.5 sm:p-2 rounded-lg hover:bg-white/50 transition-colors">
-                                        <div className="w-2 h-2 bg-green-700 rounded-full"></div>
-                                        <span className="text-xs sm:text-sm text-gray-700 font-medium">Prescription Management</span>
+                                    <div className="flex items-start gap-3 text-left">
+                                        <div className="w-1.5 h-1.5 bg-green-500 rounded-full mt-1.5 flex-shrink-0"></div>
+                                        <span className="text-sm sm:text-base text-gray-700">Seamless prescription workflow</span>
                                     </div>
                                 </div>
                             </div>
                             
                             {/* For Patients */}
-                            <div className="bg-gradient-to-br from-red-50 to-rose-100 rounded-2xl sm:rounded-3xl p-4 sm:p-6 lg:p-4 border border-rose-200">
-                                <div className="w-12 h-12 sm:w-14 sm:h-14 lg:w-10 lg:h-10 bg-gradient-to-br from-rose-400 to-rose-500 rounded-2xl flex items-center justify-center mb-3 sm:mb-4 lg:mb-2">
+                            <div className="bg-white rounded-2xl sm:rounded-3xl p-5 sm:p-7 lg:p-6 border-2 border-rose-200 shadow-lg shadow-rose-100/50">
+                                <div className="w-14 h-14 sm:w-16 sm:h-16 lg:w-14 lg:h-14 bg-gradient-to-br from-rose-400 to-rose-500 rounded-2xl flex items-center justify-center mb-4 sm:mb-5 lg:mb-4 shadow-md">
                                     <PatientIcon />
                                 </div>
-                                <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-2 sm:mb-3">For Patients</h3>
-                                <p className="text-gray-600 mb-3 sm:mb-4 lg:mb-2 leading-relaxed text-sm sm:text-base lg:text-sm">Personalized health insights and seamless healthcare access.</p>
-                                <div className="space-y-2 sm:space-y-3">
-                                    <div className="flex items-center gap-2 sm:gap-3 lg:gap-2 p-1.5 sm:p-2 lg:p-1 rounded-lg text-left">
-                                        <div className="w-2 h-2 bg-rose-400 rounded-full"></div>
-                                        <span className="text-xs sm:text-sm text-gray-700 font-medium">Personal Health Records</span>
+                                <h3 className="text-xl sm:text-2xl lg:text-xl font-bold text-gray-900 mb-3 sm:mb-4">Patient Empowerment</h3>
+                                <p className="text-gray-600 mb-4 sm:mb-5 lg:mb-4 leading-relaxed text-sm sm:text-base">Personalized health tracking with actionable insights for proactive wellness management.</p>
+                                <div className="space-y-3 sm:space-y-3.5">
+                                    <div className="flex items-start gap-3 text-left">
+                                        <div className="w-1.5 h-1.5 bg-rose-500 rounded-full mt-1.5 flex-shrink-0"></div>
+                                        <span className="text-sm sm:text-base text-gray-700">Secure personal health records</span>
                                     </div>
-                                    <div className="flex items-center gap-2 sm:gap-3 p-1.5 sm:p-2 rounded-lg hover:bg-white/50 transition-colors">
-                                        <div className="w-2 h-2 bg-rose-500 rounded-full"></div>
-                                        <span className="text-xs sm:text-sm text-gray-700 font-medium">Health Monitoring</span>
+                                    <div className="flex items-start gap-3 text-left">
+                                        <div className="w-1.5 h-1.5 bg-rose-500 rounded-full mt-1.5 flex-shrink-0"></div>
+                                        <span className="text-sm sm:text-base text-gray-700">Continuous health monitoring</span>
                                     </div>
-                                    <div className="flex items-center gap-2 sm:gap-3 p-1.5 sm:p-2 rounded-lg hover:bg-white/50 transition-colors">
-                                        <div className="w-2 h-2 bg-rose-600 rounded-full"></div>
-                                        <span className="text-xs sm:text-sm text-gray-700 font-medium">Smart Recommendations</span>
+                                    <div className="flex items-start gap-3 text-left">
+                                        <div className="w-1.5 h-1.5 bg-rose-500 rounded-full mt-1.5 flex-shrink-0"></div>
+                                        <span className="text-sm sm:text-base text-gray-700">Smart health recommendations</span>
                                     </div>
                                 </div>
                             </div>
@@ -411,7 +411,7 @@ function Homepage() {
                     </div>
                 </section>
 
-                <section id="insights" className="py-12 sm:py-20 lg:py-32 px-4 sm:px-6 lg:px-8 bg-slate-900 text-white">
+                <section id="insights" className="py-20 sm:py-20 lg:py-32 px-4 sm:px-6 lg:px-8 bg-slate-900 text-white">
                     <div className="max-w-6xl mx-auto">
                         <div className="flex flex-col gap-2.5 sm:gap-4 mb-8 sm:mb-16 text-center pb-6 sm:pb-8">
                             <p className="text-xs sm:text-sm font-semibold tracking-[0.3em] text-emerald-300">INTELLIGENCE LAYER</p>
@@ -435,7 +435,7 @@ function Homepage() {
                     </div>
                 </section>
 
-                <section id="trust" className="py-12 sm:py-20 lg:py-24 px-4 sm:px-6 lg:px-8">
+                <section id="trust" className="py-20 sm:py-20 lg:py-24 px-4 sm:px-6 lg:px-8">
                     <div className="max-w-6xl mx-auto">
                         <div className="rounded-2xl sm:rounded-3xl border border-slate-200 p-5 sm:p-8 bg-gradient-to-br from-slate-900 to-blue-900 text-white max-w-4xl mx-auto">
                             <p className="text-sm font-semibold tracking-[0.3em] text-emerald-300 mb-6">PROOF OF TRUST</p>
@@ -461,16 +461,28 @@ function Homepage() {
 
             <footer className="bg-white border-t border-slate-200">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10">
+                    {/* Mobile view */}
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                        <div>
-                            <p className="text-sm font-semibold text-slate-900">© 2025 Health Track</p>
+                        <div className="w-full block md:hidden mb-3">
+                            <p className="text-sm font-semibold text-slate-900 text-center">© 2025 Health Track</p>
                         </div>
-                        <div className="flex flex-wrap items-center gap-6 text-sm text-slate-800">
+                        <div className="w-full flex md:hidden justify-around items-center gap-0 text-sm text-slate-800">
                             <span className="flex items-center gap-2">
                                 <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
                                 Platform live
                             </span>
-                            <span>Version 2.0 Preview</span>
+                            <span>Version 2.0</span>
+                        </div>
+                        {/* Desktop view */}
+                        <div className="hidden md:block">
+                            <p className="text-sm font-semibold text-slate-900">© 2025 Health Track</p>
+                        </div>
+                        <div className="hidden md:flex flex-wrap items-center gap-6 text-sm text-slate-800">
+                            <span className="flex items-center gap-2">
+                                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                                Platform live
+                            </span>
+                            <span>Version 2.0</span>
                         </div>
                     </div>
                 </div>
