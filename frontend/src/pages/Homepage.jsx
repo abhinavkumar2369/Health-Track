@@ -340,8 +340,8 @@ function Homepage() {
                         {/* Main Feature Categories */}
                         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                             {/* For Hospitals */}
-                            <div className="group bg-gradient-to-br from-blue-50 to-blue-100 rounded-3xl p-6 hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 border border-blue-200">
-                                <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 group-hover:rotate-3 transition-all duration-300 shadow-lg">
+                            <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-3xl p-6 border border-blue-200">
+                                <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center mb-4">
                                     <HospitalIcon />
                                 </div>
                                 <h3 className="text-xl font-bold text-gray-900 mb-3">For Hospitals</h3>
@@ -363,8 +363,8 @@ function Homepage() {
                             </div>
                             
                             {/* For Doctors */}
-                            <div className="group bg-gradient-to-br from-green-50 to-green-100 rounded-3xl p-6 hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 border border-green-200">
-                                <div className="w-14 h-14 bg-gradient-to-br from-green-500 to-green-600 rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 group-hover:rotate-3 transition-all duration-300 shadow-lg">
+                            <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-3xl p-6 border border-green-200">
+                                <div className="w-14 h-14 bg-gradient-to-br from-green-500 to-green-600 rounded-2xl flex items-center justify-center mb-4">
                                     <DoctorIcon />
                                 </div>
                                 <h3 className="text-xl font-bold text-gray-900 mb-3">For Doctors</h3>
@@ -386,8 +386,8 @@ function Homepage() {
                             </div>
                             
                             {/* For Patients */}
-                            <div className="group bg-gradient-to-br from-red-50 to-rose-100 rounded-3xl p-6 hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 border border-rose-200">
-                                <div className="w-14 h-14 bg-gradient-to-br from-rose-400 to-rose-500 rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 group-hover:rotate-3 transition-all duration-300 shadow-lg">
+                            <div className="bg-gradient-to-br from-red-50 to-rose-100 rounded-3xl p-6 border border-rose-200">
+                                <div className="w-14 h-14 bg-gradient-to-br from-rose-400 to-rose-500 rounded-2xl flex items-center justify-center mb-4">
                                     <PatientIcon />
                                 </div>
                                 <h3 className="text-xl font-bold text-gray-900 mb-3">For Patients</h3>
