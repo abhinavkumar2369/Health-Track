@@ -1,6 +1,31 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { 
+    LayoutDashboard, 
+    Calendar, 
+    Pill, 
+    FileText, 
+    TrendingUp, 
+    User, 
+    LogOut, 
+    Upload, 
+    Download, 
+    Eye, 
+    Trash2, 
+    FileBarChart,
+    Heart,
+    Activity,
+    Thermometer,
+    Weight,
+    Shield,
+    Phone,
+    Mail,
+    MapPin,
+    Camera,
+    Lock,
+    CheckCircle
+} from 'lucide-react';
 
 const API_BASE_URL = (import.meta.env.VITE_API_URL || 'http://localhost:5000').replace(/\/$/, '');
 const API_URL = `${API_BASE_URL}/api/documents`;
@@ -16,6 +41,10 @@ const PatientDashboard = () => {
     const [selectedFile, setSelectedFile] = useState(null);
     const [uploadMessage, setUploadMessage] = useState({ type: '', text: '' });
     const [isDragging, setIsDragging] = useState(false);
+    
+    // Health reports state
+    const [generatingReport, setGeneratingReport] = useState(false);
+    const [healthReports, setHealthReports] = useState([]);
 
     useEffect(() => {
         const userData = localStorage.getItem('user');
@@ -207,8 +236,72 @@ const PatientDashboard = () => {
         });
     };
 
+    const handleGenerateReport = async () => {
+        setGeneratingReport(true);
+        setUploadMessage({ type: '', text: '' });
+
+        try {
+            const token = localStorage.getItem('token');
+            
+            const response = await axios.post(`${API_BASE_URL}/api/reports/generate`, { 
+                token,
+                includeRecords: true,
+                includeAppointments: true,
+                includePrescriptions: true,
+                includeHealthMetrics: true
+            });
+
+            if (response.data.success) {
+                setUploadMessage({ 
+                    type: 'success', 
+                    text: 'Health report generated successfully! The report has been saved to your account.' 
+                });
+                // Refresh the reports list
+                const report = response.data.report;
+                setHealthReports(prev => [report, ...prev]);
+            }
+        } catch (error) {
+            console.error('Report generation error:', error);
+            setUploadMessage({ 
+                type: 'error', 
+                text: error.response?.data?.message || 'Failed to generate health report' 
+            });
+        } finally {
+            setGeneratingReport(false);
+        }
+    };
+
+    const handleViewReport = async (reportId) => {
+        try {
+            const token = localStorage.getItem('token');
+            const response = await axios.post(`${API_BASE_URL}/api/reports/view/${reportId}`, { token });
+            
+            if (response.data.success) {
+                window.open(response.data.url, '_blank');
+            }
+        } catch (error) {
+            console.error('View report error:', error);
+            setUploadMessage({ type: 'error', text: 'Failed to view report' });
+        }
+    };
+
+    const handleDownloadReport = async (reportId) => {
+        try {
+            const token = localStorage.getItem('token');
+            const response = await axios.post(`${API_BASE_URL}/api/reports/download/${reportId}`, { token });
+            
+            if (response.data.success) {
+                window.open(response.data.url, '_blank');
+            }
+        } catch (error) {
+            console.error('Download report error:', error);
+            setUploadMessage({ type: 'error', text: 'Failed to download report' });
+        }
+    };
+
     const handleLogout = () => {
         localStorage.removeItem('user');
+        localStorage.removeItem('token');
         navigate('/');
     };
 
@@ -246,26 +339,29 @@ const PatientDashboard = () => {
             {/* Navigation Items */}
             <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
                 {[
-                    { id: 'dashboard', label: 'Dashboard', icon: '📊' },
-                    { id: 'appointments', label: 'Appointments', icon: '📅' },
-                    { id: 'prescriptions', label: 'Prescriptions', icon: '💊' },
-                    { id: 'records', label: 'Medical Records', icon: '📄' },
-                    { id: 'reports', label: 'Health Reports', icon: '📈' },
-                    { id: 'profile', label: 'My Profile', icon: '👤' }
-                ].map((item) => (
-                    <button
-                        key={item.id}
-                        onClick={() => setActiveSection(item.id)}
-                        className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 ${
-                            activeSection === item.id
-                                ? 'bg-blue-50 text-blue-600 font-medium'
-                                : 'text-gray-700 hover:bg-gray-50'
-                        }`}
-                    >
-                        <span className="text-xl">{item.icon}</span>
-                        <span className="text-sm">{item.label}</span>
-                    </button>
-                ))}
+                    { id: 'dashboard', label: 'Dashboard', Icon: LayoutDashboard },
+                    { id: 'appointments', label: 'Appointments', Icon: Calendar },
+                    { id: 'prescriptions', label: 'Prescriptions', Icon: Pill },
+                    { id: 'records', label: 'Medical Records', Icon: FileText },
+                    { id: 'reports', label: 'Health Reports', Icon: TrendingUp },
+                    { id: 'profile', label: 'My Profile', Icon: User }
+                ].map((item) => {
+                    const IconComponent = item.Icon;
+                    return (
+                        <button
+                            key={item.id}
+                            onClick={() => setActiveSection(item.id)}
+                            className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 ${
+                                activeSection === item.id
+                                    ? 'bg-blue-50 text-blue-600 font-medium'
+                                    : 'text-gray-700 hover:bg-gray-50'
+                            }`}
+                        >
+                            <IconComponent className="w-5 h-5" />
+                            <span className="text-sm">{item.label}</span>
+                        </button>
+                    );
+                })}
             </nav>
 
             {/* User Profile Section */}
@@ -283,9 +379,7 @@ const PatientDashboard = () => {
                     onClick={handleLogout}
                     className="w-full flex items-center justify-center space-x-2 px-4 py-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors text-sm font-medium"
                 >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                    </svg>
+                    <LogOut className="w-4 h-4" />
                     <span>Logout</span>
                 </button>
             </div>
@@ -324,181 +418,131 @@ const PatientDashboard = () => {
                             {/* Stats Cards */}
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                                 <div className="bg-white rounded-xl border border-gray-200 p-6 hover:shadow-lg transition-shadow">
-                                    <div className="flex items-center justify-between mb-2">
-                                        <span className="text-4xl">📅</span>
-                                        <span className="text-xs text-green-600 bg-green-50 px-2 py-1 rounded-full">+2 this week</span>
+                                    <div className="flex items-center justify-between mb-4">
+                                        <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                                            <Calendar className="w-6 h-6 text-blue-600" />
+                                        </div>
                                     </div>
-                                    <h3 className="text-2xl font-bold text-gray-900">5</h3>
+                                    <h3 className="text-2xl font-bold text-gray-900">0</h3>
                                     <p className="text-sm text-gray-600">Upcoming Appointments</p>
+                                    <p className="text-xs text-gray-500 mt-2">Book your first appointment</p>
                                 </div>
 
                                 <div className="bg-white rounded-xl border border-gray-200 p-6 hover:shadow-lg transition-shadow">
-                                    <div className="flex items-center justify-between mb-2">
-                                        <span className="text-4xl">💊</span>
-                                        <span className="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded-full">3 active</span>
+                                    <div className="flex items-center justify-between mb-4">
+                                        <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
+                                            <Pill className="w-6 h-6 text-purple-600" />
+                                        </div>
                                     </div>
-                                    <h3 className="text-2xl font-bold text-gray-900">12</h3>
-                                    <p className="text-sm text-gray-600">Total Prescriptions</p>
+                                    <h3 className="text-2xl font-bold text-gray-900">0</h3>
+                                    <p className="text-sm text-gray-600">Active Prescriptions</p>
+                                    <p className="text-xs text-gray-500 mt-2">No active prescriptions</p>
                                 </div>
 
                                 <div className="bg-white rounded-xl border border-gray-200 p-6 hover:shadow-lg transition-shadow">
-                                    <div className="flex items-center justify-between mb-2">
-                                        <span className="text-4xl">📄</span>
-                                        <span className="text-xs text-purple-600 bg-purple-50 px-2 py-1 rounded-full">{medicalRecords.length} files</span>
+                                    <div className="flex items-center justify-between mb-4">
+                                        <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                                            <FileText className="w-6 h-6 text-green-600" />
+                                        </div>
                                     </div>
                                     <h3 className="text-2xl font-bold text-gray-900">{medicalRecords.length}</h3>
                                     <p className="text-sm text-gray-600">Medical Records</p>
+                                    <p className="text-xs text-gray-500 mt-2">{medicalRecords.length === 0 ? 'Upload your records' : `${medicalRecords.length} files stored`}</p>
                                 </div>
 
                                 <div className="bg-white rounded-xl border border-gray-200 p-6 hover:shadow-lg transition-shadow">
-                                    <div className="flex items-center justify-between mb-2">
-                                        <span className="text-4xl">📈</span>
-                                        <span className="text-xs text-orange-600 bg-orange-50 px-2 py-1 rounded-full">Good</span>
+                                    <div className="flex items-center justify-between mb-4">
+                                        <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
+                                            <TrendingUp className="w-6 h-6 text-orange-600" />
+                                        </div>
                                     </div>
-                                    <h3 className="text-2xl font-bold text-gray-900">85%</h3>
-                                    <p className="text-sm text-gray-600">Health Score</p>
+                                    <h3 className="text-2xl font-bold text-gray-900">{healthReports.length}</h3>
+                                    <p className="text-sm text-gray-600">Health Reports</p>
+                                    <p className="text-xs text-gray-500 mt-2">{healthReports.length === 0 ? 'Generate your first report' : `${healthReports.length} reports available`}</p>
                                 </div>
                             </div>
 
-                            {/* Health Metrics Chart */}
-                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                                <div className="bg-white rounded-xl border border-gray-200 p-6">
-                                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Health Metrics Trend</h3>
-                                    <div className="space-y-4">
-                                        <div className="flex items-center space-x-4">
-                                            <div className="w-16 h-16 bg-red-50 rounded-lg flex items-center justify-center text-2xl">❤️</div>
-                                            <div className="flex-1">
-                                                <div className="flex justify-between items-center mb-1">
-                                                    <span className="text-sm font-medium text-gray-700">Blood Pressure</span>
-                                                    <span className="text-sm font-semibold text-gray-900">120/80 mmHg</span>
-                                                </div>
-                                                <div className="w-full bg-gray-200 rounded-full h-2">
-                                                    <div className="bg-green-500 h-2 rounded-full" style={{width: '75%'}}></div>
-                                                </div>
-                                                <p className="text-xs text-gray-500 mt-1">Normal range</p>
-                                            </div>
+                            {/* Quick Actions */}
+                            <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl border border-blue-200 p-8">
+                                <h3 className="text-xl font-bold text-gray-900 mb-4">Welcome to Your Health Dashboard</h3>
+                                <p className="text-gray-600 mb-6">Manage your health records, track appointments, and generate comprehensive health reports all in one place.</p>
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    <button 
+                                        onClick={() => setActiveSection('records')}
+                                        className="flex items-center space-x-3 p-4 bg-white rounded-lg hover:shadow-md transition-all border border-gray-200"
+                                    >
+                                        <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                                            <Upload className="w-5 h-5 text-green-600" />
                                         </div>
-
-                                        <div className="flex items-center space-x-4">
-                                            <div className="w-16 h-16 bg-blue-50 rounded-lg flex items-center justify-center text-2xl">🩺</div>
-                                            <div className="flex-1">
-                                                <div className="flex justify-between items-center mb-1">
-                                                    <span className="text-sm font-medium text-gray-700">Heart Rate</span>
-                                                    <span className="text-sm font-semibold text-gray-900">72 bpm</span>
-                                                </div>
-                                                <div className="w-full bg-gray-200 rounded-full h-2">
-                                                    <div className="bg-blue-500 h-2 rounded-full" style={{width: '68%'}}></div>
-                                                </div>
-                                                <p className="text-xs text-gray-500 mt-1">Optimal</p>
-                                            </div>
+                                        <div className="text-left">
+                                            <p className="font-semibold text-gray-900">Upload Records</p>
+                                            <p className="text-xs text-gray-500">Add medical documents</p>
                                         </div>
-
-                                        <div className="flex items-center space-x-4">
-                                            <div className="w-16 h-16 bg-yellow-50 rounded-lg flex items-center justify-center text-2xl">🌡️</div>
-                                            <div className="flex-1">
-                                                <div className="flex justify-between items-center mb-1">
-                                                    <span className="text-sm font-medium text-gray-700">Body Temperature</span>
-                                                    <span className="text-sm font-semibold text-gray-900">98.6°F</span>
-                                                </div>
-                                                <div className="w-full bg-gray-200 rounded-full h-2">
-                                                    <div className="bg-yellow-500 h-2 rounded-full" style={{width: '85%'}}></div>
-                                                </div>
-                                                <p className="text-xs text-gray-500 mt-1">Normal</p>
-                                            </div>
+                                    </button>
+                                    
+                                    <button 
+                                        onClick={() => setActiveSection('appointments')}
+                                        className="flex items-center space-x-3 p-4 bg-white rounded-lg hover:shadow-md transition-all border border-gray-200"
+                                    >
+                                        <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                                            <Calendar className="w-5 h-5 text-blue-600" />
                                         </div>
-
-                                        <div className="flex items-center space-x-4">
-                                            <div className="w-16 h-16 bg-purple-50 rounded-lg flex items-center justify-center text-2xl">⚖️</div>
-                                            <div className="flex-1">
-                                                <div className="flex justify-between items-center mb-1">
-                                                    <span className="text-sm font-medium text-gray-700">Weight</span>
-                                                    <span className="text-sm font-semibold text-gray-900">70 kg</span>
-                                                </div>
-                                                <div className="w-full bg-gray-200 rounded-full h-2">
-                                                    <div className="bg-purple-500 h-2 rounded-full" style={{width: '60%'}}></div>
-                                                </div>
-                                                <p className="text-xs text-gray-500 mt-1">Healthy weight</p>
-                                            </div>
+                                        <div className="text-left">
+                                            <p className="font-semibold text-gray-900">Book Appointment</p>
+                                            <p className="text-xs text-gray-500">Schedule with doctors</p>
                                         </div>
-                                    </div>
+                                    </button>
+                                    
+                                    <button 
+                                        onClick={() => setActiveSection('reports')}
+                                        className="flex items-center space-x-3 p-4 bg-white rounded-lg hover:shadow-md transition-all border border-gray-200"
+                                    >
+                                        <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
+                                            <FileBarChart className="w-5 h-5 text-purple-600" />
+                                        </div>
+                                        <div className="text-left">
+                                            <p className="font-semibold text-gray-900">Generate Report</p>
+                                            <p className="text-xs text-gray-500">Health summary</p>
+                                        </div>
+                                    </button>
                                 </div>
+                            </div>
 
-                                {/* Upcoming Appointments */}
+                            {/* Recent Medical Records */}
+                            {medicalRecords.length > 0 && (
                                 <div className="bg-white rounded-xl border border-gray-200 p-6">
                                     <div className="flex justify-between items-center mb-4">
-                                        <h3 className="text-lg font-semibold text-gray-900">Upcoming Appointments</h3>
-                                        <button className="text-sm text-blue-600 hover:text-blue-700 font-medium">View All</button>
-                                    </div>
-                                    <div className="space-y-3">
-                                        <div className="flex items-start space-x-3 p-3 bg-blue-50 rounded-lg border border-blue-100">
-                                            <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center text-xl flex-shrink-0">👨‍⚕️</div>
-                                            <div className="flex-1 min-w-0">
-                                                <h4 className="text-sm font-semibold text-gray-900">Dr. Sarah Johnson</h4>
-                                                <p className="text-xs text-gray-600">General Checkup</p>
-                                                <div className="flex items-center space-x-2 mt-1">
-                                                    <span className="text-xs text-blue-600">📅 Dec 20, 2024</span>
-                                                    <span className="text-xs text-gray-400">•</span>
-                                                    <span className="text-xs text-blue-600">⏰ 10:00 AM</span>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <div className="flex items-start space-x-3 p-3 bg-green-50 rounded-lg border border-green-100">
-                                            <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center text-xl flex-shrink-0">🦷</div>
-                                            <div className="flex-1 min-w-0">
-                                                <h4 className="text-sm font-semibold text-gray-900">Dr. Michael Chen</h4>
-                                                <p className="text-xs text-gray-600">Dental Cleaning</p>
-                                                <div className="flex items-center space-x-2 mt-1">
-                                                    <span className="text-xs text-green-600">📅 Dec 22, 2024</span>
-                                                    <span className="text-xs text-gray-400">•</span>
-                                                    <span className="text-xs text-green-600">⏰ 2:00 PM</span>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <div className="flex items-start space-x-3 p-3 bg-purple-50 rounded-lg border border-purple-100">
-                                            <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center text-xl flex-shrink-0">👁️</div>
-                                            <div className="flex-1 min-w-0">
-                                                <h4 className="text-sm font-semibold text-gray-900">Dr. Emily Davis</h4>
-                                                <p className="text-xs text-gray-600">Eye Examination</p>
-                                                <div className="flex items-center space-x-2 mt-1">
-                                                    <span className="text-xs text-purple-600">📅 Dec 25, 2024</span>
-                                                    <span className="text-xs text-gray-400">•</span>
-                                                    <span className="text-xs text-purple-600">⏰ 11:30 AM</span>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <button className="w-full py-3 bg-gray-50 text-gray-700 rounded-lg hover:bg-gray-100 transition-colors text-sm font-medium">
-                                            + Book New Appointment
+                                        <h3 className="text-lg font-semibold text-gray-900">Recent Medical Records</h3>
+                                        <button 
+                                            onClick={() => setActiveSection('records')}
+                                            className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+                                        >
+                                            View All
                                         </button>
                                     </div>
-                                </div>
-                            </div>
-
-                            {/* Recent Activity */}
-                            <div className="bg-white rounded-xl border border-gray-200 p-6">
-                                <h3 className="text-lg font-semibold text-gray-900 mb-4">Recent Activity</h3>
-                                <div className="space-y-4">
-                                    {[
-                                        { icon: '📄', action: 'Medical record uploaded', detail: 'Blood Test Results.pdf', time: '2 hours ago', color: 'blue' },
-                                        { icon: '💊', action: 'Prescription refilled', detail: 'Amoxicillin 500mg', time: '5 hours ago', color: 'green' },
-                                        { icon: '📅', action: 'Appointment booked', detail: 'Dr. Sarah Johnson - General Checkup', time: '1 day ago', color: 'purple' },
-                                        { icon: '📋', action: 'Lab test completed', detail: 'Complete Blood Count', time: '2 days ago', color: 'orange' }
-                                    ].map((activity, index) => (
-                                        <div key={index} className="flex items-center space-x-4 p-3 hover:bg-gray-50 rounded-lg transition-colors">
-                                            <div className={`w-10 h-10 bg-${activity.color}-50 rounded-lg flex items-center justify-center text-xl flex-shrink-0`}>
-                                                {activity.icon}
+                                    <div className="space-y-3">
+                                        {medicalRecords.slice(0, 3).map((record) => (
+                                            <div key={record._id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-100">
+                                                <div className="flex items-center space-x-3">
+                                                    <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                                                        <FileText className="w-5 h-5 text-blue-600" />
+                                                    </div>
+                                                    <div>
+                                                        <h4 className="font-medium text-gray-900 text-sm">{record.title || record.originalName}</h4>
+                                                        <p className="text-xs text-gray-500">{formatDate(record.createdAt)}</p>
+                                                    </div>
+                                                </div>
+                                                <button 
+                                                    onClick={() => handleViewDocument(record._id)}
+                                                    className="text-sm text-blue-600 hover:text-blue-700"
+                                                >
+                                                    <Eye className="w-4 h-4" />
+                                                </button>
                                             </div>
-                                            <div className="flex-1 min-w-0">
-                                                <p className="text-sm font-medium text-gray-900">{activity.action}</p>
-                                                <p className="text-xs text-gray-600">{activity.detail}</p>
-                                            </div>
-                                            <span className="text-xs text-gray-500 whitespace-nowrap">{activity.time}</span>
-                                        </div>
-                                    ))}
+                                        ))}
+                                    </div>
                                 </div>
-                            </div>
+                            )}
                         </div>
                     )}
 
@@ -510,98 +554,20 @@ const PatientDashboard = () => {
                                     <p className="text-sm text-gray-600 mt-1">Manage and track your medical appointments</p>
                                 </div>
                                 <button className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium flex items-center space-x-2">
-                                    <span>+</span>
+                                    <Calendar className="w-4 h-4" />
                                     <span>Book Appointment</span>
                                 </button>
                             </div>
 
-                            <div className="bg-white rounded-xl border border-gray-200 p-6">
-                                <div className="space-y-4">
-                                    {/* Sample Appointment Cards */}
-                                    <div className="flex items-center justify-between p-4 bg-blue-50 border border-blue-100 rounded-xl hover:shadow-md transition-shadow">
-                                        <div className="flex items-center space-x-4">
-                                            <div className="w-16 h-16 bg-blue-100 rounded-xl flex items-center justify-center text-2xl">👨‍⚕️</div>
-                                            <div>
-                                                <h4 className="font-semibold text-gray-900">Dr. Sarah Johnson</h4>
-                                                <p className="text-sm text-gray-600">General Checkup</p>
-                                                <div className="flex items-center space-x-3 mt-2">
-                                                    <span className="text-xs bg-blue-100 text-blue-700 px-3 py-1 rounded-full">📅 Dec 20, 2024</span>
-                                                    <span className="text-xs bg-blue-100 text-blue-700 px-3 py-1 rounded-full">⏰ 10:00 AM</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div className="flex space-x-2">
-                                            <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm">View</button>
-                                            <button className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 text-sm">Reschedule</button>
-                                        </div>
-                                    </div>
-
-                                    <div className="flex items-center justify-between p-4 bg-green-50 border border-green-100 rounded-xl hover:shadow-md transition-shadow">
-                                        <div className="flex items-center space-x-4">
-                                            <div className="w-16 h-16 bg-green-100 rounded-xl flex items-center justify-center text-2xl">🦷</div>
-                                            <div>
-                                                <h4 className="font-semibold text-gray-900">Dr. Michael Chen</h4>
-                                                <p className="text-sm text-gray-600">Dental Cleaning</p>
-                                                <div className="flex items-center space-x-3 mt-2">
-                                                    <span className="text-xs bg-green-100 text-green-700 px-3 py-1 rounded-full">📅 Dec 22, 2024</span>
-                                                    <span className="text-xs bg-green-100 text-green-700 px-3 py-1 rounded-full">⏰ 2:00 PM</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div className="flex space-x-2">
-                                            <button className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm">View</button>
-                                            <button className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 text-sm">Reschedule</button>
-                                        </div>
-                                    </div>
-
-                                    <div className="flex items-center justify-between p-4 bg-purple-50 border border-purple-100 rounded-xl hover:shadow-md transition-shadow">
-                                        <div className="flex items-center space-x-4">
-                                            <div className="w-16 h-16 bg-purple-100 rounded-xl flex items-center justify-center text-2xl">👁️</div>
-                                            <div>
-                                                <h4 className="font-semibold text-gray-900">Dr. Emily Davis</h4>
-                                                <p className="text-sm text-gray-600">Eye Examination</p>
-                                                <div className="flex items-center space-x-3 mt-2">
-                                                    <span className="text-xs bg-purple-100 text-purple-700 px-3 py-1 rounded-full">📅 Dec 25, 2024</span>
-                                                    <span className="text-xs bg-purple-100 text-purple-700 px-3 py-1 rounded-full">⏰ 11:30 AM</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div className="flex space-x-2">
-                                            <button className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 text-sm">View</button>
-                                            <button className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 text-sm">Reschedule</button>
-                                        </div>
-                                    </div>
+                            <div className="bg-white rounded-xl border border-gray-200 p-8 text-center">
+                                <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                    <Calendar className="w-10 h-10 text-blue-600" />
                                 </div>
-                            </div>
-
-                            {/* Past Appointments */}
-                            <div className="bg-white rounded-xl border border-gray-200 p-6">
-                                <h3 className="text-lg font-semibold text-gray-900 mb-4">Past Appointments</h3>
-                                <div className="space-y-3">
-                                    <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-100">
-                                        <div className="flex items-center space-x-4">
-                                            <div className="w-12 h-12 bg-gray-200 rounded-lg flex items-center justify-center text-xl">👨‍⚕️</div>
-                                            <div>
-                                                <h4 className="font-medium text-gray-900">Dr. Robert Smith</h4>
-                                                <p className="text-sm text-gray-600">Annual Physical</p>
-                                                <span className="text-xs text-gray-500">Dec 10, 2024 - Completed</span>
-                                            </div>
-                                        </div>
-                                        <button className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 text-sm">View Details</button>
-                                    </div>
-
-                                    <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-100">
-                                        <div className="flex items-center space-x-4">
-                                            <div className="w-12 h-12 bg-gray-200 rounded-lg flex items-center justify-center text-xl">🩺</div>
-                                            <div>
-                                                <h4 className="font-medium text-gray-900">Dr. Lisa Wong</h4>
-                                                <p className="text-sm text-gray-600">Cardiology Consultation</p>
-                                                <span className="text-xs text-gray-500">Nov 28, 2024 - Completed</span>
-                                            </div>
-                                        </div>
-                                        <button className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 text-sm">View Details</button>
-                                    </div>
-                                </div>
+                                <h3 className="text-xl font-semibold text-gray-900 mb-2">No Appointments Yet</h3>
+                                <p className="text-gray-600 mb-6">You haven't booked any appointments. Book your first appointment with a healthcare provider.</p>
+                                <button className="px-8 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-all shadow-lg">
+                                    Book Your First Appointment
+                                </button>
                             </div>
                         </div>
                     )}
@@ -613,97 +579,14 @@ const PatientDashboard = () => {
                                     <h3 className="text-xl font-semibold text-gray-900">My Prescriptions</h3>
                                     <p className="text-sm text-gray-600 mt-1">View and manage your prescriptions</p>
                                 </div>
-                                <button className="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-colors font-medium">
-                                    Request Refill
-                                </button>
                             </div>
 
-                            {/* Active Prescriptions */}
-                            <div className="bg-white rounded-xl border border-gray-200 p-6">
-                                <h3 className="text-lg font-semibold text-gray-900 mb-4">Active Prescriptions</h3>
-                                <div className="space-y-4">
-                                    <div className="flex items-center justify-between p-4 bg-green-50 border border-green-100 rounded-xl">
-                                        <div className="flex items-center space-x-4">
-                                            <div className="w-16 h-16 bg-green-100 rounded-xl flex items-center justify-center text-2xl">💊</div>
-                                            <div>
-                                                <h4 className="font-semibold text-gray-900">Amoxicillin 500mg</h4>
-                                                <p className="text-sm text-gray-600">Take 3 times daily with food</p>
-                                                <div className="flex items-center space-x-3 mt-2">
-                                                    <span className="text-xs bg-green-100 text-green-700 px-3 py-1 rounded-full">15 pills remaining</span>
-                                                    <span className="text-xs bg-yellow-100 text-yellow-700 px-3 py-1 rounded-full">Refill in 5 days</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div className="flex space-x-2">
-                                            <button className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm">Refill</button>
-                                            <button className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 text-sm">Details</button>
-                                        </div>
-                                    </div>
-
-                                    <div className="flex items-center justify-between p-4 bg-blue-50 border border-blue-100 rounded-xl">
-                                        <div className="flex items-center space-x-4">
-                                            <div className="w-16 h-16 bg-blue-100 rounded-xl flex items-center justify-center text-2xl">💊</div>
-                                            <div>
-                                                <h4 className="font-semibold text-gray-900">Lisinopril 10mg</h4>
-                                                <p className="text-sm text-gray-600">Take once daily in the morning</p>
-                                                <div className="flex items-center space-x-3 mt-2">
-                                                    <span className="text-xs bg-blue-100 text-blue-700 px-3 py-1 rounded-full">28 pills remaining</span>
-                                                    <span className="text-xs bg-green-100 text-green-700 px-3 py-1 rounded-full">Good supply</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div className="flex space-x-2">
-                                            <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm">Refill</button>
-                                            <button className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 text-sm">Details</button>
-                                        </div>
-                                    </div>
-
-                                    <div className="flex items-center justify-between p-4 bg-purple-50 border border-purple-100 rounded-xl">
-                                        <div className="flex items-center space-x-4">
-                                            <div className="w-16 h-16 bg-purple-100 rounded-xl flex items-center justify-center text-2xl">💊</div>
-                                            <div>
-                                                <h4 className="font-semibold text-gray-900">Metformin 850mg</h4>
-                                                <p className="text-sm text-gray-600">Take twice daily with meals</p>
-                                                <div className="flex items-center space-x-3 mt-2">
-                                                    <span className="text-xs bg-purple-100 text-purple-700 px-3 py-1 rounded-full">45 pills remaining</span>
-                                                    <span className="text-xs bg-green-100 text-green-700 px-3 py-1 rounded-full">Good supply</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div className="flex space-x-2">
-                                            <button className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 text-sm">Refill</button>
-                                            <button className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 text-sm">Details</button>
-                                        </div>
-                                    </div>
+                            <div className="bg-white rounded-xl border border-gray-200 p-8 text-center">
+                                <div className="w-20 h-20 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                    <Pill className="w-10 h-10 text-purple-600" />
                                 </div>
-                            </div>
-
-                            {/* Past Prescriptions */}
-                            <div className="bg-white rounded-xl border border-gray-200 p-6">
-                                <h3 className="text-lg font-semibold text-gray-900 mb-4">Past Prescriptions</h3>
-                                <div className="space-y-3">
-                                    <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-100">
-                                        <div className="flex items-center space-x-4">
-                                            <div className="w-12 h-12 bg-gray-200 rounded-lg flex items-center justify-center text-xl">💊</div>
-                                            <div>
-                                                <h4 className="font-medium text-gray-900">Ibuprofen 400mg</h4>
-                                                <p className="text-sm text-gray-600">Completed on Nov 15, 2024</p>
-                                            </div>
-                                        </div>
-                                        <button className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 text-sm">View Details</button>
-                                    </div>
-
-                                    <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-100">
-                                        <div className="flex items-center space-x-4">
-                                            <div className="w-12 h-12 bg-gray-200 rounded-lg flex items-center justify-center text-xl">💊</div>
-                                            <div>
-                                                <h4 className="font-medium text-gray-900">Azithromycin 250mg</h4>
-                                                <p className="text-sm text-gray-600">Completed on Oct 28, 2024</p>
-                                            </div>
-                                        </div>
-                                        <button className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 text-sm">View Details</button>
-                                    </div>
-                                </div>
+                                <h3 className="text-xl font-semibold text-gray-900 mb-2">No Prescriptions Yet</h3>
+                                <p className="text-gray-600 mb-6">You don't have any prescriptions yet. Your prescriptions will appear here after your doctor appointments.</p>
                             </div>
                         </div>
                     )}
@@ -739,9 +622,7 @@ const PatientDashboard = () => {
                                         onChange={handleFileSelect}
                                     />
                                     <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                                        <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                                        </svg>
+                                        <Upload className="w-8 h-8 text-green-600" />
                                     </div>
                                     <h4 className="text-lg font-medium text-gray-900 mb-2">
                                         {selectedFile ? selectedFile.name : 'Upload Your Medical Record'}
@@ -787,9 +668,7 @@ const PatientDashboard = () => {
                                 {medicalRecords.length === 0 ? (
                                     <div className="text-center py-12">
                                         <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                                            <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                                            </svg>
+                                            <FileText className="w-8 h-8 text-gray-400" />
                                         </div>
                                         <h4 className="text-lg font-medium text-gray-900 mb-2">No medical records yet</h4>
                                         <p className="text-sm text-gray-500">Upload your first medical record to get started</p>
@@ -819,9 +698,7 @@ const PatientDashboard = () => {
                                                 <div key={record._id} className="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-100 hover:shadow-md transition-shadow">
                                                     <div className="flex items-center space-x-4">
                                                         <div className={`w-12 h-12 ${getIconColor(record.category)} rounded-lg flex items-center justify-center`}>
-                                                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                                                            </svg>
+                                                            <FileText className="w-6 h-6" />
                                                         </div>
                                                         <div>
                                                             <h4 className="font-medium text-gray-900">{record.title || record.originalName}</h4>
@@ -836,21 +713,24 @@ const PatientDashboard = () => {
                                                     <div className="flex space-x-2">
                                                         <button 
                                                             onClick={() => handleViewDocument(record._id)}
-                                                            className="px-3 py-2 text-sm bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100"
+                                                            className="p-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors"
+                                                            title="View Document"
                                                         >
-                                                            View
+                                                            <Eye className="w-4 h-4" />
                                                         </button>
                                                         <button 
                                                             onClick={() => handleDownloadDocument(record._id)}
-                                                            className="px-3 py-2 text-sm bg-gray-50 text-gray-600 rounded-lg hover:bg-gray-100"
+                                                            className="p-2 bg-green-50 text-green-600 rounded-lg hover:bg-green-100 transition-colors"
+                                                            title="Download Document"
                                                         >
-                                                            Download
+                                                            <Download className="w-4 h-4" />
                                                         </button>
                                                         <button 
                                                             onClick={() => handleDeleteDocument(record._id)}
-                                                            className="px-3 py-2 text-sm bg-red-50 text-red-600 rounded-lg hover:bg-red-100"
+                                                            className="p-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors"
+                                                            title="Delete Document"
                                                         >
-                                                            Delete
+                                                            <Trash2 className="w-4 h-4" />
                                                         </button>
                                                     </div>
                                                 </div>
@@ -865,155 +745,284 @@ const PatientDashboard = () => {
 
                 {activeSection === 'reports' && (
                         <div className="space-y-6">
-                            <div className="flex justify-between items-center">
-                                <div>
-                                    <h3 className="text-xl font-semibold text-gray-900">Health Reports</h3>
-                                    <p className="text-sm text-gray-600 mt-1">Generate and view comprehensive health reports</p>
+                            {uploadMessage.text && uploadMessage.type && (
+                                <div className={`p-4 rounded-lg ${uploadMessage.type === 'success' ? 'bg-green-50 text-green-800' : 'bg-red-50 text-red-800'}`}>
+                                    {uploadMessage.text}
                                 </div>
-                                <button className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium flex items-center space-x-2">
-                                    <span>📊</span>
-                                    <span>Generate Report</span>
-                                </button>
-                            </div>
+                            )}
 
                             {/* Report Generation Card */}
                             <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl border border-blue-200 p-8 text-center">
-                                <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4 text-4xl">
-                                    📊
+                                <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                    <FileBarChart className="w-10 h-10 text-blue-600" />
                                 </div>
-                                <h3 className="text-2xl font-bold text-gray-900 mb-2">Create Health Summary</h3>
+                                <h3 className="text-2xl font-bold text-gray-900 mb-2">Generate Comprehensive Health Report</h3>
                                 <p className="text-gray-600 mb-6 max-w-2xl mx-auto">
-                                    Generate a comprehensive report including medical records, test results, appointments, prescriptions, and health metrics.
+                                    Create a detailed health summary including all your medical records, test results, appointments, prescriptions, and health metrics. The report will be automatically saved to AWS and linked to your account for future access.
                                 </p>
-                                <div className="flex justify-center space-x-3">
-                                    <button className="px-8 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-all shadow-lg">
-                                        Generate Full Report
-                                    </button>
-                                    <button className="px-8 py-3 bg-white text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 font-medium transition-all">
-                                        Customize Report
-                                    </button>
+                                <div className="bg-white rounded-lg p-6 mb-6 max-w-2xl mx-auto">
+                                    <h4 className="font-semibold text-gray-900 mb-3">Report Includes:</h4>
+                                    <div className="grid grid-cols-2 gap-3 text-left">
+                                        <div className="flex items-center space-x-2">
+                                            <CheckCircle className="w-4 h-4 text-green-600" />
+                                            <span className="text-sm text-gray-700">Medical Records ({medicalRecords.length})</span>
+                                        </div>
+                                        <div className="flex items-center space-x-2">
+                                            <CheckCircle className="w-4 h-4 text-green-600" />
+                                            <span className="text-sm text-gray-700">Appointment History</span>
+                                        </div>
+                                        <div className="flex items-center space-x-2">
+                                            <CheckCircle className="w-4 h-4 text-green-600" />
+                                            <span className="text-sm text-gray-700">Prescription Records</span>
+                                        </div>
+                                        <div className="flex items-center space-x-2">
+                                            <CheckCircle className="w-4 h-4 text-green-600" />
+                                            <span className="text-sm text-gray-700">Health Metrics</span>
+                                        </div>
+                                        <div className="flex items-center space-x-2">
+                                            <CheckCircle className="w-4 h-4 text-green-600" />
+                                            <span className="text-sm text-gray-700">Patient Profile</span>
+                                        </div>
+                                        <div className="flex items-center space-x-2">
+                                            <CheckCircle className="w-4 h-4 text-green-600" />
+                                            <span className="text-sm text-gray-700">Timeline Summary</span>
+                                        </div>
+                                    </div>
                                 </div>
+                                <button 
+                                    onClick={handleGenerateReport}
+                                    disabled={generatingReport}
+                                    className="px-8 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-all shadow-lg disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center space-x-2 mx-auto"
+                                >
+                                    {generatingReport ? (
+                                        <>
+                                            <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                            <span>Generating Report...</span>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <FileBarChart className="w-5 h-5" />
+                                            <span>Generate Full Report</span>
+                                        </>
+                                    )}
+                                </button>
+                                <p className="text-xs text-gray-500 mt-4">
+                                    <Shield className="w-3 h-3 inline mr-1" />
+                                    All reports are securely stored in AWS and encrypted
+                                </p>
                             </div>
 
                             {/* Generated Reports */}
-                            <div className="bg-white rounded-xl border border-gray-200 p-6">
-                                <h3 className="text-lg font-semibold text-gray-900 mb-4">My Health Reports</h3>
-                                <div className="space-y-3">
-                                    {[
-                                        { title: 'December 2024 Health Summary', type: 'Monthly', date: 'Jan 1, 2025', pages: '12', color: 'blue' },
-                                        { title: '2024 Annual Health Report', type: 'Annual', date: 'Dec 31, 2024', pages: '45', color: 'green' },
-                                        { title: 'Cardiology Focus Report', type: 'Custom', date: 'Dec 28, 2024', pages: '8', color: 'purple' },
-                                        { title: 'November 2024 Health Summary', type: 'Monthly', date: 'Dec 1, 2024', pages: '10', color: 'blue' }
-                                    ].map((report, index) => (
-                                        <div key={index} className="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-100 hover:shadow-md transition-shadow">
-                                            <div className="flex items-center space-x-4">
-                                                <div className={`w-14 h-14 bg-${report.color}-100 rounded-xl flex items-center justify-center text-2xl`}>
-                                                    📄
-                                                </div>
-                                                <div>
-                                                    <h4 className="font-semibold text-gray-900">{report.title}</h4>
-                                                    <p className="text-sm text-gray-600">{report.type} Report • Generated on {report.date} • {report.pages} pages</p>
-                                                    <div className="flex items-center space-x-2 mt-1">
-                                                        <span className={`text-xs bg-${report.color}-100 text-${report.color}-700 px-2 py-1 rounded-full`}>{report.type}</span>
-                                                        <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">Complete</span>
+                            {healthReports.length > 0 ? (
+                                <div className="bg-white rounded-xl border border-gray-200 p-6">
+                                    <h3 className="text-lg font-semibold text-gray-900 mb-4">My Health Reports</h3>
+                                    <div className="space-y-3">
+                                        {healthReports.map((report) => (
+                                            <div key={report._id} className="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-100 hover:shadow-md transition-shadow">
+                                                <div className="flex items-center space-x-4">
+                                                    <div className="w-14 h-14 bg-blue-100 rounded-xl flex items-center justify-center">
+                                                        <FileBarChart className="w-7 h-7 text-blue-600" />
+                                                    </div>
+                                                    <div>
+                                                        <h4 className="font-semibold text-gray-900">{report.title || 'Health Summary Report'}</h4>
+                                                        <p className="text-sm text-gray-600">
+                                                            Generated on {formatDate(report.createdAt)} • {report.recordCount || 0} records included
+                                                        </p>
+                                                        <div className="flex items-center space-x-2 mt-1">
+                                                            <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full flex items-center">
+                                                                <Shield className="w-3 h-3 mr-1" />
+                                                                Stored in AWS
+                                                            </span>
+                                                            <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full">PDF</span>
+                                                        </div>
                                                     </div>
                                                 </div>
+                                                <div className="flex space-x-2">
+                                                    <button 
+                                                        onClick={() => handleViewReport(report._id)}
+                                                        className="p-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors"
+                                                        title="View Report"
+                                                    >
+                                                        <Eye className="w-4 h-4" />
+                                                    </button>
+                                                    <button 
+                                                        onClick={() => handleDownloadReport(report._id)}
+                                                        className="p-2 bg-green-50 text-green-600 rounded-lg hover:bg-green-100 transition-colors"
+                                                        title="Download Report"
+                                                    >
+                                                        <Download className="w-4 h-4" />
+                                                    </button>
+                                                </div>
                                             </div>
-                                            <div className="flex space-x-2">
-                                                <button className="px-4 py-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 text-sm">View</button>
-                                                <button className="px-4 py-2 bg-green-50 text-green-600 rounded-lg hover:bg-green-100 text-sm">Download</button>
-                                                <button className="px-4 py-2 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 text-sm">Share</button>
-                                            </div>
-                                        </div>
-                                    ))}
+                                        ))}
+                                    </div>
                                 </div>
-                            </div>
+                            ) : (
+                                <div className="bg-white rounded-xl border border-gray-200 p-8 text-center">
+                                    <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                        <FileBarChart className="w-8 h-8 text-gray-400" />
+                                    </div>
+                                    <h4 className="text-lg font-medium text-gray-900 mb-2">No Reports Generated Yet</h4>
+                                    <p className="text-sm text-gray-500">Click the button above to generate your first comprehensive health report</p>
+                                </div>
+                            )}
                         </div>
                     )}
 
                     {activeSection === 'profile' && (
                         <div className="space-y-6">
-                            <div className="bg-white rounded-xl border border-gray-200 p-6">
-                                <h3 className="text-lg font-semibold text-gray-900 mb-6">Personal Information</h3>
-                                <div className="space-y-4">
-                                    <div className="flex items-center space-x-4">
+                            {/* Profile Header */}
+                            <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl border border-blue-200 p-6">
+                                <div className="flex items-center space-x-6">
+                                    <div className="relative">
                                         <div className="w-24 h-24 bg-gradient-to-br from-blue-400 to-purple-500 rounded-full flex items-center justify-center text-white text-4xl font-bold">
                                             {user?.fullName?.[0] || user?.email?.[0] || 'P'}
                                         </div>
-                                        <button className="px-4 py-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 text-sm font-medium">
-                                            Change Photo
+                                        <button className="absolute bottom-0 right-0 w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-white hover:bg-blue-700 transition-colors">
+                                            <Camera className="w-4 h-4" />
                                         </button>
                                     </div>
-
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-2">Full Name</label>
-                                            <input
-                                                type="text"
-                                                value={user?.fullName || ''}
-                                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                                readOnly
-                                            />
+                                    <div>
+                                        <h3 className="text-2xl font-bold text-gray-900">{user?.fullName || 'Patient Name'}</h3>
+                                        <p className="text-gray-600 flex items-center mt-1">
+                                            <Mail className="w-4 h-4 mr-2" />
+                                            {user?.email}
+                                        </p>
+                                        <div className="flex items-center space-x-2 mt-2">
+                                            <span className="text-xs bg-green-100 text-green-700 px-3 py-1 rounded-full flex items-center">
+                                                <CheckCircle className="w-3 h-3 mr-1" />
+                                                Verified Account
+                                            </span>
+                                            <span className="text-xs bg-blue-100 text-blue-700 px-3 py-1 rounded-full">Patient</span>
                                         </div>
+                                    </div>
+                                </div>
+                            </div>
 
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                            {/* Personal Information */}
+                            <div className="bg-white rounded-xl border border-gray-200 p-6">
+                                <div className="flex items-center justify-between mb-6">
+                                    <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+                                        <User className="w-5 h-5 mr-2 text-blue-600" />
+                                        Personal Information
+                                    </h3>
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">Full Name</label>
+                                        <input
+                                            type="text"
+                                            value={user?.fullName || ''}
+                                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-50"
+                                            readOnly
+                                        />
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">Email Address</label>
+                                        <div className="relative">
+                                            <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
                                             <input
                                                 type="email"
                                                 value={user?.email || ''}
-                                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-50"
                                                 readOnly
                                             />
                                         </div>
+                                    </div>
 
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-2">Phone Number</label>
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">Phone Number</label>
+                                        <div className="relative">
+                                            <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
                                             <input
                                                 type="tel"
                                                 placeholder="+1 (555) 000-0000"
-                                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                             />
                                         </div>
+                                    </div>
 
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-2">Date of Birth</label>
-                                            <input
-                                                type="date"
-                                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                            />
-                                        </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">Date of Birth</label>
+                                        <input
+                                            type="date"
+                                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                        />
+                                    </div>
 
-                                        <div className="md:col-span-2">
-                                            <label className="block text-sm font-medium text-gray-700 mb-2">Address</label>
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">Gender</label>
+                                        <select className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                            <option value="">Select Gender</option>
+                                            <option value="male">Male</option>
+                                            <option value="female">Female</option>
+                                            <option value="other">Other</option>
+                                            <option value="prefer-not-to-say">Prefer not to say</option>
+                                        </select>
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">Blood Type</label>
+                                        <select className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                            <option value="">Select Blood Type</option>
+                                            <option value="A+">A+</option>
+                                            <option value="A-">A-</option>
+                                            <option value="B+">B+</option>
+                                            <option value="B-">B-</option>
+                                            <option value="AB+">AB+</option>
+                                            <option value="AB-">AB-</option>
+                                            <option value="O+">O+</option>
+                                            <option value="O-">O-</option>
+                                        </select>
+                                    </div>
+
+                                    <div className="md:col-span-2">
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">Address</label>
+                                        <div className="relative">
+                                            <MapPin className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
                                             <textarea
                                                 rows="3"
-                                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                                placeholder="Enter your address"
+                                                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                                placeholder="Enter your complete address"
                                             />
                                         </div>
                                     </div>
 
-                                    <div className="flex justify-end space-x-3 pt-4">
-                                        <button className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-medium">
-                                            Cancel
-                                        </button>
-                                        <button className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium">
-                                            Save Changes
-                                        </button>
+                                    <div className="md:col-span-2">
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">Medical Allergies</label>
+                                        <textarea
+                                            rows="2"
+                                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                            placeholder="List any known allergies to medications or substances"
+                                        />
                                     </div>
+                                </div>
+
+                                <div className="flex justify-end space-x-3 pt-6 border-t border-gray-200 mt-6">
+                                    <button className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-medium transition-colors">
+                                        Cancel
+                                    </button>
+                                    <button className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors flex items-center space-x-2">
+                                        <CheckCircle className="w-4 h-4" />
+                                        <span>Save Changes</span>
+                                    </button>
                                 </div>
                             </div>
 
                             {/* Emergency Contact */}
                             <div className="bg-white rounded-xl border border-gray-200 p-6">
-                                <h3 className="text-lg font-semibold text-gray-900 mb-4">Emergency Contact</h3>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                                    <Phone className="w-5 h-5 mr-2 text-red-600" />
+                                    Emergency Contact
+                                </h3>
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 mb-2">Contact Name</label>
                                         <input
                                             type="text"
-                                            placeholder="Enter emergency contact name"
-                                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                            placeholder="Full name"
+                                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                         />
                                     </div>
 
@@ -1022,7 +1031,7 @@ const PatientDashboard = () => {
                                         <input
                                             type="tel"
                                             placeholder="+1 (555) 000-0000"
-                                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                         />
                                     </div>
 
@@ -1030,14 +1039,14 @@ const PatientDashboard = () => {
                                         <label className="block text-sm font-medium text-gray-700 mb-2">Relationship</label>
                                         <input
                                             type="text"
-                                            placeholder="e.g., Spouse, Parent, Sibling"
-                                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                            placeholder="e.g., Spouse, Parent"
+                                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                         />
                                     </div>
                                 </div>
 
-                                <div className="flex justify-end space-x-3 pt-4">
-                                    <button className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium">
+                                <div className="flex justify-end pt-4">
+                                    <button className="px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 font-medium transition-colors">
                                         Save Emergency Contact
                                     </button>
                                 </div>
@@ -1045,24 +1054,37 @@ const PatientDashboard = () => {
 
                             {/* Security Settings */}
                             <div className="bg-white rounded-xl border border-gray-200 p-6">
-                                <h3 className="text-lg font-semibold text-gray-900 mb-4">Security Settings</h3>
-                                <div className="space-y-4">
-                                    <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                                        <div>
-                                            <h4 className="font-medium text-gray-900">Change Password</h4>
-                                            <p className="text-sm text-gray-600">Update your password regularly for security</p>
+                                <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                                    <Lock className="w-5 h-5 mr-2 text-gray-600" />
+                                    Security & Privacy
+                                </h3>
+                                <div className="space-y-3">
+                                    <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200">
+                                        <div className="flex items-center space-x-3">
+                                            <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                                                <Lock className="w-5 h-5 text-blue-600" />
+                                            </div>
+                                            <div>
+                                                <h4 className="font-medium text-gray-900">Change Password</h4>
+                                                <p className="text-sm text-gray-600">Update your password regularly for security</p>
+                                            </div>
                                         </div>
-                                        <button className="px-4 py-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 text-sm font-medium">
+                                        <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium transition-colors">
                                             Change
                                         </button>
                                     </div>
 
-                                    <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                                        <div>
-                                            <h4 className="font-medium text-gray-900">Two-Factor Authentication</h4>
-                                            <p className="text-sm text-gray-600">Add an extra layer of security to your account</p>
+                                    <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200">
+                                        <div className="flex items-center space-x-3">
+                                            <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                                                <Shield className="w-5 h-5 text-green-600" />
+                                            </div>
+                                            <div>
+                                                <h4 className="font-medium text-gray-900">Two-Factor Authentication</h4>
+                                                <p className="text-sm text-gray-600">Add an extra layer of security to your account</p>
+                                            </div>
                                         </div>
-                                        <button className="px-4 py-2 bg-green-50 text-green-600 rounded-lg hover:bg-green-100 text-sm font-medium">
+                                        <button className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm font-medium transition-colors">
                                             Enable
                                         </button>
                                     </div>

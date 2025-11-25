@@ -191,26 +191,26 @@ function Homepage() {
                 </div>
             </header>
 
-            <main className="pt-[5.5rem]">
+            <main className="pt-[4.5rem] sm:pt-[5rem] lg:pt-[5rem]">
                 <section id="hero" className="relative overflow-hidden bg-gradient-to-br from-slate-950 via-blue-950 to-emerald-900 text-white">
                     <div className="absolute inset-0">
                         <div className="absolute inset-0 opacity-20 bg-[radial-gradient(circle_at_top,_#22d3ee,_transparent_50%)]"></div>
                         <div className="absolute -bottom-20 -left-10 w-80 h-80 bg-emerald-500/20 blur-3xl"></div>
                         <div className="absolute -top-10 -right-10 w-96 h-96 bg-blue-500/20 blur-3xl"></div>
                     </div>
-                    <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 lg:py-20 grid lg:grid-cols-2 gap-12 items-center">
-                        <div className="space-y-6">
-                            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-white/20 text-xs uppercase tracking-[0.2em] text-slate-200">
+                    <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24 sm:py-28 lg:py-22 grid lg:grid-cols-2 gap-8 lg:gap-12 items-center">
+                        <div className="space-y-4 sm:space-y-6">
+                            <div className="inline-flex items-center gap-2 px-3 py-1.5 sm:px-4 sm:py-2 rounded-full border border-white/20 text-xs uppercase tracking-[0.15em] sm:tracking-[0.2em] text-slate-200">
                                 Next-gen Healthcare OS
                             </div>
-                            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-semibold leading-tight">
+                            <h1 className="text-2xl sm:text-3xl md:text-3xl lg:text-4xl font-semibold leading-tight">
                                 Design, deliver, and scale care from a single intelligent screen.
                             </h1>
-                            <p className="text-base text-slate-200 max-w-xl">
+                            <p className="text-base sm:text-base text-slate-200 max-w-xl">
                                 Health Track unifies clinical workflows, revenue operations, lab systems, and patient engagement with AI copilots built for regulated healthcare teams.
                             </p>
-                            <div className="flex flex-col sm:flex-row gap-4">
-                                <button onClick={() => navigate('/sign-in')} className="inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-2xl bg-white text-slate-900 font-semibold text-sm shadow-lg shadow-white/20">
+                            <div className="flex flex-col sm:flex-row gap-3">
+                                <button onClick={() => navigate('/sign-in')} className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl sm:rounded-2xl bg-white text-slate-900 font-semibold text-sm shadow-lg shadow-white/20">
                                     Launch Platform
                                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 12h14M12 5l7 7-7 7" />
@@ -224,7 +224,7 @@ function Homepage() {
                                 </button>
                             </div>
                         </div>
-                        <div className="relative hidden lg:flex lg:justify-center">
+                        <div className="relative flex justify-center mt-8 lg:mt-0">
                             <div className="w-full max-w-sm">
                             <div className="absolute -top-8 -left-6 w-36 h-36 bg-emerald-400/40 blur-3xl"></div>
                             <div className="relative rounded-[24px] border border-white/20 bg-white/5 p-4 backdrop-blur-2xl shadow-2xl">
@@ -321,89 +321,89 @@ function Homepage() {
                     </div>
                 </section>
 
-                <section id="platform" className="py-16 sm:py-20 lg:py-24 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-slate-50 to-white">
+                <section id="platform" className="py-12 sm:py-16 lg:py-24 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-slate-50 to-white">
                     <div className="max-w-7xl mx-auto">
-                        <div className="space-y-4 text-center mb-12">
+                        <div className="space-y-3 sm:space-y-4 text-center mb-8 sm:mb-12">
                             <div className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-50 to-green-50 text-gray-700 px-4 py-2 rounded-full text-sm font-semibold mb-4 border border-gray-200">
                                 <div className="w-2 h-2 bg-gradient-to-r from-blue-600 to-green-600 rounded-full animate-pulse"></div>
                                 Complete Healthcare Platform
                             </div>
-                            <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
+                            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 mb-3 sm:mb-4">
                                 Everything you need to modernize
-                                <span className="bg-gradient-to-r from-blue-600 to-green-600 bg-clip-text text-transparent block mt-2">healthcare delivery</span>
+                                <span className="bg-gradient-to-r from-blue-600 to-green-600 bg-clip-text text-transparent block mt-1 sm:mt-2">healthcare delivery</span>
                             </h2>
-                            <p className="text-lg text-gray-600 max-w-3xl mx-auto">
+                            <p className="text-base sm:text-lg text-gray-600 max-w-3xl mx-auto px-2">
                                 From patient registration to AI-powered diagnostics, Health Track provides comprehensive tools for every healthcare stakeholder.
                             </p>
                         </div>
                         
                         {/* Main Feature Categories */}
-                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
                             {/* For Hospitals */}
-                            <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-3xl p-6 border border-blue-200">
-                                <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center mb-4">
+                            <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-2xl sm:rounded-3xl p-4 sm:p-6 lg:p-4 border border-blue-200">
+                                <div className="w-12 h-12 sm:w-14 sm:h-14 lg:w-10 lg:h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center mb-3 sm:mb-4 lg:mb-2">
                                     <HospitalIcon />
                                 </div>
-                                <h3 className="text-xl font-bold text-gray-900 mb-3">For Hospitals</h3>
-                                <p className="text-gray-600 mb-4 leading-relaxed text-base">Complete administrative control with advanced analytics and streamlined operations.</p>
-                                <div className="space-y-3">
-                                    <div className="flex items-center gap-3 p-2 rounded-lg hover:bg-white/50 transition-colors">
+                                <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-2 sm:mb-3">For Hospitals</h3>
+                                <p className="text-gray-600 mb-3 sm:mb-4 lg:mb-2 leading-relaxed text-sm sm:text-base lg:text-sm">Complete administrative control with advanced analytics and streamlined operations.</p>
+                                <div className="space-y-2 sm:space-y-3">
+                                    <div className="flex items-center gap-2 sm:gap-3 lg:gap-2 p-1.5 sm:p-2 lg:p-1 rounded-lg text-left">
                                         <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                                        <span className="text-sm text-gray-700 font-medium">Doctor & Staff Management</span>
+                                        <span className="text-xs sm:text-sm text-gray-700 font-medium">Doctor & Staff Management</span>
                                     </div>
-                                    <div className="flex items-center gap-3 p-2 rounded-lg hover:bg-white/50 transition-colors">
+                                    <div className="flex items-center gap-2 sm:gap-3 p-1.5 sm:p-2 rounded-lg hover:bg-white/50 transition-colors">
                                         <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
-                                        <span className="text-sm text-gray-700 font-medium">Resource Optimization</span>
+                                        <span className="text-xs sm:text-sm text-gray-700 font-medium">Resource Optimization</span>
                                     </div>
-                                    <div className="flex items-center gap-3 p-2 rounded-lg hover:bg-white/50 transition-colors">
+                                    <div className="flex items-center gap-2 sm:gap-3 p-1.5 sm:p-2 rounded-lg hover:bg-white/50 transition-colors">
                                         <div className="w-2 h-2 bg-blue-700 rounded-full"></div>
-                                        <span className="text-sm text-gray-700 font-medium">Financial Analytics</span>
+                                        <span className="text-xs sm:text-sm text-gray-700 font-medium">Financial Analytics</span>
                                     </div>
                                 </div>
                             </div>
                             
                             {/* For Doctors */}
-                            <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-3xl p-6 border border-green-200">
-                                <div className="w-14 h-14 bg-gradient-to-br from-green-500 to-green-600 rounded-2xl flex items-center justify-center mb-4">
+                            <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-2xl sm:rounded-3xl p-4 sm:p-6 lg:p-4 border border-green-200">
+                                <div className="w-12 h-12 sm:w-14 sm:h-14 lg:w-10 lg:h-10 bg-gradient-to-br from-green-500 to-green-600 rounded-2xl flex items-center justify-center mb-3 sm:mb-4 lg:mb-2">
                                     <DoctorIcon />
                                 </div>
-                                <h3 className="text-xl font-bold text-gray-900 mb-3">For Doctors</h3>
-                                <p className="text-gray-600 mb-4 leading-relaxed text-base">AI-enhanced clinical tools for better diagnoses and patient care.</p>
-                                <div className="space-y-3">
-                                    <div className="flex items-center gap-3 p-2 rounded-lg hover:bg-white/50 transition-colors">
+                                <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-2 sm:mb-3">For Doctors</h3>
+                                <p className="text-gray-600 mb-3 sm:mb-4 lg:mb-2 leading-relaxed text-sm sm:text-base lg:text-sm">AI-enhanced clinical tools for better diagnoses and patient care.</p>
+                                <div className="space-y-2 sm:space-y-3">
+                                    <div className="flex items-center gap-2 sm:gap-3 lg:gap-2 p-1.5 sm:p-2 lg:p-1 rounded-lg text-left">
                                         <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                                        <span className="text-sm text-gray-700 font-medium">Smart Medical Records</span>
+                                        <span className="text-xs sm:text-sm text-gray-700 font-medium">Smart Medical Records</span>
                                     </div>
-                                    <div className="flex items-center gap-3 p-2 rounded-lg hover:bg-white/50 transition-colors">
+                                    <div className="flex items-center gap-2 sm:gap-3 p-1.5 sm:p-2 rounded-lg hover:bg-white/50 transition-colors">
                                         <div className="w-2 h-2 bg-green-600 rounded-full"></div>
-                                        <span className="text-sm text-gray-700 font-medium">AI Diagnostic Support</span>
+                                        <span className="text-xs sm:text-sm text-gray-700 font-medium">AI Diagnostic Support</span>
                                     </div>
-                                    <div className="flex items-center gap-3 p-2 rounded-lg hover:bg-white/50 transition-colors">
+                                    <div className="flex items-center gap-2 sm:gap-3 p-1.5 sm:p-2 rounded-lg hover:bg-white/50 transition-colors">
                                         <div className="w-2 h-2 bg-green-700 rounded-full"></div>
-                                        <span className="text-sm text-gray-700 font-medium">Prescription Management</span>
+                                        <span className="text-xs sm:text-sm text-gray-700 font-medium">Prescription Management</span>
                                     </div>
                                 </div>
                             </div>
                             
                             {/* For Patients */}
-                            <div className="bg-gradient-to-br from-red-50 to-rose-100 rounded-3xl p-6 border border-rose-200">
-                                <div className="w-14 h-14 bg-gradient-to-br from-rose-400 to-rose-500 rounded-2xl flex items-center justify-center mb-4">
+                            <div className="bg-gradient-to-br from-red-50 to-rose-100 rounded-2xl sm:rounded-3xl p-4 sm:p-6 lg:p-4 border border-rose-200">
+                                <div className="w-12 h-12 sm:w-14 sm:h-14 lg:w-10 lg:h-10 bg-gradient-to-br from-rose-400 to-rose-500 rounded-2xl flex items-center justify-center mb-3 sm:mb-4 lg:mb-2">
                                     <PatientIcon />
                                 </div>
-                                <h3 className="text-xl font-bold text-gray-900 mb-3">For Patients</h3>
-                                <p className="text-gray-600 mb-4 leading-relaxed text-base">Personalized health insights and seamless healthcare access.</p>
-                                <div className="space-y-3">
-                                    <div className="flex items-center gap-3 p-2 rounded-lg hover:bg-white/50 transition-colors">
+                                <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-2 sm:mb-3">For Patients</h3>
+                                <p className="text-gray-600 mb-3 sm:mb-4 lg:mb-2 leading-relaxed text-sm sm:text-base lg:text-sm">Personalized health insights and seamless healthcare access.</p>
+                                <div className="space-y-2 sm:space-y-3">
+                                    <div className="flex items-center gap-2 sm:gap-3 lg:gap-2 p-1.5 sm:p-2 lg:p-1 rounded-lg text-left">
                                         <div className="w-2 h-2 bg-rose-400 rounded-full"></div>
-                                        <span className="text-sm text-gray-700 font-medium">Personal Health Records</span>
+                                        <span className="text-xs sm:text-sm text-gray-700 font-medium">Personal Health Records</span>
                                     </div>
-                                    <div className="flex items-center gap-3 p-2 rounded-lg hover:bg-white/50 transition-colors">
+                                    <div className="flex items-center gap-2 sm:gap-3 p-1.5 sm:p-2 rounded-lg hover:bg-white/50 transition-colors">
                                         <div className="w-2 h-2 bg-rose-500 rounded-full"></div>
-                                        <span className="text-sm text-gray-700 font-medium">Health Monitoring</span>
+                                        <span className="text-xs sm:text-sm text-gray-700 font-medium">Health Monitoring</span>
                                     </div>
-                                    <div className="flex items-center gap-3 p-2 rounded-lg hover:bg-white/50 transition-colors">
+                                    <div className="flex items-center gap-2 sm:gap-3 p-1.5 sm:p-2 rounded-lg hover:bg-white/50 transition-colors">
                                         <div className="w-2 h-2 bg-rose-600 rounded-full"></div>
-                                        <span className="text-sm text-gray-700 font-medium">Smart Recommendations</span>
+                                        <span className="text-xs sm:text-sm text-gray-700 font-medium">Smart Recommendations</span>
                                     </div>
                                 </div>
                             </div>
@@ -411,23 +411,23 @@ function Homepage() {
                     </div>
                 </section>
 
-                <section id="insights" className="py-24 sm:py-28 lg:py-32 px-4 sm:px-6 lg:px-8 bg-slate-900 text-white">
+                <section id="insights" className="py-12 sm:py-20 lg:py-32 px-4 sm:px-6 lg:px-8 bg-slate-900 text-white">
                     <div className="max-w-6xl mx-auto">
-                        <div className="flex flex-col gap-4 mb-16 text-center">
-                            <p className="text-sm font-semibold tracking-[0.3em] text-emerald-300">INTELLIGENCE LAYER</p>
-                            <h2 className="text-3xl sm:text-4xl font-bold">AI copilots custom-built for healthcare regulation.</h2>
-                            <p className="text-lg text-white/70 max-w-3xl mx-auto">Compliance-locked automations analyze billions of data points daily to surface the next best action for every role.</p>
+                        <div className="flex flex-col gap-2.5 sm:gap-4 mb-8 sm:mb-16 text-center pb-6 sm:pb-8">
+                            <p className="text-xs sm:text-sm font-semibold tracking-[0.3em] text-emerald-300">INTELLIGENCE LAYER</p>
+                            <h2 className="text-2xl sm:text-4xl font-bold">AI copilots custom-built for healthcare regulation.</h2>
+                            <p className="text-sm sm:text-lg text-white/70 max-w-3xl mx-auto">Compliance-locked automations analyze billions of data points daily to surface the next best action for every role.</p>
                         </div>
-                        <div className="grid md:grid-cols-3 gap-8">
+                        <div className="grid md:grid-cols-3 gap-3 sm:gap-6 lg:gap-8">
                             {insightCards.map((insight) => {
                                 const Icon = insight.icon;
                                 return (
-                                    <div key={insight.title} className="p-8 rounded-3xl border border-white/10 bg-white/5">
-                                        <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${insight.accent} flex items-center justify-center text-white mb-6`}>
+                                    <div key={insight.title} className="p-4 sm:p-8 rounded-2xl sm:rounded-3xl border border-white/10 bg-white/5">
+                                        <div className={`w-10 h-10 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl bg-gradient-to-br ${insight.accent} flex items-center justify-center text-white mb-4 sm:mb-6`}>
                                             <Icon />
                                         </div>
-                                        <h3 className="text-xl font-semibold mb-3">{insight.title}</h3>
-                                        <p className="text-base text-white/80 leading-relaxed">{insight.description}</p>
+                                        <h3 className="text-base sm:text-xl font-semibold mb-2 sm:mb-3">{insight.title}</h3>
+                                        <p className="text-sm sm:text-base text-white/80 leading-relaxed">{insight.description}</p>
                                     </div>
                                 );
                             })}
@@ -435,9 +435,9 @@ function Homepage() {
                     </div>
                 </section>
 
-                <section id="trust" className="py-20 sm:py-24 px-4 sm:px-6 lg:px-8">
+                <section id="trust" className="py-12 sm:py-20 lg:py-24 px-4 sm:px-6 lg:px-8">
                     <div className="max-w-6xl mx-auto">
-                        <div className="rounded-3xl border border-slate-200 p-8 bg-gradient-to-br from-slate-900 to-blue-900 text-white max-w-4xl mx-auto">
+                        <div className="rounded-2xl sm:rounded-3xl border border-slate-200 p-5 sm:p-8 bg-gradient-to-br from-slate-900 to-blue-900 text-white max-w-4xl mx-auto">
                             <p className="text-sm font-semibold tracking-[0.3em] text-emerald-300 mb-6">PROOF OF TRUST</p>
                             <ul className="space-y-6 text-white/90">
                                 <li className="flex items-center justify-between text-lg font-semibold">
@@ -460,7 +460,7 @@ function Homepage() {
             </main>
 
             <footer className="bg-white border-t border-slate-200">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10">
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                         <div>
                             <p className="text-sm font-semibold text-slate-900">© 2025 Health Track</p>

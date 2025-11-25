@@ -99,9 +99,9 @@ const SignIn = () => {
     };
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50 flex items-center justify-center p-4 sm:p-6 lg:p-8">
+        <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50 flex items-center justify-center p-3 sm:p-6 lg:p-8">
             <div className="max-w-6xl w-full">
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8 items-center">
                     {/* Left Side - Branding/Info (Hidden on mobile) */}
                     <div className="hidden lg:flex flex-col justify-center space-y-8 pr-8">
                         <div>
@@ -156,17 +156,17 @@ const SignIn = () => {
                     </div>
 
                     {/* Right Side - Sign In Form */}
-                    <div className="max-w-md mx-auto w-full space-y-8">
+                    <div className="max-w-md mx-auto w-full space-y-4 sm:space-y-6 lg:space-y-8">
                         {/* Mobile Header */}
                         <div className="text-center lg:hidden">
-                            <div className="inline-flex items-center gap-3 mb-4">
-                                <div className="w-12 h-12 bg-gradient-to-br from-blue-600 to-green-600 rounded-xl flex items-center justify-center shadow-lg">
-                                    <CheckCircle2 className="w-6 h-6 text-white" strokeWidth={2.5} />
+                            <div className="inline-flex items-center gap-2.5 mb-3">
+                                <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-green-600 rounded-lg flex items-center justify-center shadow-lg">
+                                    <CheckCircle2 className="w-5 h-5 text-white" strokeWidth={2.5} />
                                 </div>
-                                <h1 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-green-600 bg-clip-text text-transparent">Health Track</h1>
+                                <h1 className="text-lg font-bold bg-gradient-to-r from-blue-600 to-green-600 bg-clip-text text-transparent">Health Track</h1>
                             </div>
-                            <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">Welcome Back</h2>
-                            <p className="text-gray-600">Sign in to your healthcare dashboard</p>
+                            <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-1.5">Welcome Back</h2>
+                            <p className="text-sm text-gray-600">Sign in to your healthcare dashboard</p>
                         </div>
 
                         {/* Desktop Header */}
@@ -176,8 +176,8 @@ const SignIn = () => {
                         </div>
 
                 {/* Sign In Form */}
-                <div className="bg-white rounded-2xl p-8 border border-gray-200">
-                    <form onSubmit={handleSubmit} className="space-y-6">
+                <div className="bg-white rounded-xl sm:rounded-2xl p-5 sm:p-8 border border-gray-200">
+                    <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
                         {/* General Error */}
                         {errors.general && (
                             <div className="bg-red-50 border border-red-200 rounded-lg p-4">
@@ -195,13 +195,13 @@ const SignIn = () => {
                             <label className="block text-sm font-medium text-gray-700 mb-2">
                                 Select Your Role
                             </label>
-                            <div className="grid grid-cols-4 gap-2">
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                                 {roles.map((role) => {
                                     const IconComponent = role.icon;
                                     return (
                                         <label
                                             key={role.value}
-                                            className={`relative flex flex-col items-center justify-center p-3 rounded-lg border-2 cursor-pointer transition-all duration-200 ${
+                                            className={`relative flex flex-col items-center justify-center p-2.5 sm:p-3 rounded-lg border-2 cursor-pointer transition-all duration-200 ${
                                                 formData.role === role.value
                                                     ? `${role.borderColor} ${role.bgColor}`
                                                     : 'border-gray-200 hover:border-gray-300 bg-white'
@@ -239,7 +239,7 @@ const SignIn = () => {
                                     type="email"
                                     value={formData.email}
                                     onChange={handleInputChange}
-                                    className={`w-full pl-12 pr-4 py-3 rounded-xl border-2 transition-all duration-200 focus:outline-none focus:ring-0 ${
+                                    className={`w-full pl-11 pr-4 py-2.5 sm:py-3 text-sm sm:text-base rounded-xl border-2 transition-all duration-200 focus:outline-none focus:ring-0 ${
                                         errors.email
                                             ? 'border-red-300 focus:border-red-500 bg-red-50/50'
                                             : 'border-gray-200 focus:border-blue-500 hover:border-gray-300'
@@ -287,7 +287,7 @@ const SignIn = () => {
                         <button
                             type="submit"
                             disabled={isLoading}
-                            className="mt-4 w-full bg-gradient-to-r from-blue-600 to-green-600 text-white py-3.5 px-4 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 group"
+                            className="mt-4 w-full bg-gradient-to-r from-blue-600 to-green-600 text-white py-3 sm:py-3.5 px-4 text-sm sm:text-base rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 group"
                         >
                             {isLoading ? (
                                 <div className="flex items-center justify-center gap-2">
