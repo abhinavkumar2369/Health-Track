@@ -267,6 +267,40 @@ export const pharmacistAPI = {
         });
         return response;
     },
+
+    // Get all reports
+    getReports: async () => {
+        const token = ensureToken();
+        const response = await apiRequest(`/pharmacist/reports?token=${token}`);
+        return response;
+    },
+
+    // Generate new report
+    generateReport: async (reportData) => {
+        const token = ensureToken();
+        const response = await apiRequest('/pharmacist/generate-report', {
+            method: 'POST',
+            body: JSON.stringify({ token, ...reportData }),
+        });
+        return response;
+    },
+
+    // Get report download URL
+    getReportDownloadUrl: async (reportId) => {
+        const token = ensureToken();
+        const response = await apiRequest(`/pharmacist/report-download/${reportId}?token=${token}`);
+        return response;
+    },
+
+    // Delete report
+    deleteReport: async (reportId) => {
+        const token = ensureToken();
+        const response = await apiRequest(`/pharmacist/report/${reportId}`, {
+            method: 'DELETE',
+            body: JSON.stringify({ token }),
+        });
+        return response;
+    },
 };
 
 export default {
