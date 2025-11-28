@@ -227,7 +227,7 @@ const SignUp = () => {
                                             ? 'border-red-300 focus:border-red-500 bg-red-50/50'
                                             : 'border-gray-200 focus:border-blue-500 hover:border-gray-300'
                                     }`}
-                                    placeholder="John Doe"
+                                    placeholder="Enter your full name"
                                 />
                             </div>
                             {errors.fullName && <p className="mt-2 text-sm text-red-600 flex items-center gap-1"><span className="w-1 h-1 bg-red-600 rounded-full"></span>{errors.fullName}</p>}

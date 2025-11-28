@@ -1,8 +1,7 @@
-![Health Track Banner](screenshots/health-track-banner.png)
+![Health Track Banner](docs/screenshots/health-track-banner.png)
 
 ## Overview ✨
 Health-Track is a modern healthcare management platform designed to streamline patient care, clinical workflows, and data analytics for hospitals, doctors, and patients.
-
 
 
 ## Features 🚀
@@ -15,18 +14,17 @@ Health-Track is a modern healthcare management platform designed to streamline p
 - Responsive, modern UI
 
 
-
 ## Screenshots 🖼️
 
 ### Homepage
-![homepage-1](screenshots/homepage-1.png)
-![homepage-2](screenshots/homepage-2.png)
-![homepage-3](screenshots/homepage-3.png)
-![homepage-4](screenshots/homepage-4.png)
+![homepage-1](docs/screenshots/homepage-1.png)
+![homepage-2](docs/screenshots/homepage-2.png)
+![homepage-3](docs/screenshots/homepage-3.png)
+![homepage-4](docs/screenshots/homepage-4.png)
 
 ### Authentication
-![Sign In Page](screenshots/sign-in.png)
-![Sign Up Page](screenshots/sign-up.png)
+![Sign In Page](docs/screenshots/sign-in.png)
+![Sign Up Page](docs/screenshots/sign-up.png)
 
 
 ## Technologies Used 🛠️
@@ -38,8 +36,6 @@ Health-Track is a modern healthcare management platform designed to streamline p
 - JWT (Authentication)
 
 ## Diagrams
-![Block Diagram 1](screenshots/block-diagram-1.jpg)
-
 
 ## Installation 💻
 1. Clone the repository:

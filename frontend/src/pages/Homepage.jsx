@@ -391,20 +391,20 @@ function Homepage() {
                                 </div>
                                 <h3 className="text-xl sm:text-2xl lg:text-xl font-bold text-gray-900 mb-3 sm:mb-4">Hospital Operations</h3>
                                 <p className="text-gray-600 mb-4 sm:mb-5 lg:mb-4 leading-relaxed text-sm sm:text-base">Comprehensive administrative control with real-time analytics and intelligent resource management.</p>
-                                <div className="space-y-3 sm:space-y-3.5">
-                                    <div className="flex items-start gap-3 text-left">
-                                        <div className="w-1.5 h-1.5 bg-blue-500 rounded-full mt-1.5 flex-shrink-0"></div>
+                                <ul className="space-y-3 sm:space-y-3.5">
+                                    <li className="flex items-center gap-3">
+                                        <div className="w-1.5 h-1.5 bg-blue-500 rounded-full flex-shrink-0"></div>
                                         <span className="text-sm sm:text-base text-gray-700">Centralized staff & doctor management</span>
-                                    </div>
-                                    <div className="flex items-start gap-3 text-left">
-                                        <div className="w-1.5 h-1.5 bg-blue-500 rounded-full mt-1.5 flex-shrink-0"></div>
+                                    </li>
+                                    <li className="flex items-center gap-3">
+                                        <div className="w-1.5 h-1.5 bg-blue-500 rounded-full flex-shrink-0"></div>
                                         <span className="text-sm sm:text-base text-gray-700">Advanced resource optimization</span>
-                                    </div>
-                                    <div className="flex items-start gap-3 text-left">
-                                        <div className="w-1.5 h-1.5 bg-blue-500 rounded-full mt-1.5 flex-shrink-0"></div>
+                                    </li>
+                                    <li className="flex items-center gap-3">
+                                        <div className="w-1.5 h-1.5 bg-blue-500 rounded-full flex-shrink-0"></div>
                                         <span className="text-sm sm:text-base text-gray-700">Real-time financial insights</span>
-                                    </div>
-                                </div>
+                                    </li>
+                                </ul>
                             </div>
                             
                             {/* For Doctors */}
@@ -414,20 +414,20 @@ function Homepage() {
                                 </div>
                                 <h3 className="text-xl sm:text-2xl lg:text-xl font-bold text-gray-900 mb-3 sm:mb-4">Clinical Excellence</h3>
                                 <p className="text-gray-600 mb-4 sm:mb-5 lg:mb-4 leading-relaxed text-sm sm:text-base">AI-powered tools designed to enhance diagnostic accuracy and streamline patient care delivery.</p>
-                                <div className="space-y-3 sm:space-y-3.5">
-                                    <div className="flex items-start gap-3 text-left">
-                                        <div className="w-1.5 h-1.5 bg-green-500 rounded-full mt-1.5 flex-shrink-0"></div>
+                                <ul className="space-y-3 sm:space-y-3.5">
+                                    <li className="flex items-center gap-3">
+                                        <div className="w-1.5 h-1.5 bg-green-500 rounded-full flex-shrink-0"></div>
                                         <span className="text-sm sm:text-base text-gray-700">Intelligent medical record system</span>
-                                    </div>
-                                    <div className="flex items-start gap-3 text-left">
-                                        <div className="w-1.5 h-1.5 bg-green-500 rounded-full mt-1.5 flex-shrink-0"></div>
+                                    </li>
+                                    <li className="flex items-center gap-3">
+                                        <div className="w-1.5 h-1.5 bg-green-500 rounded-full flex-shrink-0"></div>
                                         <span className="text-sm sm:text-base text-gray-700">AI-assisted diagnostic insights</span>
-                                    </div>
-                                    <div className="flex items-start gap-3 text-left">
-                                        <div className="w-1.5 h-1.5 bg-green-500 rounded-full mt-1.5 flex-shrink-0"></div>
+                                    </li>
+                                    <li className="flex items-center gap-3">
+                                        <div className="w-1.5 h-1.5 bg-green-500 rounded-full flex-shrink-0"></div>
                                         <span className="text-sm sm:text-base text-gray-700">Seamless prescription workflow</span>
-                                    </div>
-                                </div>
+                                    </li>
+                                </ul>
                             </div>
                             
                             {/* For Patients */}
@@ -437,20 +437,20 @@ function Homepage() {
                                 </div>
                                 <h3 className="text-xl sm:text-2xl lg:text-xl font-bold text-gray-900 mb-3 sm:mb-4">Patient Empowerment</h3>
                                 <p className="text-gray-600 mb-4 sm:mb-5 lg:mb-4 leading-relaxed text-sm sm:text-base">Personalized health tracking with actionable insights for proactive wellness management.</p>
-                                <div className="space-y-3 sm:space-y-3.5">
-                                    <div className="flex items-start gap-3 text-left">
-                                        <div className="w-1.5 h-1.5 bg-rose-500 rounded-full mt-1.5 flex-shrink-0"></div>
+                                <ul className="space-y-3 sm:space-y-3.5">
+                                    <li className="flex items-center gap-3">
+                                        <div className="w-1.5 h-1.5 bg-rose-500 rounded-full flex-shrink-0"></div>
                                         <span className="text-sm sm:text-base text-gray-700">Secure personal health records</span>
-                                    </div>
-                                    <div className="flex items-start gap-3 text-left">
-                                        <div className="w-1.5 h-1.5 bg-rose-500 rounded-full mt-1.5 flex-shrink-0"></div>
+                                    </li>
+                                    <li className="flex items-center gap-3">
+                                        <div className="w-1.5 h-1.5 bg-rose-500 rounded-full flex-shrink-0"></div>
                                         <span className="text-sm sm:text-base text-gray-700">Continuous health monitoring</span>
-                                    </div>
-                                    <div className="flex items-start gap-3 text-left">
-                                        <div className="w-1.5 h-1.5 bg-rose-500 rounded-full mt-1.5 flex-shrink-0"></div>
+                                    </li>
+                                    <li className="flex items-center gap-3">
+                                        <div className="w-1.5 h-1.5 bg-rose-500 rounded-full flex-shrink-0"></div>
                                         <span className="text-sm sm:text-base text-gray-700">Smart health recommendations</span>
-                                    </div>
-                                </div>
+                                    </li>
+                                </ul>
                             </div>
                         </div>
                     </div>
