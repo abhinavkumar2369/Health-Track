@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { adminAPI } from '../services/api';
 import authService from '../services/authService';
-import { LayoutDashboard, Stethoscope, Users, Pill, BarChart3, Settings, LogOut, User, Lock } from 'lucide-react';
+import { LayoutDashboard, Stethoscope, Users, Pill, BarChart3, Settings, LogOut, User, Lock, Plus } from 'lucide-react';
 
 const initialFormState = {
     email: '',
@@ -340,9 +340,7 @@ const AdminDashboard = () => {
                 {/* Logo */}
                 <div className="h-16 flex items-center px-6 border-b border-gray-200">
                     <div className="flex items-center space-x-3">
-                        <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-green-500 rounded-lg flex items-center justify-center">
-                            <span className="text-white text-sm font-bold">H</span>
-                        </div>
+                        <img src="/favicon.svg" alt="Health Track" className="w-8 h-8" />
                         <span className="text-lg font-bold text-gray-900">Health Track</span>
                     </div>
                 </div>
@@ -370,25 +368,16 @@ const AdminDashboard = () => {
 
                 {/* User Profile */}
                 <div className="p-4 border-t border-gray-200">
-                    <div className="flex items-center space-x-3 mb-3">
-                        <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
-                            <span className="text-white text-sm font-bold">
-                                {user?.email?.charAt(0).toUpperCase()}
-                            </span>
-                        </div>
-                        <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium text-gray-900 truncate">
-                                {user?.email || 'Admin'}
-                            </p>
-                            <p className="text-xs text-gray-500">Administrator</p>
-                        </div>
+                    <div className="mb-4">
+                        <p className="text-sm font-medium text-gray-900 truncate">{user?.email || 'mail@abhinavkumar.dev'}</p>
+                        <p className="text-xs text-gray-500 mt-0.5">Administrator</p>
                     </div>
                     <button
                         onClick={handleLogout}
-                        className="w-full flex items-center justify-center space-x-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm font-medium text-gray-700 transition-colors"
+                        className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-900 font-semibold bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors"
                     >
-                        <LogOut className="w-4 h-4" />
-                        <span>Log out</span>
+                        <LogOut className="w-4 h-4 text-gray-900" />
+                        <span className="text-gray-900 font-semibold">Log out</span>
                     </button>
                 </div>
             </div>
@@ -396,10 +385,7 @@ const AdminDashboard = () => {
             {/* Main Content */}
             <div className="flex-1 flex flex-col overflow-hidden">
                 {/* Header */}
-                <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-8">
-                    <h1 className="text-2xl font-bold text-gray-900 capitalize">
-                        {activeSection}
-                    </h1>
+                <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-end px-8">
                     <div className="text-sm text-gray-500">
                         {new Date().toLocaleDateString('en-US', { 
                             weekday: 'long', 
@@ -578,32 +564,22 @@ const AdminDashboard = () => {
                                     <p className="text-green-700">{successMessage}</p>
                                 </div>
                             )}
-                            
-                            <div className="flex justify-between items-center">
-                                <h2 className="text-2xl font-bold text-gray-900">Doctors Management</h2>
-                                <button
-                                    onClick={() => openAddUserModal('doctor')}
-                                    className="flex items-center space-x-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
-                                >
-                                    <span>+</span>
-                                    <span>Add Doctor</span>
-                                </button>
-                            </div>
 
+                            {/* Table Card */}
                             <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
                                 {loading ? (
-                                    <div className="p-12 text-center">
-                                        <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
-                                        <p className="text-gray-600 mt-4">Loading doctors...</p>
+                                    <div className="p-16 text-center">
+                                        <div className="w-10 h-10 border-2 border-gray-900 border-t-transparent rounded-full animate-spin mx-auto"></div>
+                                        <p className="text-gray-500 mt-4 text-sm">Loading doctors...</p>
                                     </div>
                                 ) : doctors.length === 0 ? (
-                                    <div className="p-12 text-center">
-                                        <div className="text-6xl mb-4">👨‍⚕️</div>
+                                    <div className="p-16 text-center">
+                                        <Stethoscope className="w-12 h-12 text-gray-300 mx-auto mb-4" />
                                         <h3 className="text-lg font-semibold text-gray-700 mb-2">No Doctors Found</h3>
-                                        <p className="text-gray-500 mb-4">Add your first doctor to get started</p>
+                                        <p className="text-gray-500 mb-6 text-sm">Add your first doctor to get started</p>
                                         <button
                                             onClick={() => openAddUserModal('doctor')}
-                                            className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                                            className="px-5 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 text-sm font-medium"
                                         >
                                             Add First Doctor
                                         </button>
@@ -611,28 +587,32 @@ const AdminDashboard = () => {
                                 ) : (
                                     <div className="overflow-x-auto">
                                         <table className="w-full">
-                                            <thead className="bg-gray-50 border-b border-gray-200">
-                                                <tr>
-                                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">ID</th>
-                                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
-                                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
-                                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Specialization</th>
-                                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Created</th>
-                                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                                            <thead>
+                                                <tr className="border-b border-gray-200">
+                                                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">ID</th>
+                                                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Name</th>
+                                                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Email</th>
+                                                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Specialization</th>
+                                                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Created</th>
+                                                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Actions</th>
                                                 </tr>
                                             </thead>
-                                            <tbody className="divide-y divide-gray-200">
+                                            <tbody className="divide-y divide-gray-100">
                                                 {doctors.map((doctor) => (
-                                                    <tr key={doctor.id} className="hover:bg-gray-50">
-                                                        <td className="px-6 py-4 text-sm font-medium text-gray-900">{doctor.uniqueId || doctor.id}</td>
-                                                        <td className="px-6 py-4 text-sm text-gray-900">{doctor.name || '—'}</td>
+                                                    <tr key={doctor.id} className="hover:bg-gray-50 transition-colors">
+                                                        <td className="px-6 py-4 text-sm font-mono text-gray-600">{doctor.uniqueId || doctor.id}</td>
+                                                        <td className="px-6 py-4 text-sm font-medium text-gray-900">{doctor.name || '—'}</td>
                                                         <td className="px-6 py-4 text-sm text-gray-600">{doctor.email || '—'}</td>
-                                                        <td className="px-6 py-4 text-sm text-gray-600">{doctor.specialization || '—'}</td>
-                                                        <td className="px-6 py-4 text-sm text-gray-600">{formatDisplayDate(doctor.createdAt)}</td>
-                                                        <td className="px-6 py-4 text-sm">
+                                                        <td className="px-6 py-4">
+                                                            <span className="inline-flex px-2.5 py-1 text-xs font-medium bg-blue-50 text-blue-700 rounded-full">
+                                                                {doctor.specialization || 'General'}
+                                                            </span>
+                                                        </td>
+                                                        <td className="px-6 py-4 text-sm text-gray-500">{formatDisplayDate(doctor.createdAt)}</td>
+                                                        <td className="px-6 py-4">
                                                             <button
                                                                 onClick={() => handleRemoveUser(doctor.id, 'doctor')}
-                                                                className="text-red-600 hover:text-red-800 font-medium"
+                                                                className="text-sm text-red-600 hover:text-red-700 font-medium hover:underline"
                                                             >
                                                                 Remove
                                                             </button>
@@ -660,32 +640,22 @@ const AdminDashboard = () => {
                                     <p className="text-green-700">{successMessage}</p>
                                 </div>
                             )}
-                            
-                            <div className="flex justify-between items-center">
-                                <h2 className="text-2xl font-bold text-gray-900">Patients Management</h2>
-                                <button
-                                    onClick={() => openAddUserModal('patient')}
-                                    className="flex items-center space-x-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
-                                >
-                                    <span>+</span>
-                                    <span>Add Patient</span>
-                                </button>
-                            </div>
 
+                            {/* Table Card */}
                             <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
                                 {loading ? (
-                                    <div className="p-12 text-center">
-                                        <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
-                                        <p className="text-gray-600 mt-4">Loading patients...</p>
+                                    <div className="p-16 text-center">
+                                        <div className="w-10 h-10 border-2 border-gray-900 border-t-transparent rounded-full animate-spin mx-auto"></div>
+                                        <p className="text-gray-500 mt-4 text-sm">Loading patients...</p>
                                     </div>
                                 ) : patients.length === 0 ? (
-                                    <div className="p-12 text-center">
-                                        <div className="text-6xl mb-4">👤</div>
+                                    <div className="p-16 text-center">
+                                        <Users className="w-12 h-12 text-gray-300 mx-auto mb-4" />
                                         <h3 className="text-lg font-semibold text-gray-700 mb-2">No Patients Found</h3>
-                                        <p className="text-gray-500 mb-4">Add your first patient to get started</p>
+                                        <p className="text-gray-500 mb-6 text-sm">Add your first patient to get started</p>
                                         <button
                                             onClick={() => openAddUserModal('patient')}
-                                            className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                                            className="px-5 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 text-sm font-medium"
                                         >
                                             Add First Patient
                                         </button>
@@ -693,28 +663,32 @@ const AdminDashboard = () => {
                                 ) : (
                                     <div className="overflow-x-auto">
                                         <table className="w-full">
-                                            <thead className="bg-gray-50 border-b border-gray-200">
-                                                <tr>
-                                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">ID</th>
-                                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
-                                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
-                                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Role</th>
-                                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Created</th>
-                                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                                            <thead>
+                                                <tr className="border-b border-gray-200">
+                                                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">ID</th>
+                                                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Name</th>
+                                                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Email</th>
+                                                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Status</th>
+                                                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Created</th>
+                                                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Actions</th>
                                                 </tr>
                                             </thead>
-                                            <tbody className="divide-y divide-gray-200">
+                                            <tbody className="divide-y divide-gray-100">
                                                 {patients.map((patient) => (
-                                                    <tr key={patient.id} className="hover:bg-gray-50">
-                                                        <td className="px-6 py-4 text-sm font-medium text-gray-900">{patient.uniqueId || patient.id}</td>
-                                                        <td className="px-6 py-4 text-sm text-gray-900">{patient.name || '—'}</td>
+                                                    <tr key={patient.id} className="hover:bg-gray-50 transition-colors">
+                                                        <td className="px-6 py-4 text-sm font-mono text-gray-600">{patient.uniqueId || patient.id}</td>
+                                                        <td className="px-6 py-4 text-sm font-medium text-gray-900">{patient.name || '—'}</td>
                                                         <td className="px-6 py-4 text-sm text-gray-600">{patient.email || '—'}</td>
-                                                        <td className="px-6 py-4 text-sm text-gray-600">Patient</td>
-                                                        <td className="px-6 py-4 text-sm text-gray-600">{formatDisplayDate(patient.createdAt)}</td>
-                                                        <td className="px-6 py-4 text-sm">
+                                                        <td className="px-6 py-4">
+                                                            <span className="inline-flex px-2.5 py-1 text-xs font-medium bg-green-50 text-green-700 rounded-full">
+                                                                Active
+                                                            </span>
+                                                        </td>
+                                                        <td className="px-6 py-4 text-sm text-gray-500">{formatDisplayDate(patient.createdAt)}</td>
+                                                        <td className="px-6 py-4">
                                                             <button
                                                                 onClick={() => handleRemoveUser(patient.id, 'patient')}
-                                                                className="text-red-600 hover:text-red-800 font-medium"
+                                                                className="text-sm text-red-600 hover:text-red-700 font-medium hover:underline"
                                                             >
                                                                 Remove
                                                             </button>
@@ -742,32 +716,22 @@ const AdminDashboard = () => {
                                     <p className="text-green-700">{successMessage}</p>
                                 </div>
                             )}
-                            
-                            <div className="flex justify-between items-center">
-                                <h2 className="text-2xl font-bold text-gray-900">Pharmacists Management</h2>
-                                <button
-                                    onClick={() => openAddUserModal('pharmacist')}
-                                    className="flex items-center space-x-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
-                                >
-                                    <span>+</span>
-                                    <span>Add Pharmacist</span>
-                                </button>
-                            </div>
 
+                            {/* Table Card */}
                             <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
                                 {loading ? (
-                                    <div className="p-12 text-center">
-                                        <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
-                                        <p className="text-gray-600 mt-4">Loading pharmacists...</p>
+                                    <div className="p-16 text-center">
+                                        <div className="w-10 h-10 border-2 border-gray-900 border-t-transparent rounded-full animate-spin mx-auto"></div>
+                                        <p className="text-gray-500 mt-4 text-sm">Loading pharmacists...</p>
                                     </div>
                                 ) : pharmacists.length === 0 ? (
-                                    <div className="p-12 text-center">
-                                        <div className="text-6xl mb-4">💊</div>
+                                    <div className="p-16 text-center">
+                                        <Pill className="w-12 h-12 text-gray-300 mx-auto mb-4" />
                                         <h3 className="text-lg font-semibold text-gray-700 mb-2">No Pharmacists Found</h3>
-                                        <p className="text-gray-500 mb-4">Add your first pharmacist to get started</p>
+                                        <p className="text-gray-500 mb-6 text-sm">Add your first pharmacist to get started</p>
                                         <button
                                             onClick={() => openAddUserModal('pharmacist')}
-                                            className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                                            className="px-5 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 text-sm font-medium"
                                         >
                                             Add First Pharmacist
                                         </button>
@@ -775,28 +739,32 @@ const AdminDashboard = () => {
                                 ) : (
                                     <div className="overflow-x-auto">
                                         <table className="w-full">
-                                            <thead className="bg-gray-50 border-b border-gray-200">
-                                                <tr>
-                                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">ID</th>
-                                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
-                                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
-                                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Role</th>
-                                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Created</th>
-                                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                                            <thead>
+                                                <tr className="border-b border-gray-200">
+                                                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">ID</th>
+                                                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Name</th>
+                                                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Email</th>
+                                                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Status</th>
+                                                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Created</th>
+                                                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Actions</th>
                                                 </tr>
                                             </thead>
-                                            <tbody className="divide-y divide-gray-200">
+                                            <tbody className="divide-y divide-gray-100">
                                                 {pharmacists.map((pharmacist) => (
-                                                    <tr key={pharmacist.id} className="hover:bg-gray-50">
-                                                        <td className="px-6 py-4 text-sm font-medium text-gray-900">{pharmacist.uniqueId || pharmacist.id}</td>
-                                                        <td className="px-6 py-4 text-sm text-gray-900">{pharmacist.name || '—'}</td>
+                                                    <tr key={pharmacist.id} className="hover:bg-gray-50 transition-colors">
+                                                        <td className="px-6 py-4 text-sm font-mono text-gray-600">{pharmacist.uniqueId || pharmacist.id}</td>
+                                                        <td className="px-6 py-4 text-sm font-medium text-gray-900">{pharmacist.name || '—'}</td>
                                                         <td className="px-6 py-4 text-sm text-gray-600">{pharmacist.email || '—'}</td>
-                                                        <td className="px-6 py-4 text-sm text-gray-600">Pharmacist</td>
-                                                        <td className="px-6 py-4 text-sm text-gray-600">{formatDisplayDate(pharmacist.createdAt)}</td>
-                                                        <td className="px-6 py-4 text-sm">
+                                                        <td className="px-6 py-4">
+                                                            <span className="inline-flex px-2.5 py-1 text-xs font-medium bg-purple-50 text-purple-700 rounded-full">
+                                                                Active
+                                                            </span>
+                                                        </td>
+                                                        <td className="px-6 py-4 text-sm text-gray-500">{formatDisplayDate(pharmacist.createdAt)}</td>
+                                                        <td className="px-6 py-4">
                                                             <button
                                                                 onClick={() => handleRemoveUser(pharmacist.id, 'pharmacist')}
-                                                                className="text-red-600 hover:text-red-800 font-medium"
+                                                                className="text-sm text-red-600 hover:text-red-700 font-medium hover:underline"
                                                             >
                                                                 Remove
                                                             </button>

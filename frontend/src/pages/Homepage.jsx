@@ -9,7 +9,9 @@ import {
     TrendingUp,
     FileText,
     FlaskConical,
-    Brain
+    Brain,
+    Menu,
+    X
 } from 'lucide-react';
 
 /* ========================================
@@ -59,6 +61,7 @@ const AIIcon = () => (
 function Homepage() {
     const navigate = useNavigate();
     const [isScrolled, setIsScrolled] = useState(false);
+    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
     useEffect(() => {
         const handleScroll = () => {
@@ -158,7 +161,7 @@ function Homepage() {
     return (
         <div className="min-h-screen bg-slate-50 text-gray-900">
             <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${isScrolled ? 'bg-white/95 backdrop-blur-xl shadow-xl border-b border-slate-200' : 'bg-white/70 backdrop-blur-md border-b border-transparent'}`}>
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
                     <div className="flex items-center justify-between h-[4.5rem] md:h-[5.25rem]">
                         <div className="flex items-center gap-4 group">
                             <div className="relative">
@@ -183,11 +186,53 @@ function Homepage() {
                             <button onClick={() => navigate('/sign-in')} className="hidden md:inline-flex items-center px-5 py-2.5 rounded-xl border border-slate-200 text-sm font-semibold text-slate-700 hover:text-blue-600 hover:border-blue-300 transition-all">
                                 Sign In
                             </button>
-                            <button onClick={() => navigate('/sign-up')} className="inline-flex items-center px-5 py-2.5 rounded-xl text-sm font-semibold text-white bg-gradient-to-r from-blue-600 to-emerald-500 shadow-lg shadow-blue-500/30 hover:translate-y-[-2px] transition-all">
+                            <button onClick={() => navigate('/sign-up')} className="hidden md:inline-flex items-center px-5 py-2.5 rounded-xl text-sm font-semibold text-white bg-gradient-to-r from-blue-600 to-emerald-500 shadow-lg shadow-blue-500/30 hover:translate-y-[-2px] transition-all">
                                 Create Account
+                            </button>
+                            {/* Mobile Menu Button */}
+                            <button 
+                                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                                className={`md:hidden p-2.5 rounded-xl border text-slate-700 transition-all ${isMobileMenuOpen ? 'border-slate-300 bg-slate-100 shadow-inner' : 'border-transparent hover:border-slate-200 hover:bg-slate-50'}`}
+                                aria-label="Toggle navigation menu"
+                            >
+                                {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
                             </button>
                         </div>
                     </div>
+
+                    {/* Mobile Menu */}
+                    {isMobileMenuOpen && (
+                        <div className="md:hidden absolute left-0 right-0 mt-3">
+                            <div className="mx-4 rounded-2xl border border-slate-200 bg-white/95 backdrop-blur-xl shadow-[0_20px_45px_rgba(15,23,42,0.12)]">
+                                <nav className="flex flex-col py-4 px-4 space-y-2">
+                                    {navItems.map((item) => (
+                                        <a 
+                                            key={item.label} 
+                                            href={item.href} 
+                                            className="px-4 py-3 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-all"
+                                            onClick={() => setIsMobileMenuOpen(false)}
+                                        >
+                                            {item.label}
+                                        </a>
+                                    ))}
+                                    <div className="pt-4 border-t border-slate-100 space-y-2">
+                                        <button 
+                                            onClick={() => { navigate('/sign-in'); setIsMobileMenuOpen(false); }} 
+                                            className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm font-semibold text-slate-700 hover:text-blue-600 hover:border-blue-300 transition-all"
+                                        >
+                                            Sign In
+                                        </button>
+                                        <button 
+                                            onClick={() => { navigate('/sign-up'); setIsMobileMenuOpen(false); }} 
+                                            className="w-full px-4 py-2.5 rounded-xl text-sm font-semibold text-white bg-gradient-to-r from-blue-600 to-emerald-500 shadow-lg shadow-blue-500/30 hover:translate-y-[-1px] transition-all"
+                                        >
+                                            Create Account
+                                        </button>
+                                    </div>
+                                </nav>
+                            </div>
+                        </div>
+                    )}
                 </div>
             </header>
 
@@ -435,22 +480,47 @@ function Homepage() {
                     </div>
                 </section>
 
-                <section id="trust" className="py-20 sm:py-20 lg:py-24 px-4 sm:px-6 lg:px-8">
-                    <div className="max-w-6xl mx-auto">
-                        <div className="rounded-2xl sm:rounded-3xl border border-slate-200 p-5 sm:p-8 bg-gradient-to-br from-slate-900 to-blue-900 text-white max-w-4xl mx-auto">
-                            <p className="text-sm font-semibold tracking-[0.3em] text-emerald-300 mb-6">PROOF OF TRUST</p>
-                            <ul className="space-y-6 text-white/90">
-                                <li className="flex items-center justify-between text-lg font-semibold">
-                                    SOC 2 Type II & ISO 27001 ready <span className="text-sm text-emerald-300">Audited quarterly</span>
+                <section id="trust" className="py-16 sm:py-20 lg:py-24 px-4 sm:px-6 lg:px-8">
+                    <div className="max-w-3xl mx-auto">
+                        <div className="rounded-2xl sm:rounded-3xl border border-slate-700 p-6 sm:p-10 lg:p-12 bg-slate-900 text-white">
+                            {/* Header */}
+                            <div className="text-center mb-8">
+                                <p className="text-xs sm:text-sm font-semibold tracking-[0.25em] text-emerald-400 mb-3">PROOF OF TRUST</p>
+                            </div>
+                            
+                            {/* Trust Items */}
+                            <ul className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                                <li className="flex items-center gap-3 text-sm sm:text-base text-white/90">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 flex-shrink-0"></span>
+                                    SOC 2 Type II & ISO 27001
                                 </li>
-                                <li className="flex items-center justify-between text-lg font-semibold">
-                                    99.99% uptime <span className="text-sm text-emerald-300">Multi-cloud active-active</span>
+                                <li className="flex items-center gap-3 text-sm sm:text-base text-white/90">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 flex-shrink-0"></span>
+                                    Audited quarterly
                                 </li>
-                                <li className="flex items-center justify-between text-lg font-semibold">
-                                    6-week average launch <span className="text-sm text-emerald-300">Dedicated concierge</span>
+                                <li className="flex items-center gap-3 text-sm sm:text-base text-white/90">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 flex-shrink-0"></span>
+                                    99.99% Uptime
                                 </li>
-                                <li className="flex items-center justify-between text-lg font-semibold">
-                                    HIPAA, GDPR, NDHM aligned <span className="text-sm text-emerald-300">Audit trails baked-in</span>
+                                <li className="flex items-center gap-3 text-sm sm:text-base text-white/90">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 flex-shrink-0"></span>
+                                    Multi-cloud active-active
+                                </li>
+                                <li className="flex items-center gap-3 text-sm sm:text-base text-white/90">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 flex-shrink-0"></span>
+                                    6-Week Average Launch
+                                </li>
+                                <li className="flex items-center gap-3 text-sm sm:text-base text-white/90">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 flex-shrink-0"></span>
+                                    Dedicated concierge
+                                </li>
+                                <li className="flex items-center gap-3 text-sm sm:text-base text-white/90">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 flex-shrink-0"></span>
+                                    HIPAA, GDPR, NDHM Aligned
+                                </li>
+                                <li className="flex items-center gap-3 text-sm sm:text-base text-white/90">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 flex-shrink-0"></span>
+                                    Audit trails baked-in
                                 </li>
                             </ul>
                         </div>

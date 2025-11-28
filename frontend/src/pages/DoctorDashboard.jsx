@@ -187,11 +187,7 @@ const DoctorDashboard = () => {
                     <div className="flex justify-between items-center h-16">
                         <div className="flex items-center">
                             <div className="flex items-center">
-                                <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-green-500 rounded-lg flex items-center justify-center mr-2 sm:mr-3">
-                                    <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                    </svg>
-                                </div>
+                                <img src="/favicon.svg" alt="Health Track" className="w-8 h-8 mr-2 sm:mr-3" />
                                 <h1 className="text-lg sm:text-xl font-bold text-gray-900">Doctor Panel</h1>
                             </div>
                         </div>

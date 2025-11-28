@@ -6,6 +6,7 @@ import AdminDashboard from './pages/AdminDashboard';
 import DoctorDashboard from './pages/DoctorDashboard';
 import PatientDashboard from './pages/PatientDashboard';
 import PharmacistDashboard from './pages/PharmacistDashboard';
+import NotFound from './pages/NotFound';
 
 // Protected Route Component
 const ProtectedRoute = ({ children, allowedRole }) => {
@@ -66,8 +67,8 @@ function App() {
           } 
         />
         
-        {/* Catch all route - redirect to home */}
-        <Route path="*" element={<Navigate to="/" replace />} />
+        {/* 404 - Page Not Found */}
+        <Route path="*" element={<NotFound />} />
       </Routes>
     </Router>
   );
