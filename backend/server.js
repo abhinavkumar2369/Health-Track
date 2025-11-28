@@ -10,9 +10,19 @@ import pharmacistRoutes from "./routes/pharmacistRoutes.js";
 import documentRoutes from "./routes/documentRoutes.js";
 
 dotenv.config();
-connectDB();
 
 const app = express();
+
+// Connect to DB on each request for serverless
+app.use(async (req, res, next) => {
+  try {
+    await connectDB();
+    next();
+  } catch (error) {
+    console.error("Database connection error:", error);
+    res.status(500).json({ success: false, message: "Database connection failed" });
+  }
+});
 
 // Function to get local IP address
 const getLocalIP = () => {
