@@ -115,7 +115,7 @@ const SignUp = () => {
     const passwordValidation = validatePassword(formData.password);
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50 flex items-center justify-center p-3 sm:p-6 lg:p-8">
+        <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50 flex items-center justify-center p-4 sm:p-6 lg:p-8">
             <div className="max-w-6xl w-full">
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8 items-center">
                     {/* Left Side - Branding/Info (Hidden on mobile) */}
@@ -172,33 +172,34 @@ const SignUp = () => {
                     </div>
 
                     {/* Right Side - Sign Up Form */}
-                    <div className="max-w-md mx-auto w-full space-y-4 sm:space-y-6 lg:space-y-8">
-                        {/* Mobile Header */}
-                        <div className="text-center lg:hidden">
-                            <div className="inline-flex items-center gap-2.5 mb-3">
-                                <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-green-600 rounded-lg flex items-center justify-center shadow-lg">
-                                    <CheckCircle2 className="w-5 h-5 text-white" strokeWidth={2.5} />
+                    <div className="max-w-md mx-auto w-full space-y-5 sm:space-y-6 lg:space-y-8">
+                        {/* Mobile Header - Enhanced */}
+                        <div className="lg:hidden">
+                            <div className="text-center">
+                                <div className="inline-flex items-center gap-3 mb-4">
+                                    <div className="w-12 h-12 bg-gradient-to-br from-blue-600 to-green-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/20">
+                                        <CheckCircle2 className="w-6 h-6 text-white" strokeWidth={2.5} />
+                                    </div>
+                                    <h1 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-green-600 bg-clip-text text-transparent">Health Track</h1>
                                 </div>
-                                <h1 className="text-lg font-bold bg-gradient-to-r from-blue-600 to-green-600 bg-clip-text text-transparent">Health Track</h1>
+                                <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">Create Account</h2>
+                                <p className="text-sm text-gray-500">Setup your administrator profile</p>
                             </div>
-                            <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-1.5">Create Admin Account</h2>
-                            <p className="text-sm text-gray-600">Setup your administrator profile</p>
                         </div>
 
                         {/* Desktop Header */}
                         <div className="hidden lg:block text-center">
                             <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">Admin Registration</h2>
-                            <p className="text-gray-600">Create your administrator account</p>
                         </div>
 
                 {/* Sign Up Form */}
-                <div className="bg-white rounded-xl sm:rounded-2xl p-5 sm:p-8 border border-gray-200">
-                    <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
+                <div className="bg-white rounded-2xl p-5 sm:p-8 border border-gray-200 shadow-xl shadow-gray-100/50">
+                    <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5">
                         {/* General Error */}
                         {errors.general && (
-                            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                            <div className="bg-red-50 border border-red-200 rounded-xl p-3.5">
                                 <div className="flex items-center">
-                                    <svg className="w-5 h-5 text-red-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <svg className="w-5 h-5 text-red-500 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                                     </svg>
                                     <span className="text-red-700 text-sm">{errors.general}</span>
@@ -208,7 +209,7 @@ const SignUp = () => {
 
                         {/* Full Name */}
                         <div>
-                            <label htmlFor="fullName" className="block text-sm font-medium text-gray-700 mb-2">
+                            <label htmlFor="fullName" className="block text-sm font-semibold text-gray-700 mb-2">
                                 Full Name
                             </label>
                             <div className="relative">
@@ -221,7 +222,7 @@ const SignUp = () => {
                                     type="text"
                                     value={formData.fullName}
                                     onChange={handleInputChange}
-                                    className={`w-full pl-11 pr-4 py-2.5 sm:py-3 text-sm sm:text-base rounded-xl border-2 transition-all duration-200 focus:outline-none focus:ring-0 ${
+                                    className={`w-full pl-12 pr-4 py-3 sm:py-3.5 text-sm sm:text-base rounded-xl border-2 transition-all duration-200 focus:outline-none focus:ring-0 ${
                                         errors.fullName
                                             ? 'border-red-300 focus:border-red-500 bg-red-50/50'
                                             : 'border-gray-200 focus:border-blue-500 hover:border-gray-300'
@@ -229,12 +230,12 @@ const SignUp = () => {
                                     placeholder="John Doe"
                                 />
                             </div>
-                            {errors.fullName && <p className="mt-1.5 text-sm text-red-600 flex items-center gap-1"><span className="w-1 h-1 bg-red-600 rounded-full"></span>{errors.fullName}</p>}
+                            {errors.fullName && <p className="mt-2 text-sm text-red-600 flex items-center gap-1"><span className="w-1 h-1 bg-red-600 rounded-full"></span>{errors.fullName}</p>}
                         </div>
 
                         {/* Email */}
                         <div>
-                            <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+                            <label htmlFor="email" className="block text-sm font-semibold text-gray-700 mb-2">
                                 Email Address
                             </label>
                             <div className="relative">
@@ -247,7 +248,7 @@ const SignUp = () => {
                                     type="email"
                                     value={formData.email}
                                     onChange={handleInputChange}
-                                    className={`w-full pl-11 pr-4 py-2.5 sm:py-3 text-sm sm:text-base rounded-xl border-2 transition-all duration-200 focus:outline-none focus:ring-0 ${
+                                    className={`w-full pl-12 pr-4 py-3 sm:py-3.5 text-sm sm:text-base rounded-xl border-2 transition-all duration-200 focus:outline-none focus:ring-0 ${
                                         errors.email
                                             ? 'border-red-300 focus:border-red-500 bg-red-50/50'
                                             : 'border-gray-200 focus:border-blue-500 hover:border-gray-300'
@@ -255,78 +256,65 @@ const SignUp = () => {
                                     placeholder="admin@example.com"
                                 />
                             </div>
-                            {errors.email && <p className="mt-1.5 text-sm text-red-600 flex items-center gap-1"><span className="w-1 h-1 bg-red-600 rounded-full"></span>{errors.email}</p>}
+                            {errors.email && <p className="mt-2 text-sm text-red-600 flex items-center gap-1"><span className="w-1 h-1 bg-red-600 rounded-full"></span>{errors.email}</p>}
                         </div>
 
                         {/* Password */}
                         <div>
-                            <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
+                            <label htmlFor="password" className="block text-sm font-semibold text-gray-700 mb-2">
                                 Password
                             </label>
                             <div className="relative">
+                                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                                    <Lock className="w-5 h-5 text-gray-400" strokeWidth={2} />
+                                </div>
                                 <input
                                     id="password"
                                     name="password"
                                     type={showPassword ? 'text' : 'password'}
                                     value={formData.password}
                                     onChange={handleInputChange}
-                                    className={`w-full px-4 py-2.5 sm:py-3 pr-11 text-sm sm:text-base rounded-xl border-2 transition-colors duration-200 focus:outline-none focus:ring-0 ${
+                                    className={`w-full pl-12 pr-12 py-3 sm:py-3.5 text-sm sm:text-base rounded-xl border-2 transition-colors duration-200 focus:outline-none focus:ring-0 ${
                                         errors.password
-                                            ? 'border-red-300 focus:border-red-500'
-                                            : 'border-gray-200 focus:border-blue-500'
+                                            ? 'border-red-300 focus:border-red-500 bg-red-50/50'
+                                            : 'border-gray-200 focus:border-blue-500 hover:border-gray-300'
                                     }`}
                                     placeholder="Create a strong password"
                                 />
                                 <button
                                     type="button"
                                     onClick={() => setShowPassword(!showPassword)}
-                                    className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                                    className="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-400 hover:text-gray-600 transition-colors"
                                 >
-                                    <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        {showPassword ? (
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L8.464 8.464M18.364 5.636L8.464 8.464m9.9-2.828l-1.414 1.414" />
-                                        ) : (
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                        )}
-                                    </svg>
+                                    {showPassword ? <EyeOff className="w-5 h-5" strokeWidth={2} /> : <Eye className="w-5 h-5" strokeWidth={2} />}
                                 </button>
                             </div>
-                            {errors.password && <p className="mt-1 text-sm text-red-600">{errors.password}</p>}
+                            {errors.password && <p className="mt-2 text-sm text-red-600 flex items-center gap-1"><span className="w-1 h-1 bg-red-600 rounded-full"></span>{errors.password}</p>}
                             
                             {/* Password Requirements */}
                             {formData.password && (
-                                <div className="mt-2.5 sm:mt-3 space-y-1.5">
-                                    <p className="text-xs sm:text-sm font-medium text-gray-700">Password Requirements:</p>
-                                    <div className="grid grid-cols-1 gap-0.5 text-xs">
-                                        <div className={`flex items-center ${passwordValidation.minLength ? 'text-green-600' : 'text-gray-400'}`}>
-                                            <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                                            </svg>
-                                            At least 8 characters
+                                <div className="mt-3 p-3 bg-gray-50 rounded-xl border border-gray-100">
+                                    <p className="text-xs font-semibold text-gray-700 mb-2">Password Requirements:</p>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 text-xs">
+                                        <div className={`flex items-center gap-1.5 ${passwordValidation.minLength ? 'text-green-600' : 'text-gray-400'}`}>
+                                            <Check className={`w-3.5 h-3.5 ${passwordValidation.minLength ? 'text-green-500' : 'text-gray-300'}`} strokeWidth={2.5} />
+                                            <span>8+ characters</span>
                                         </div>
-                                        <div className={`flex items-center ${passwordValidation.hasUppercase ? 'text-green-600' : 'text-gray-400'}`}>
-                                            <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                                            </svg>
-                                            One uppercase letter
+                                        <div className={`flex items-center gap-1.5 ${passwordValidation.hasUppercase ? 'text-green-600' : 'text-gray-400'}`}>
+                                            <Check className={`w-3.5 h-3.5 ${passwordValidation.hasUppercase ? 'text-green-500' : 'text-gray-300'}`} strokeWidth={2.5} />
+                                            <span>Uppercase</span>
                                         </div>
-                                        <div className={`flex items-center ${passwordValidation.hasLowercase ? 'text-green-600' : 'text-gray-400'}`}>
-                                            <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                                            </svg>
-                                            One lowercase letter
+                                        <div className={`flex items-center gap-1.5 ${passwordValidation.hasLowercase ? 'text-green-600' : 'text-gray-400'}`}>
+                                            <Check className={`w-3.5 h-3.5 ${passwordValidation.hasLowercase ? 'text-green-500' : 'text-gray-300'}`} strokeWidth={2.5} />
+                                            <span>Lowercase</span>
                                         </div>
-                                        <div className={`flex items-center ${passwordValidation.hasNumber ? 'text-green-600' : 'text-gray-400'}`}>
-                                            <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                                            </svg>
-                                            One number
+                                        <div className={`flex items-center gap-1.5 ${passwordValidation.hasNumber ? 'text-green-600' : 'text-gray-400'}`}>
+                                            <Check className={`w-3.5 h-3.5 ${passwordValidation.hasNumber ? 'text-green-500' : 'text-gray-300'}`} strokeWidth={2.5} />
+                                            <span>Number</span>
                                         </div>
-                                        <div className={`flex items-center ${passwordValidation.hasSpecialChar ? 'text-green-600' : 'text-gray-400'}`}>
-                                            <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                                            </svg>
-                                            One special character
+                                        <div className={`flex items-center gap-1.5 ${passwordValidation.hasSpecialChar ? 'text-green-600' : 'text-gray-400'}`}>
+                                            <Check className={`w-3.5 h-3.5 ${passwordValidation.hasSpecialChar ? 'text-green-500' : 'text-gray-300'}`} strokeWidth={2.5} />
+                                            <span>Special char</span>
                                         </div>
                                     </div>
                                 </div>
@@ -335,7 +323,7 @@ const SignUp = () => {
 
                         {/* Confirm Password */}
                         <div>
-                            <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-2">
+                            <label htmlFor="confirmPassword" className="block text-sm font-semibold text-gray-700 mb-2">
                                 Confirm Password
                             </label>
                             <div className="relative">
@@ -348,7 +336,7 @@ const SignUp = () => {
                                     type={showConfirmPassword ? 'text' : 'password'}
                                     value={formData.confirmPassword}
                                     onChange={handleInputChange}
-                                    className={`w-full pl-11 pr-11 py-2.5 sm:py-3 text-sm sm:text-base rounded-xl border-2 transition-all duration-200 focus:outline-none focus:ring-0 ${
+                                    className={`w-full pl-12 pr-12 py-3 sm:py-3.5 text-sm sm:text-base rounded-xl border-2 transition-all duration-200 focus:outline-none focus:ring-0 ${
                                         errors.confirmPassword
                                             ? 'border-red-300 focus:border-red-500 bg-red-50/50'
                                             : 'border-gray-200 focus:border-blue-500 hover:border-gray-300'
@@ -363,14 +351,14 @@ const SignUp = () => {
                                     {showConfirmPassword ? <EyeOff className="w-5 h-5" strokeWidth={2} /> : <Eye className="w-5 h-5" strokeWidth={2} />}
                                 </button>
                             </div>
-                            {errors.confirmPassword && <p className="mt-1.5 text-sm text-red-600 flex items-center gap-1"><span className="w-1 h-1 bg-red-600 rounded-full"></span>{errors.confirmPassword}</p>}
+                            {errors.confirmPassword && <p className="mt-2 text-sm text-red-600 flex items-center gap-1"><span className="w-1 h-1 bg-red-600 rounded-full"></span>{errors.confirmPassword}</p>}
                         </div>
 
                         {/* Submit Button */}
                         <button
                             type="submit"
                             disabled={isLoading}
-                            className="w-full bg-gradient-to-r from-blue-600 to-green-600 text-white py-3 sm:py-3.5 px-4 text-sm sm:text-base rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 group mt-4 sm:mt-6"
+                            className="w-full bg-gradient-to-r from-blue-600 to-green-600 text-white py-3.5 sm:py-4 px-4 text-sm sm:text-base rounded-xl font-semibold shadow-lg shadow-blue-500/25 hover:shadow-xl hover:shadow-blue-500/30 transition-all duration-300 hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 group mt-2"
                         >
                             {isLoading ? (
                                 <div className="flex items-center justify-center gap-2">
@@ -384,8 +372,29 @@ const SignUp = () => {
                                 </div>
                             )}
                         </button>
+
+                        {/* Sign In Link */}
+                        <div className="text-center pt-2">
+                            <p className="text-sm text-gray-500">
+                                Already have an account?{' '}
+                                <button 
+                                    type="button"
+                                    onClick={() => navigate('/sign-in')}
+                                    className="font-semibold text-blue-600 hover:text-blue-700 transition-colors"
+                                >
+                                    Sign In
+                                </button>
+                            </p>
+                        </div>
                         
                     </form>
+                </div>
+
+                {/* Mobile Footer */}
+                <div className="lg:hidden text-center pt-4">
+                    <p className="text-xs text-gray-400">
+                        Protected by industry-standard encryption
+                    </p>
                 </div>
             </div>
         </div>

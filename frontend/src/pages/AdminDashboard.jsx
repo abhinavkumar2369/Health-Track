@@ -1063,7 +1063,9 @@ const AdminDashboard = () => {
 
                     {/* Settings Section */}
                     {activeSection === 'settings' && (
-                        <div className="max-w-4xl space-y-4 sm:space-y-6">
+                        <div className="space-y-4 sm:space-y-6">
+                            <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Settings</h2>
+
                             {error && (
                                 <div className="bg-red-50 border border-red-200 rounded-lg p-3">
                                     <p className="text-red-700 text-sm">{error}</p>
@@ -1075,110 +1077,86 @@ const AdminDashboard = () => {
                                 </div>
                             )}
 
-                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
-                                {/* Profile Settings */}
-                                <div className="bg-white rounded-xl border border-gray-200 p-4 sm:p-5">
-                                    <div className="flex items-center space-x-2 mb-4">
-                                        <User className="w-5 h-5 text-blue-600" />
-                                        <h3 className="text-base sm:text-lg font-semibold text-gray-900">Profile</h3>
+                            {/* Profile Settings */}
+                            <div className="bg-white rounded-xl border border-gray-200 p-5">
+                                <div className="flex items-center gap-4 mb-6 pb-4 border-b border-gray-100">
+                                    <div className="w-14 h-14 bg-blue-100 rounded-full flex items-center justify-center text-xl font-bold text-blue-600">
+                                        {user?.fullName?.charAt(0)?.toUpperCase() || user?.email?.charAt(0)?.toUpperCase() || 'A'}
                                     </div>
-
-                                    <form onSubmit={handleProfileUpdate} className="space-y-3">
+                                    <div>
+                                        <h3 className="font-semibold text-gray-900">{user?.fullName || profileForm.fullname || 'Administrator'}</h3>
+                                        <p className="text-sm text-gray-500">{user?.email || 'No email'}</p>
+                                    </div>
+                                </div>
+                                <h3 className="text-lg font-semibold text-gray-900 mb-4">Profile Information</h3>
+                                <form onSubmit={handleProfileUpdate} className="space-y-4">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                         <div>
-                                            <label className="block text-xs font-medium text-gray-700 mb-1">
-                                                Full Name *
-                                            </label>
+                                            <label className="block text-sm font-medium text-gray-700 mb-2">Full Name</label>
                                             <input
                                                 type="text"
                                                 name="fullname"
                                                 value={profileForm.fullname}
                                                 onChange={handleProfileInputChange}
-                                                className={`w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-blue-500 focus:ring-0 transition-colors ${
-                                                    profileErrors.fullname ? 'border-red-500' : 'border-gray-200'
+                                                className={`w-full px-4 py-2 border-2 border-gray-200 rounded-lg outline-none focus:border-blue-500 focus:ring-0 transition-colors ${
+                                                    profileErrors.fullname ? 'border-red-500' : ''
                                                 }`}
-                                                placeholder="Your name"
+                                                placeholder="Enter your name"
                                             />
                                             {profileErrors.fullname && (
                                                 <p className="text-red-500 text-xs mt-1">{profileErrors.fullname}</p>
                                             )}
                                         </div>
-
-                                        <div className="grid grid-cols-2 gap-3">
-                                            <div>
-                                                <label className="block text-xs font-medium text-gray-700 mb-1">
-                                                    Gender
-                                                </label>
-                                                <select
-                                                    name="gender"
-                                                    value={profileForm.gender}
-                                                    onChange={handleProfileInputChange}
-                                                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                                >
-                                                    <option value="">Select</option>
-                                                    <option value="male">Male</option>
-                                                    <option value="female">Female</option>
-                                                    <option value="other">Other</option>
-                                                </select>
-                                            </div>
-
-                                            <div>
-                                                <label className="block text-xs font-medium text-gray-700 mb-1">
-                                                    Phone
-                                                </label>
-                                                <input
-                                                    type="tel"
-                                                    name="phone"
-                                                    value={profileForm.phone}
-                                                    onChange={handleProfileInputChange}
-                                                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                                    placeholder="Phone number"
-                                                />
-                                            </div>
-                                        </div>
-
                                         <div>
-                                            <label className="block text-xs font-medium text-gray-700 mb-1">
-                                                Email
-                                            </label>
+                                            <label className="block text-sm font-medium text-gray-700 mb-2">Gender</label>
+                                            <select
+                                                name="gender"
+                                                value={profileForm.gender}
+                                                onChange={handleProfileInputChange}
+                                                className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg outline-none focus:border-blue-500 focus:ring-0 transition-colors"
+                                            >
+                                                <option value="">Select gender</option>
+                                                <option value="male">Male</option>
+                                                <option value="female">Female</option>
+                                                <option value="other">Other</option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-2">Phone</label>
                                             <input
-                                                type="email"
-                                                value={user?.email || ''}
-                                                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg bg-gray-50 text-gray-500 cursor-not-allowed"
-                                                disabled
+                                                type="tel"
+                                                name="phone"
+                                                value={profileForm.phone}
+                                                onChange={handleProfileInputChange}
+                                                className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg outline-none focus:border-blue-500 focus:ring-0 transition-colors"
+                                                placeholder="Enter phone number"
                                             />
                                         </div>
-
-                                        <div className="flex justify-end pt-2">
-                                            <button
-                                                type="submit"
-                                                disabled={isSubmitting}
-                                                className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:bg-gray-400 disabled:cursor-not-allowed"
-                                            >
-                                                {isSubmitting ? 'Saving...' : 'Save Changes'}
-                                            </button>
-                                        </div>
-                                    </form>
-                                </div>
-
-                                {/* Password Settings */}
-                                <div className="bg-white rounded-xl border border-gray-200 p-5">
-                                    <div className="flex items-center space-x-2 mb-4">
-                                        <Lock className="w-5 h-5 text-purple-600" />
-                                        <h3 className="text-lg font-semibold text-gray-900">Security</h3>
                                     </div>
+                                    <button
+                                        type="submit"
+                                        disabled={isSubmitting}
+                                        className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors disabled:bg-gray-400"
+                                    >
+                                        {isSubmitting ? 'Saving...' : 'Save Changes'}
+                                    </button>
+                                </form>
+                            </div>
 
-                                    <form onSubmit={handlePasswordChange} className="space-y-3">
+                            {/* Password Change */}
+                            <div className="bg-white rounded-xl border border-gray-200 p-5">
+                                <h3 className="text-lg font-semibold text-gray-900 mb-4">Change Password</h3>
+                                <form onSubmit={handlePasswordChange} className="space-y-4">
+                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                                         <div>
-                                            <label className="block text-xs font-medium text-gray-700 mb-1">
-                                                Current Password *
-                                            </label>
+                                            <label className="block text-sm font-medium text-gray-700 mb-2">Current Password</label>
                                             <input
                                                 type="password"
                                                 name="currentPassword"
                                                 value={passwordForm.currentPassword}
                                                 onChange={handlePasswordInputChange}
-                                                className={`w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-blue-500 focus:ring-0 transition-colors ${
-                                                    passwordErrors.currentPassword ? 'border-red-500' : 'border-gray-200'
+                                                className={`w-full px-4 py-2 border-2 border-gray-200 rounded-lg outline-none focus:border-blue-500 focus:ring-0 transition-colors ${
+                                                    passwordErrors.currentPassword ? 'border-red-500' : ''
                                                 }`}
                                                 placeholder="Current password"
                                             />
@@ -1186,37 +1164,31 @@ const AdminDashboard = () => {
                                                 <p className="text-red-500 text-xs mt-1">{passwordErrors.currentPassword}</p>
                                             )}
                                         </div>
-
                                         <div>
-                                            <label className="block text-xs font-medium text-gray-700 mb-1">
-                                                New Password *
-                                            </label>
+                                            <label className="block text-sm font-medium text-gray-700 mb-2">New Password</label>
                                             <input
                                                 type="password"
                                                 name="newPassword"
                                                 value={passwordForm.newPassword}
                                                 onChange={handlePasswordInputChange}
-                                                className={`w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-blue-500 focus:ring-0 transition-colors ${
-                                                    passwordErrors.newPassword ? 'border-red-500' : 'border-gray-200'
+                                                className={`w-full px-4 py-2 border-2 border-gray-200 rounded-lg outline-none focus:border-blue-500 focus:ring-0 transition-colors ${
+                                                    passwordErrors.newPassword ? 'border-red-500' : ''
                                                 }`}
-                                                placeholder="New password (min 6 chars)"
+                                                placeholder="New password"
                                             />
                                             {passwordErrors.newPassword && (
                                                 <p className="text-red-500 text-xs mt-1">{passwordErrors.newPassword}</p>
                                             )}
                                         </div>
-
                                         <div>
-                                            <label className="block text-xs font-medium text-gray-700 mb-1">
-                                                Confirm Password *
-                                            </label>
+                                            <label className="block text-sm font-medium text-gray-700 mb-2">Confirm Password</label>
                                             <input
                                                 type="password"
                                                 name="confirmPassword"
                                                 value={passwordForm.confirmPassword}
                                                 onChange={handlePasswordInputChange}
-                                                className={`w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-blue-500 focus:ring-0 transition-colors ${
-                                                    passwordErrors.confirmPassword ? 'border-red-500' : 'border-gray-200'
+                                                className={`w-full px-4 py-2 border-2 border-gray-200 rounded-lg outline-none focus:border-blue-500 focus:ring-0 transition-colors ${
+                                                    passwordErrors.confirmPassword ? 'border-red-500' : ''
                                                 }`}
                                                 placeholder="Confirm password"
                                             />
@@ -1224,18 +1196,15 @@ const AdminDashboard = () => {
                                                 <p className="text-red-500 text-xs mt-1">{passwordErrors.confirmPassword}</p>
                                             )}
                                         </div>
-
-                                        <div className="flex justify-end pt-2">
-                                            <button
-                                                type="submit"
-                                                disabled={isSubmitting}
-                                                className="px-4 py-2 text-sm bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-medium disabled:bg-gray-400 disabled:cursor-not-allowed"
-                                            >
-                                                {isSubmitting ? 'Changing...' : 'Change Password'}
-                                            </button>
-                                        </div>
-                                    </form>
-                                </div>
+                                    </div>
+                                    <button
+                                        type="submit"
+                                        disabled={isSubmitting}
+                                        className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors disabled:bg-gray-400"
+                                    >
+                                        {isSubmitting ? 'Updating...' : 'Update Password'}
+                                    </button>
+                                </form>
                             </div>
                         </div>
                     )}

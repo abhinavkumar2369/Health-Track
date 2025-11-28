@@ -171,6 +171,30 @@ export const doctorAPI = {
         const response = await apiRequest(`/doctor/my-patients?token=${token}`);
         return response;
     },
+
+    // Get doctor profile
+    getProfile: async () => {
+        const token = ensureToken();
+        return apiRequest(`/doctor/profile?token=${token}`);
+    },
+
+    // Update doctor profile
+    updateProfile: async (profileData) => {
+        const token = ensureToken();
+        return apiRequest('/doctor/profile', {
+            method: 'PUT',
+            body: JSON.stringify({ token, ...profileData }),
+        });
+    },
+
+    // Change doctor password
+    changePassword: async (passwordData) => {
+        const token = ensureToken();
+        return apiRequest('/doctor/change-password', {
+            method: 'PUT',
+            body: JSON.stringify({ token, ...passwordData }),
+        });
+    },
 };
 
 // Patient API (placeholder for future endpoints)

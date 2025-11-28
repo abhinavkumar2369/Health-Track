@@ -2,23 +2,53 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { doctorAPI } from '../services/api';
 import authService from '../services/authService';
+import { LayoutDashboard, Users, FileText, Pill, BarChart3, Settings, LogOut, Plus, Menu, X, Calendar, Clock, Download, Trash2 } from 'lucide-react';
+
+const initialFormState = {
+    fullname: '',
+    email: '',
+    password: '',
+};
 
 const DoctorDashboard = () => {
     const navigate = useNavigate();
     const [user, setUser] = useState(null);
-    const [activeTab, setActiveTab] = useState('patients');
+    const [activeSection, setActiveSection] = useState('dashboard');
+    const [sidebarOpen, setSidebarOpen] = useState(false);
     const [patients, setPatients] = useState([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [successMessage, setSuccessMessage] = useState('');
-    const [showAddPatientModal, setShowAddPatientModal] = useState(false);
-    const [formData, setFormData] = useState({
-        fullname: '',
-        email: '',
-        password: '',
-    });
+    const [showModal, setShowModal] = useState(false);
+    const [formData, setFormData] = useState(initialFormState);
     const [formErrors, setFormErrors] = useState({});
     const [isSubmitting, setIsSubmitting] = useState(false);
+    
+    // Profile form states
+    const [profileForm, setProfileForm] = useState({
+        fullname: '',
+        gender: '',
+        phone: '',
+        specialization: ''
+    });
+    const [passwordForm, setPasswordForm] = useState({
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: ''
+    });
+    const [profileErrors, setProfileErrors] = useState({});
+    const [passwordErrors, setPasswordErrors] = useState({});
+    
+    // Reports state
+    const [reports, setReports] = useState([]);
+    const [showReportModal, setShowReportModal] = useState(false);
+    const [reportForm, setReportForm] = useState({
+        reportType: 'summary',
+        title: '',
+        description: '',
+        dateFrom: '',
+        dateTo: ''
+    });
 
     useEffect(() => {
         const currentUser = authService.getCurrentUser();
@@ -27,13 +57,10 @@ const DoctorDashboard = () => {
             return;
         }
         setUser(currentUser);
+        loadPatients();
+        loadProfile();
+        loadReports();
     }, [navigate]);
-
-    useEffect(() => {
-        if (user && activeTab === 'patients') {
-            loadPatients();
-        }
-    }, [user, activeTab]);
 
     const loadPatients = async () => {
         setLoading(true);
@@ -50,25 +77,49 @@ const DoctorDashboard = () => {
         }
     };
 
+    const loadProfile = async () => {
+        try {
+            const response = await doctorAPI.getProfile();
+            if (response.success && response.profile) {
+                setProfileForm({
+                    fullname: response.profile.fullname || '',
+                    gender: response.profile.gender || '',
+                    phone: response.profile.phone || '',
+                    specialization: response.profile.specialization || ''
+                });
+            }
+        } catch (error) {
+            console.error('Error loading profile:', error);
+        }
+    };
+
+    const loadReports = () => {
+        const savedReports = localStorage.getItem('doctorReports');
+        if (savedReports) {
+            setReports(JSON.parse(savedReports));
+        }
+    };
+
     const handleLogout = () => {
         authService.logout();
-        navigate('/');
+        navigate('/sign-in');
     };
 
     const openAddPatientModal = () => {
-        setFormData({ fullname: '', email: '', password: '' });
+        setFormData(initialFormState);
         setFormErrors({});
         setError('');
         setSuccessMessage('');
-        setShowAddPatientModal(true);
+        setShowModal(true);
     };
 
-    const closeAddPatientModal = () => {
-        setShowAddPatientModal(false);
-        setFormData({ fullname: '', email: '', password: '' });
+    const closeModal = () => {
+        setShowModal(false);
+        setFormData(initialFormState);
         setFormErrors({});
         setError('');
         setSuccessMessage('');
+        setIsSubmitting(false);
     };
 
     const handleInputChange = ({ target: { name, value } }) => {
@@ -95,9 +146,12 @@ const DoctorDashboard = () => {
         return Object.keys(errors).length === 0;
     };
 
-    const handleAddPatient = async (e) => {
-        e.preventDefault();
-        if (!validateForm()) return;
+    const handleSubmit = async (event) => {
+        event.preventDefault();
+
+        if (!validateForm()) {
+            return;
+        }
 
         setIsSubmitting(true);
         setError('');
@@ -110,14 +164,15 @@ const DoctorDashboard = () => {
                 formData.password.trim()
             );
             setSuccessMessage('Patient added successfully!');
-            setFormData({ fullname: '', email: '', password: '' });
+            setFormData(initialFormState);
             await loadPatients();
+
             setTimeout(() => {
-                closeAddPatientModal();
+                closeModal();
             }, 1500);
-        } catch (err) {
-            console.error('Error adding patient:', err);
-            setError(err.message || 'Failed to add patient');
+        } catch (submissionError) {
+            console.error('Error adding patient:', submissionError);
+            setError(submissionError.message || 'Failed to add patient. Please try again.');
         } finally {
             setIsSubmitting(false);
         }
@@ -128,51 +183,172 @@ const DoctorDashboard = () => {
             return;
         }
 
-        setLoading(true);
         setError('');
+        setSuccessMessage('');
+        setLoading(true);
         try {
             await doctorAPI.removePatient(patientId);
             await loadPatients();
-        } catch (err) {
-            console.error('Error removing patient:', err);
-            setError(err.message || 'Failed to remove patient');
+            setSuccessMessage('Patient removed successfully!');
+            setTimeout(() => setSuccessMessage(''), 3000);
+        } catch (removeError) {
+            console.error('Error removing patient:', removeError);
+            setError(removeError.message || 'Failed to remove patient');
+            setTimeout(() => setError(''), 3000);
         } finally {
             setLoading(false);
         }
     };
 
-    const todayStats = [
-        { 
-            label: 'Total Patients', 
-            value: patients.length.toString(), 
-            icon: <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg>, 
-            color: 'from-emerald-500 to-emerald-600' 
-        },
-        { 
-            label: 'Active Patients', 
-            value: patients.length.toString(), 
-            icon: <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>, 
-            color: 'from-slate-500 to-slate-600' 
-        },
-        { 
-            label: 'Appointments', 
-            value: '0', 
-            icon: <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>, 
-            color: 'from-amber-500 to-amber-600' 
-        },
-        { 
-            label: 'Pending', 
-            value: '0', 
-            icon: <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>, 
-            color: 'from-rose-500 to-rose-600' 
+    const handleProfileInputChange = ({ target: { name, value } }) => {
+        setProfileForm((prev) => ({ ...prev, [name]: value }));
+        if (profileErrors[name]) {
+            setProfileErrors((prev) => ({ ...prev, [name]: '' }));
         }
+    };
+
+    const handlePasswordInputChange = ({ target: { name, value } }) => {
+        setPasswordForm((prev) => ({ ...prev, [name]: value }));
+        if (passwordErrors[name]) {
+            setPasswordErrors((prev) => ({ ...prev, [name]: '' }));
+        }
+    };
+
+    const handleProfileUpdate = async (e) => {
+        e.preventDefault();
+        const errors = {};
+        
+        if (!profileForm.fullname.trim()) {
+            errors.fullname = 'Full name is required';
+        }
+
+        setProfileErrors(errors);
+        if (Object.keys(errors).length > 0) return;
+
+        setIsSubmitting(true);
+        setError('');
+        setSuccessMessage('');
+
+        try {
+            const response = await doctorAPI.updateProfile(profileForm);
+            if (response.success) {
+                setSuccessMessage('Profile updated successfully!');
+                await loadProfile();
+                setTimeout(() => setSuccessMessage(''), 3000);
+            }
+        } catch (error) {
+            console.error('Profile update error:', error);
+            setError(error.message || 'Failed to update profile');
+            setTimeout(() => setError(''), 3000);
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    const handlePasswordChange = async (e) => {
+        e.preventDefault();
+        const errors = {};
+        
+        if (!passwordForm.currentPassword) {
+            errors.currentPassword = 'Current password is required';
+        }
+        if (!passwordForm.newPassword) {
+            errors.newPassword = 'New password is required';
+        } else if (passwordForm.newPassword.length < 6) {
+            errors.newPassword = 'Password must be at least 6 characters';
+        }
+        if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+            errors.confirmPassword = 'Passwords do not match';
+        }
+
+        setPasswordErrors(errors);
+        if (Object.keys(errors).length > 0) return;
+
+        setIsSubmitting(true);
+        setError('');
+        setSuccessMessage('');
+
+        try {
+            const response = await doctorAPI.changePassword({
+                currentPassword: passwordForm.currentPassword,
+                newPassword: passwordForm.newPassword
+            });
+            
+            if (response.success) {
+                setSuccessMessage('Password changed successfully!');
+                setPasswordForm({
+                    currentPassword: '',
+                    newPassword: '',
+                    confirmPassword: ''
+                });
+                setTimeout(() => setSuccessMessage(''), 3000);
+            }
+        } catch (error) {
+            console.error('Password change error:', error);
+            setError(error.message || 'Failed to change password');
+            setTimeout(() => setError(''), 3000);
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    const handleGenerateReport = (e) => {
+        e.preventDefault();
+        const newReport = {
+            id: Date.now(),
+            ...reportForm,
+            title: reportForm.title || `${reportForm.reportType.charAt(0).toUpperCase() + reportForm.reportType.slice(1)} Report`,
+            status: 'completed',
+            generatedAt: new Date().toISOString(),
+            fileSize: Math.floor(Math.random() * 500000) + 100000
+        };
+        const updatedReports = [newReport, ...reports];
+        setReports(updatedReports);
+        localStorage.setItem('doctorReports', JSON.stringify(updatedReports));
+        setShowReportModal(false);
+        setReportForm({
+            reportType: 'summary',
+            title: '',
+            description: '',
+            dateFrom: '',
+            dateTo: ''
+        });
+        setSuccessMessage('Report generated successfully!');
+        setTimeout(() => setSuccessMessage(''), 3000);
+    };
+
+    const handleDeleteReport = (reportId) => {
+        if (window.confirm('Are you sure you want to delete this report?')) {
+            const updatedReports = reports.filter(r => r.id !== reportId);
+            setReports(updatedReports);
+            localStorage.setItem('doctorReports', JSON.stringify(updatedReports));
+            setSuccessMessage('Report deleted successfully!');
+            setTimeout(() => setSuccessMessage(''), 3000);
+        }
+    };
+
+    const formatFileSize = (bytes) => {
+        if (bytes === 0) return '0 Bytes';
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    };
+
+    const sidebarItems = [
+        { id: 'dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+        { id: 'patients', icon: Users, label: 'Patients' },
+        { id: 'appointments', icon: Calendar, label: 'Appointments' },
+        { id: 'prescriptions', icon: Pill, label: 'Prescriptions' },
+        { id: 'reports', icon: BarChart3, label: 'Reports' },
+        { id: 'settings', icon: Settings, label: 'Settings' }
     ];
 
     if (!user) {
         return (
             <div className="min-h-screen bg-gray-100 flex items-center justify-center">
                 <div className="text-center">
-                    <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                    <div className="w-12 h-12 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
                     <p className="text-gray-600">Loading dashboard...</p>
                 </div>
             </div>
@@ -180,284 +356,598 @@ const DoctorDashboard = () => {
     }
 
     return (
-        <div className="min-h-screen bg-gray-50">
-            {/* Header */}
-            <header className="bg-white shadow-sm border-b border-gray-200">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="flex justify-between items-center h-16">
-                        <div className="flex items-center">
-                            <div className="flex items-center">
-                                <img src="/favicon.svg" alt="Health Track" className="w-8 h-8 mr-2 sm:mr-3" />
-                                <h1 className="text-lg sm:text-xl font-bold text-gray-900">Doctor Panel</h1>
-                            </div>
-                        </div>
-                        
-                        <div className="flex items-center space-x-2 sm:space-x-4">
-                            <button
-                                onClick={handleLogout}
-                                className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200"
-                            >
-                                Logout
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </header>
+        <div className="flex h-screen bg-gray-50">
+            {/* Mobile Overlay */}
+            {sidebarOpen && (
+                <div 
+                    className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+                    onClick={() => setSidebarOpen(false)}
+                />
+            )}
 
-            {/* Navigation Tabs */}
-            <div className="bg-white border-b border-gray-200">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <nav className="flex space-x-1 sm:space-x-8 overflow-x-auto scrollbar-hide py-2"
-                         style={{scrollbarWidth: 'none', msOverflowStyle: 'none'}}>
-                        {[
-                            { 
-                                id: 'appointments', 
-                                label: 'Appointments', 
-                                icon: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg> 
-                            },
-                            { 
-                                id: 'patients', 
-                                label: 'Patient Records', 
-                                icon: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg> 
-                            },
-                            { 
-                                id: 'prescriptions', 
-                                label: 'Prescriptions', 
-                                icon: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" /></svg> 
-                            },
-                            { 
-                                id: 'reports', 
-                                label: 'Medical Reports', 
-                                icon: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 8v8m-4-5v5m-4-2v2m-2 4h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg> 
-                            }
-                        ].map((tab) => (
+            {/* Sidebar */}
+            <div className={`w-64 bg-white border-r border-gray-200 flex flex-col fixed inset-y-0 left-0 z-50 transform transition-transform duration-300 lg:translate-x-0 lg:static ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+                {/* Logo */}
+                <div className="h-16 flex items-center justify-between px-4 sm:px-6 border-b border-gray-200">
+                    <div className="flex items-center space-x-3">
+                        <img src="/favicon.svg" alt="Health Track" className="w-8 h-8" />
+                        <span className="text-lg font-bold text-gray-900">Health Track</span>
+                    </div>
+                    <button 
+                        onClick={() => setSidebarOpen(false)}
+                        className="lg:hidden p-2 rounded-lg hover:bg-gray-100"
+                    >
+                        <X className="w-5 h-5 text-gray-500" />
+                    </button>
+                </div>
+
+                {/* Navigation */}
+                <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
+                    {sidebarItems.map((item) => {
+                        const IconComponent = item.icon;
+                        return (
                             <button
-                                key={tab.id}
-                                onClick={() => setActiveTab(tab.id)}
-                                className={`flex items-center space-x-1 sm:space-x-2 py-3 sm:py-4 px-2 sm:px-1 border-b-2 font-medium text-xs sm:text-sm transition-colors duration-200 whitespace-nowrap ${
-                                    activeTab === tab.id
-                                        ? 'border-green-500 text-green-600'
-                                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                                key={item.id}
+                                onClick={() => {
+                                    setActiveSection(item.id);
+                                    setSidebarOpen(false);
+                                }}
+                                className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-sm font-medium transition-all ${
+                                    activeSection === item.id
+                                        ? 'bg-emerald-50 text-emerald-600'
+                                        : 'text-gray-700 hover:bg-gray-50'
                                 }`}
                             >
-                                {tab.icon}
-                                <span className="hidden sm:inline">{tab.label}</span>
-                                <span className="sm:hidden">{tab.label.split(' ')[0]}</span>
+                                <IconComponent className="w-5 h-5" />
+                                <span>{item.label}</span>
                             </button>
-                        ))}
-                    </nav>
+                        );
+                    })}
+                </nav>
+
+                {/* User Profile */}
+                <div className="p-4 border-t border-gray-200">
+                    <button
+                        onClick={handleLogout}
+                        className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-900 font-semibold bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors"
+                    >
+                        <LogOut className="w-4 h-4 text-gray-900" />
+                        <span className="text-gray-900 font-semibold">Log out</span>
+                    </button>
                 </div>
             </div>
 
             {/* Main Content */}
-            <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
-                {activeTab === 'appointments' && (
-                    <div className="space-y-6 sm:space-y-8">
-                        {/* Today's Stats */}
-                        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
-                            {todayStats.map((stat, index) => (
-                                <div key={index} className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-shadow duration-200">
+            <div className="flex-1 flex flex-col overflow-hidden lg:ml-0">
+                {/* Header */}
+                <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-4 sm:px-8">
+                    <button 
+                        onClick={() => setSidebarOpen(true)}
+                        className="lg:hidden p-2 rounded-lg hover:bg-gray-100"
+                    >
+                        <Menu className="w-6 h-6 text-gray-600" />
+                    </button>
+                    <div className="text-sm text-gray-500 ml-auto">
+                        <span className="hidden sm:inline">{new Date().toLocaleDateString('en-US', { 
+                            weekday: 'long', 
+                            year: 'numeric', 
+                            month: 'long', 
+                            day: 'numeric' 
+                        })}</span>
+                        <span className="sm:hidden">{new Date().toLocaleDateString('en-US', { 
+                            month: 'short', 
+                            day: 'numeric' 
+                        })}</span>
+                    </div>
+                </header>
+
+                {/* Content Area */}
+                <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
+                    {/* Success/Error Messages */}
+                    {successMessage && (
+                        <div className="mb-4 bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg">
+                            {successMessage}
+                        </div>
+                    )}
+                    {error && (
+                        <div className="mb-4 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+                            {error}
+                        </div>
+                    )}
+
+                    {activeSection === 'dashboard' && (
+                        <div className="space-y-4 sm:space-y-6">
+                            {/* Stats Cards */}
+                            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+                                <div className="bg-white rounded-xl border border-gray-200 p-4 sm:p-5">
                                     <div className="flex items-center justify-between">
                                         <div>
-                                            <p className="text-sm font-medium text-gray-600">{stat.label}</p>
-                                            <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
+                                            <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Total Patients</p>
+                                            <p className="text-2xl sm:text-3xl font-semibold text-gray-900 mt-2">{patients.length}</p>
                                         </div>
-                                        <div className={`w-12 h-12 bg-gradient-to-br ${stat.color} rounded-lg flex items-center justify-center text-white text-2xl`}>
-                                            {stat.icon}
+                                        <div className="w-12 h-12 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-lg flex items-center justify-center">
+                                            <Users className="w-6 h-6 text-white" />
                                         </div>
                                     </div>
                                 </div>
-                            ))}
-                        </div>
+                                <div className="bg-white rounded-xl border border-gray-200 p-4 sm:p-5">
+                                    <div className="flex items-center justify-between">
+                                        <div>
+                                            <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Appointments</p>
+                                            <p className="text-2xl sm:text-3xl font-semibold text-gray-900 mt-2">0</p>
+                                        </div>
+                                        <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
+                                            <Calendar className="w-6 h-6 text-white" />
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="bg-white rounded-xl border border-gray-200 p-4 sm:p-5">
+                                    <div className="flex items-center justify-between">
+                                        <div>
+                                            <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Prescriptions</p>
+                                            <p className="text-2xl sm:text-3xl font-semibold text-gray-900 mt-2">0</p>
+                                        </div>
+                                        <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg flex items-center justify-center">
+                                            <Pill className="w-6 h-6 text-white" />
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="bg-white rounded-xl border border-gray-200 p-4 sm:p-5">
+                                    <div className="flex items-center justify-between">
+                                        <div>
+                                            <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Pending</p>
+                                            <p className="text-2xl sm:text-3xl font-semibold text-amber-600 mt-2">0</p>
+                                        </div>
+                                        <div className="w-12 h-12 bg-gradient-to-br from-amber-500 to-amber-600 rounded-lg flex items-center justify-center">
+                                            <Clock className="w-6 h-6 text-white" />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
 
-                        {/* Upcoming Appointments */}
-                        <div className="bg-white rounded-xl shadow-sm border border-gray-100">
-                            <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center">
-                                <h3 className="text-lg font-semibold text-gray-900">Today's Appointments</h3>
-                                <button className="bg-green-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-green-700">
-                                    Add Appointment
+                            {/* Two Column Layout */}
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+                                {/* Recent Patients */}
+                                <div className="bg-white rounded-xl border border-gray-200 p-5">
+                                    <div className="flex items-center justify-between mb-4">
+                                        <h3 className="text-lg font-semibold text-gray-900">Recent Patients</h3>
+                                        <button 
+                                            onClick={() => setActiveSection('patients')}
+                                            className="text-sm text-emerald-600 hover:text-emerald-700 font-medium"
+                                        >
+                                            View All
+                                        </button>
+                                    </div>
+                                    {patients.length === 0 ? (
+                                        <div className="text-center py-8">
+                                            <Users className="w-10 h-10 text-gray-300 mx-auto mb-3" />
+                                            <p className="text-gray-500 text-sm">No patients yet</p>
+                                        </div>
+                                    ) : (
+                                        <div className="space-y-3">
+                                            {patients.slice(0, 5).map((patient) => (
+                                                <div key={patient._id} className="flex items-center space-x-3 p-2 rounded-lg hover:bg-gray-50">
+                                                    <div className="w-10 h-10 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-full flex items-center justify-center">
+                                                        <span className="text-sm font-medium text-white">
+                                                            {patient.fullname?.charAt(0).toUpperCase() || 'P'}
+                                                        </span>
+                                                    </div>
+                                                    <div className="flex-1 min-w-0">
+                                                        <p className="text-sm font-medium text-gray-900 truncate">{patient.fullname || 'Unknown'}</p>
+                                                        <p className="text-xs text-gray-500 truncate">{patient.email}</p>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Today's Schedule */}
+                                <div className="bg-white rounded-xl border border-gray-200 p-5">
+                                    <div className="flex items-center justify-between mb-4">
+                                        <h3 className="text-lg font-semibold text-gray-900">Today's Schedule</h3>
+                                        <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
+                                            {new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                                        </span>
+                                    </div>
+                                    <div className="text-center py-8">
+                                        <Calendar className="w-10 h-10 text-gray-300 mx-auto mb-3" />
+                                        <p className="text-gray-500 text-sm">No appointments scheduled</p>
+                                        <button className="mt-3 text-sm text-emerald-600 hover:text-emerald-700 font-medium">
+                                            + Add Appointment
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Quick Actions */}
+                            <div className="bg-white rounded-xl border border-gray-200 p-5">
+                                <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
+                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                                    <button 
+                                        onClick={openAddPatientModal}
+                                        className="p-4 bg-emerald-50 rounded-lg hover:bg-emerald-100 transition-colors text-center"
+                                    >
+                                        <Users className="w-6 h-6 text-emerald-600 mx-auto mb-2" />
+                                        <span className="text-sm font-medium text-emerald-700">Add Patient</span>
+                                    </button>
+                                    <button className="p-4 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors text-center">
+                                        <Calendar className="w-6 h-6 text-blue-600 mx-auto mb-2" />
+                                        <span className="text-sm font-medium text-blue-700">Schedule</span>
+                                    </button>
+                                    <button className="p-4 bg-purple-50 rounded-lg hover:bg-purple-100 transition-colors text-center">
+                                        <Pill className="w-6 h-6 text-purple-600 mx-auto mb-2" />
+                                        <span className="text-sm font-medium text-purple-700">Prescribe</span>
+                                    </button>
+                                    <button 
+                                        onClick={() => setShowReportModal(true)}
+                                        className="p-4 bg-amber-50 rounded-lg hover:bg-amber-100 transition-colors text-center"
+                                    >
+                                        <FileText className="w-6 h-6 text-amber-600 mx-auto mb-2" />
+                                        <span className="text-sm font-medium text-amber-700">Report</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {activeSection === 'patients' && (
+                        <div className="space-y-4 sm:space-y-6">
+                            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                                <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Patient Records</h2>
+                                <button 
+                                    onClick={openAddPatientModal}
+                                    className="flex items-center justify-center space-x-2 bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-700 transition-colors"
+                                >
+                                    <Plus className="w-5 h-5" />
+                                    <span>Add Patient</span>
                                 </button>
                             </div>
-                            <div className="p-12 text-center">
-                                <svg className="w-16 h-16 mx-auto text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                </svg>
-                                <h3 className="text-lg font-semibold text-gray-700 mb-2">No Appointments Today</h3>
-                                <p className="text-gray-500">You don't have any appointments scheduled for today</p>
+
+                            <div className="bg-white rounded-xl border border-gray-200">
+                                {loading && (
+                                    <div className="text-center py-12">
+                                        <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-500"></div>
+                                        <p className="mt-4 text-gray-600">Loading patients...</p>
+                                    </div>
+                                )}
+
+                                {!loading && patients.length === 0 && (
+                                    <div className="text-center py-12 px-4">
+                                        <Users className="w-16 h-16 mx-auto text-gray-400 mb-4" />
+                                        <h3 className="text-lg font-semibold text-gray-700 mb-2">No Patients Yet</h3>
+                                        <p className="text-gray-500 mb-4">Start by adding your first patient</p>
+                                        <button
+                                            onClick={openAddPatientModal}
+                                            className="bg-emerald-500 text-white px-6 py-2 rounded-lg hover:bg-emerald-600 transition-colors"
+                                        >
+                                            Add Your First Patient
+                                        </button>
+                                    </div>
+                                )}
+
+                                {!loading && patients.length > 0 && (
+                                    <div className="divide-y divide-gray-200">
+                                        {patients.map((patient) => (
+                                            <div key={patient._id} className="px-4 sm:px-6 py-4 hover:bg-gray-50">
+                                                <div className="flex items-center justify-between">
+                                                    <div className="flex items-center space-x-3 sm:space-x-4 min-w-0">
+                                                        <div className="flex-shrink-0">
+                                                            <div className="w-10 h-10 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-full flex items-center justify-center">
+                                                                <span className="text-sm font-medium text-white">
+                                                                    {patient.fullname?.charAt(0).toUpperCase() || 'P'}
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                        <div className="min-w-0">
+                                                            <p className="text-sm font-medium text-gray-900 truncate">{patient.fullname || 'Unknown Patient'}</p>
+                                                            <p className="text-sm text-gray-500 truncate">{patient.email}</p>
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex items-center space-x-2 flex-shrink-0">
+                                                        <button 
+                                                            onClick={() => handleRemovePatient(patient._id)}
+                                                            className="text-red-600 hover:text-red-800 hover:bg-red-50 p-2 rounded-lg transition-colors"
+                                                            title="Remove patient"
+                                                        >
+                                                            <Trash2 className="w-5 h-5" />
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
                             </div>
                         </div>
-                    </div>
-                )}
+                    )}
 
-                {activeTab === 'patients' && (
-                    <div className="space-y-4 sm:space-y-6">
+                    {activeSection === 'appointments' && (
+                        <div className="space-y-4 sm:space-y-6">
+                            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                                <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Appointments</h2>
+                                <button className="flex items-center justify-center space-x-2 bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-700 transition-colors">
+                                    <Plus className="w-5 h-5" />
+                                    <span>Add Appointment</span>
+                                </button>
+                            </div>
+
+                            <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
+                                <Calendar className="w-16 h-16 mx-auto text-gray-400 mb-4" />
+                                <h3 className="text-lg font-semibold text-gray-700 mb-2">No Appointments</h3>
+                                <p className="text-gray-500">You don't have any appointments scheduled</p>
+                            </div>
+                        </div>
+                    )}
+
+                    {activeSection === 'prescriptions' && (
+                        <div className="space-y-4 sm:space-y-6">
+                            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                                <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Prescriptions</h2>
+                                <button className="flex items-center justify-center space-x-2 bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-700 transition-colors">
+                                    <Plus className="w-5 h-5" />
+                                    <span>New Prescription</span>
+                                </button>
+                            </div>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+                                <div className="bg-white rounded-xl border border-gray-200 p-6 text-center hover:border-emerald-200 transition-colors">
+                                    <Pill className="w-12 h-12 text-emerald-600 mx-auto mb-4" />
+                                    <h4 className="font-medium text-gray-900 mb-2">Create New Prescription</h4>
+                                    <p className="text-sm text-gray-600 mb-4">Generate digital prescriptions for your patients</p>
+                                    <button className="bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-emerald-700">
+                                        Create Prescription
+                                    </button>
+                                </div>
+                                <div className="bg-white rounded-xl border border-gray-200 p-6 text-center hover:border-gray-300 transition-colors">
+                                    <FileText className="w-12 h-12 text-gray-600 mx-auto mb-4" />
+                                    <h4 className="font-medium text-gray-900 mb-2">Prescription History</h4>
+                                    <p className="text-sm text-gray-600 mb-4">View and manage past prescriptions</p>
+                                    <button className="bg-gray-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-gray-700">
+                                        View History
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {activeSection === 'reports' && (
+                        <div className="space-y-4 sm:space-y-6">
+                            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                                <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Reports</h2>
+                                <button 
+                                    onClick={() => setShowReportModal(true)}
+                                    className="flex items-center justify-center space-x-2 bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-700 transition-colors"
+                                >
+                                    <Plus className="w-5 h-5" />
+                                    <span>Generate Report</span>
+                                </button>
+                            </div>
+
+                            <div className="bg-white rounded-xl border border-gray-200">
+                                {reports.length === 0 ? (
+                                    <div className="text-center py-12 px-4">
+                                        <FileText className="w-16 h-16 mx-auto text-gray-400 mb-4" />
+                                        <h3 className="text-lg font-semibold text-gray-700 mb-2">No Reports Yet</h3>
+                                        <p className="text-gray-500 mb-4">Generate your first report to get started</p>
+                                        <button
+                                            onClick={() => setShowReportModal(true)}
+                                            className="bg-emerald-500 text-white px-6 py-2 rounded-lg hover:bg-emerald-600 transition-colors"
+                                        >
+                                            Generate Report
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <div className="divide-y divide-gray-200">
+                                        {reports.map((report) => (
+                                            <div key={report.id} className="px-4 sm:px-6 py-4 hover:bg-gray-50">
+                                                <div className="flex items-center justify-between">
+                                                    <div className="flex items-center space-x-3 min-w-0">
+                                                        <div className="w-10 h-10 bg-emerald-100 rounded-lg flex items-center justify-center">
+                                                            <FileText className="w-5 h-5 text-emerald-600" />
+                                                        </div>
+                                                        <div className="min-w-0">
+                                                            <p className="text-sm font-medium text-gray-900 truncate">{report.title}</p>
+                                                            <p className="text-xs text-gray-500">
+                                                                {new Date(report.generatedAt).toLocaleDateString()} • {formatFileSize(report.fileSize)}
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex items-center space-x-2">
+                                                        <button className="text-emerald-600 hover:text-emerald-800 p-2 rounded-lg hover:bg-emerald-50 transition-colors">
+                                                            <Download className="w-5 h-5" />
+                                                        </button>
+                                                        <button 
+                                                            onClick={() => handleDeleteReport(report.id)}
+                                                            className="text-red-600 hover:text-red-800 p-2 rounded-lg hover:bg-red-50 transition-colors"
+                                                        >
+                                                            <Trash2 className="w-5 h-5" />
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
+
+                    {activeSection === 'settings' && (
+                        <div className="space-y-4 sm:space-y-6">
+                            <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Settings</h2>
+
+                            {/* Profile Settings */}
+                            <div className="bg-white rounded-xl border border-gray-200 p-5">
+                                <div className="flex items-center gap-4 mb-6 pb-4 border-b border-gray-100">
+                                    <div className="w-14 h-14 bg-emerald-100 rounded-full flex items-center justify-center text-xl font-bold text-emerald-600">
+                                        {user?.fullName?.charAt(0)?.toUpperCase() || user?.email?.charAt(0)?.toUpperCase() || 'D'}
+                                    </div>
+                                    <div>
+                                        <h3 className="font-semibold text-gray-900">{user?.fullName || profileForm.fullname || 'Doctor'}</h3>
+                                        <p className="text-sm text-gray-500">{user?.email || 'No email'}</p>
+                                    </div>
+                                </div>
+                                <h3 className="text-lg font-semibold text-gray-900 mb-4">Profile Information</h3>
+                                <form onSubmit={handleProfileUpdate} className="space-y-4">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-2">Full Name</label>
+                                            <input
+                                                type="text"
+                                                name="fullname"
+                                                value={profileForm.fullname}
+                                                onChange={handleProfileInputChange}
+                                                className={`w-full px-4 py-2 border-2 border-gray-200 rounded-lg outline-none focus:border-emerald-500 focus:ring-0 transition-colors ${
+                                                    profileErrors.fullname ? 'border-red-500' : ''
+                                                }`}
+                                                placeholder="Enter your name"
+                                            />
+                                            {profileErrors.fullname && (
+                                                <p className="text-red-500 text-xs mt-1">{profileErrors.fullname}</p>
+                                            )}
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-2">Specialization</label>
+                                            <input
+                                                type="text"
+                                                name="specialization"
+                                                value={profileForm.specialization}
+                                                onChange={handleProfileInputChange}
+                                                className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg outline-none focus:border-emerald-500 focus:ring-0 transition-colors"
+                                                placeholder="Enter specialization"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-2">Gender</label>
+                                            <select
+                                                name="gender"
+                                                value={profileForm.gender}
+                                                onChange={handleProfileInputChange}
+                                                className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg outline-none focus:border-emerald-500 focus:ring-0 transition-colors"
+                                            >
+                                                <option value="">Select gender</option>
+                                                <option value="male">Male</option>
+                                                <option value="female">Female</option>
+                                                <option value="other">Other</option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-2">Phone</label>
+                                            <input
+                                                type="tel"
+                                                name="phone"
+                                                value={profileForm.phone}
+                                                onChange={handleProfileInputChange}
+                                                className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg outline-none focus:border-emerald-500 focus:ring-0 transition-colors"
+                                                placeholder="Enter phone number"
+                                            />
+                                        </div>
+                                    </div>
+                                    <button
+                                        type="submit"
+                                        disabled={isSubmitting}
+                                        className="bg-emerald-600 text-white px-6 py-2 rounded-lg hover:bg-emerald-700 transition-colors disabled:bg-gray-400"
+                                    >
+                                        {isSubmitting ? 'Saving...' : 'Save Changes'}
+                                    </button>
+                                </form>
+                            </div>
+
+                            {/* Password Change */}
+                            <div className="bg-white rounded-xl border border-gray-200 p-5">
+                                <h3 className="text-lg font-semibold text-gray-900 mb-4">Change Password</h3>
+                                <form onSubmit={handlePasswordChange} className="space-y-4">
+                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-2">Current Password</label>
+                                            <input
+                                                type="password"
+                                                name="currentPassword"
+                                                value={passwordForm.currentPassword}
+                                                onChange={handlePasswordInputChange}
+                                                className={`w-full px-4 py-2 border-2 border-gray-200 rounded-lg outline-none focus:border-emerald-500 focus:ring-0 transition-colors ${
+                                                    passwordErrors.currentPassword ? 'border-red-500' : ''
+                                                }`}
+                                                placeholder="Current password"
+                                            />
+                                            {passwordErrors.currentPassword && (
+                                                <p className="text-red-500 text-xs mt-1">{passwordErrors.currentPassword}</p>
+                                            )}
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-2">New Password</label>
+                                            <input
+                                                type="password"
+                                                name="newPassword"
+                                                value={passwordForm.newPassword}
+                                                onChange={handlePasswordInputChange}
+                                                className={`w-full px-4 py-2 border-2 border-gray-200 rounded-lg outline-none focus:border-emerald-500 focus:ring-0 transition-colors ${
+                                                    passwordErrors.newPassword ? 'border-red-500' : ''
+                                                }`}
+                                                placeholder="New password"
+                                            />
+                                            {passwordErrors.newPassword && (
+                                                <p className="text-red-500 text-xs mt-1">{passwordErrors.newPassword}</p>
+                                            )}
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-2">Confirm Password</label>
+                                            <input
+                                                type="password"
+                                                name="confirmPassword"
+                                                value={passwordForm.confirmPassword}
+                                                onChange={handlePasswordInputChange}
+                                                className={`w-full px-4 py-2 border-2 border-gray-200 rounded-lg outline-none focus:border-emerald-500 focus:ring-0 transition-colors ${
+                                                    passwordErrors.confirmPassword ? 'border-red-500' : ''
+                                                }`}
+                                                placeholder="Confirm password"
+                                            />
+                                            {passwordErrors.confirmPassword && (
+                                                <p className="text-red-500 text-xs mt-1">{passwordErrors.confirmPassword}</p>
+                                            )}
+                                        </div>
+                                    </div>
+                                    <button
+                                        type="submit"
+                                        disabled={isSubmitting}
+                                        className="bg-emerald-600 text-white px-6 py-2 rounded-lg hover:bg-emerald-700 transition-colors disabled:bg-gray-400"
+                                    >
+                                        {isSubmitting ? 'Updating...' : 'Update Password'}
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    )}
+                </main>
+            </div>
+
+            {/* Add Patient Modal */}
+            {showModal && (
+                <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+                    <div className="bg-white rounded-xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
+                        <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+                            <h3 className="text-lg font-semibold text-gray-900">Add New Patient</h3>
+                            <button onClick={closeModal} className="text-gray-400 hover:text-gray-600">
+                                <X className="w-6 h-6" />
+                            </button>
+                        </div>
+                        
                         {successMessage && (
-                            <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg">
+                            <div className="mx-6 mt-4 bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg">
                                 {successMessage}
                             </div>
                         )}
-
+                        
                         {error && (
-                            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+                            <div className="mx-6 mt-4 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
                                 {error}
                             </div>
                         )}
-
-                        <div className="bg-white rounded-xl shadow-sm border border-gray-100">
-                            <div className="px-4 sm:px-6 py-4 border-b border-gray-100 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
-                                <h3 className="text-base sm:text-lg font-semibold text-gray-900">Patient Records</h3>
-                                <button 
-                                    onClick={openAddPatientModal}
-                                    className="bg-green-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-green-700 flex items-center justify-center gap-2 w-full sm:w-auto"
-                                >
-                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                                    </svg>
-                                    Add Patient
-                                </button>
-                            </div>
-
-                            {loading && (
-                                <div className="text-center py-8 sm:py-12">
-                                    <div className="inline-block animate-spin rounded-full h-10 w-10 sm:h-12 sm:w-12 border-b-2 border-emerald-500"></div>
-                                    <p className="mt-4 text-gray-600 text-sm">Loading patients...</p>
-                                </div>
-                            )}
-
-                            {!loading && patients.length === 0 && (
-                                <div className="text-center py-8 sm:py-12 px-4">
-                                    <svg className="w-12 h-12 sm:w-16 sm:h-16 mx-auto text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                                    </svg>
-                                    <h3 className="text-base sm:text-lg font-semibold text-gray-700 mb-2">No Patients Yet</h3>
-                                    <p className="text-gray-500 mb-4 text-sm">Start by adding your first patient</p>
-                                    <button
-                                        onClick={openAddPatientModal}
-                                        className="bg-emerald-500 text-white px-6 py-2 rounded-lg hover:bg-emerald-600 transition-colors text-sm"
-                                    >
-                                        Add Your First Patient
-                                    </button>
-                                </div>
-                            )}
-
-                            {!loading && patients.length > 0 && (
-                                <div className="divide-y divide-gray-200">
-                                    {patients.map((patient) => (
-                                        <div key={patient._id} className="px-4 sm:px-6 py-4 hover:bg-gray-50">
-                                            <div className="flex items-center justify-between">
-                                                <div className="flex items-center space-x-3 sm:space-x-4 min-w-0">
-                                                    <div className="flex-shrink-0">
-                                                        <div className="w-9 h-9 sm:w-10 sm:h-10 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-full flex items-center justify-center">
-                                                            <span className="text-sm font-medium text-white">
-                                                                {patient.fullname?.charAt(0).toUpperCase() || 'P'}
-                                                            </span>
-                                                        </div>
-                                                    </div>
-                                                    <div className="min-w-0">
-                                                        <p className="text-sm font-medium text-gray-900 truncate">{patient.fullname || 'Unknown Patient'}</p>
-                                                        <p className="text-xs sm:text-sm text-gray-500 truncate">{patient.email}</p>
-                                                    </div>
-                                                </div>
-                                                <div className="flex items-center space-x-2 sm:space-x-3 flex-shrink-0">
-                                                    <button 
-                                                        onClick={() => handleRemovePatient(patient._id)}
-                                                        className="text-red-600 hover:text-red-800 hover:bg-red-50 p-2 rounded-lg transition-colors"
-                                                        title="Remove patient"
-                                                    >
-                                                        <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                                        </svg>
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                )}
-
-                {activeTab === 'prescriptions' && (
-                    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 sm:p-6">
-                        <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-4">Prescription Management</h3>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
-                            <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 sm:p-6 text-center hover:border-emerald-400 transition-colors">
-                                <div className="flex justify-center mb-3 sm:mb-4">
-                                    <svg className="w-10 h-10 sm:w-12 sm:h-12 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
-                                    </svg>
-                                </div>
-                                <h4 className="font-medium text-gray-900 mb-2 text-sm sm:text-base">Create New Prescription</h4>
-                                <p className="text-xs sm:text-sm text-gray-600 mb-4">Generate digital prescriptions for your patients</p>
-                                <button className="bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-emerald-700 w-full sm:w-auto">
-                                    Create Prescription
-                                </button>
-                            </div>
-                            <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 sm:p-6 text-center hover:border-slate-400 transition-colors">
-                                <div className="flex justify-center mb-3 sm:mb-4">
-                                    <svg className="w-10 h-10 sm:w-12 sm:h-12 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                                    </svg>
-                                </div>
-                                <h4 className="font-medium text-gray-900 mb-2 text-sm sm:text-base">Prescription History</h4>
-                                <p className="text-xs sm:text-sm text-gray-600 mb-4">View and manage past prescriptions</p>
-                                <button className="bg-slate-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-slate-700 w-full sm:w-auto">
-                                    View History
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                )}
-
-                {activeTab === 'reports' && (
-                    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 sm:p-6">
-                        <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-4">Medical Reports</h3>
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
-                            <div className="p-3 sm:p-4 bg-blue-50 rounded-lg">
-                                <h4 className="font-medium text-blue-900 mb-1 sm:mb-2 text-sm sm:text-base">Lab Results</h4>
-                                <p className="text-xs sm:text-sm text-blue-700">3 pending reviews</p>
-                                <button className="mt-2 text-blue-600 hover:text-blue-800 text-xs sm:text-sm font-medium">
-                                    Review Now
-                                </button>
-                            </div>
-                            <div className="p-3 sm:p-4 bg-green-50 rounded-lg">
-                                <h4 className="font-medium text-green-900 mb-1 sm:mb-2 text-sm sm:text-base">Imaging Reports</h4>
-                                <p className="text-xs sm:text-sm text-green-700">2 new reports</p>
-                                <button className="mt-2 text-green-600 hover:text-green-800 text-xs sm:text-sm font-medium">
-                                    View Reports
-                                </button>
-                            </div>
-                            <div className="p-3 sm:p-4 bg-purple-50 rounded-lg">
-                                <h4 className="font-medium text-purple-900 mb-1 sm:mb-2 text-sm sm:text-base">Consultation Notes</h4>
-                                <p className="text-xs sm:text-sm text-purple-700">12 notes today</p>
-                                <button className="mt-2 text-purple-600 hover:text-purple-800 text-xs sm:text-sm font-medium">
-                                    Manage Notes
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                )}
-            </main>
-
-            {/* Add Patient Modal */}
-            {showAddPatientModal && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                    <div className="bg-white rounded-lg p-8 max-w-md w-full mx-4">
-                        <div className="flex justify-between items-center mb-6">
-                            <h3 className="text-xl font-bold text-gray-800">Add New Patient</h3>
-                            <button
-                                onClick={closeAddPatientModal}
-                                className="text-gray-500 hover:text-gray-700"
-                            >
-                                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                </svg>
-                            </button>
-                        </div>
-                        <form onSubmit={handleAddPatient} className="space-y-4">
+                        
+                        <form onSubmit={handleSubmit} className="p-6 space-y-4">
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
                                     Full Name *
                                 </label>
                                 <input
@@ -465,75 +955,164 @@ const DoctorDashboard = () => {
                                     name="fullname"
                                     value={formData.fullname}
                                     onChange={handleInputChange}
-                                    className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 ${
-                                        formErrors.fullname
-                                            ? 'border-red-500 focus:ring-red-500'
-                                            : 'border-gray-300 focus:ring-emerald-500'
+                                    className={`w-full px-4 py-2 border-2 border-gray-200 rounded-lg outline-none focus:border-emerald-500 focus:ring-0 transition-colors ${
+                                        formErrors.fullname ? 'border-red-500' : 'border-gray-200'
                                     }`}
-                                    required
+                                    placeholder="Enter patient's full name"
                                 />
                                 {formErrors.fullname && (
                                     <p className="text-red-500 text-xs mt-1">{formErrors.fullname}</p>
                                 )}
                             </div>
+
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    Email *
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    Email Address *
                                 </label>
                                 <input
                                     type="email"
                                     name="email"
                                     value={formData.email}
                                     onChange={handleInputChange}
-                                    className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 ${
-                                        formErrors.email
-                                            ? 'border-red-500 focus:ring-red-500'
-                                            : 'border-gray-300 focus:ring-emerald-500'
+                                    className={`w-full px-4 py-2 border-2 border-gray-200 rounded-lg outline-none focus:border-emerald-500 focus:ring-0 transition-colors ${
+                                        formErrors.email ? 'border-red-500' : 'border-gray-200'
                                     }`}
-                                    required
+                                    placeholder="Enter email address"
                                 />
                                 {formErrors.email && (
                                     <p className="text-red-500 text-xs mt-1">{formErrors.email}</p>
                                 )}
                             </div>
+
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    Password *
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    Temporary Password *
                                 </label>
                                 <input
                                     type="password"
                                     name="password"
                                     value={formData.password}
                                     onChange={handleInputChange}
-                                    className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 ${
-                                        formErrors.password
-                                            ? 'border-red-500 focus:ring-red-500'
-                                            : 'border-gray-300 focus:ring-emerald-500'
+                                    className={`w-full px-4 py-2 border-2 border-gray-200 rounded-lg outline-none focus:border-emerald-500 focus:ring-0 transition-colors ${
+                                        formErrors.password ? 'border-red-500' : 'border-gray-200'
                                     }`}
-                                    required
+                                    placeholder="Enter temporary password"
                                 />
                                 {formErrors.password && (
                                     <p className="text-red-500 text-xs mt-1">{formErrors.password}</p>
                                 )}
-                                <p className="text-gray-500 text-xs mt-1">
-                                    Minimum 6 characters
-                                </p>
                             </div>
-                            <div className="flex gap-3 pt-4">
+
+                            <div className="flex justify-end space-x-3 pt-4">
                                 <button
                                     type="button"
-                                    onClick={closeAddPatientModal}
-                                    className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
-                                    disabled={isSubmitting}
+                                    onClick={closeModal}
+                                    className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
                                 >
                                     Cancel
                                 </button>
                                 <button
                                     type="submit"
-                                    className="flex-1 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:opacity-50"
                                     disabled={isSubmitting}
+                                    className="px-6 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors font-medium disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center space-x-2"
                                 >
-                                    {isSubmitting ? 'Adding...' : 'Add Patient'}
+                                    {isSubmitting ? (
+                                        <>
+                                            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                            <span>Adding...</span>
+                                        </>
+                                    ) : (
+                                        <span>Add Patient</span>
+                                    )}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Generate Report Modal */}
+            {showReportModal && (
+                <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+                    <div className="bg-white rounded-xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
+                        <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+                            <h3 className="text-lg font-semibold text-gray-900">Generate Report</h3>
+                            <button onClick={() => setShowReportModal(false)} className="text-gray-400 hover:text-gray-600">
+                                <X className="w-6 h-6" />
+                            </button>
+                        </div>
+                        <form onSubmit={handleGenerateReport} className="p-6 space-y-4">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Report Type *</label>
+                                <select
+                                    required
+                                    value={reportForm.reportType}
+                                    onChange={(e) => setReportForm({...reportForm, reportType: e.target.value})}
+                                    className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg outline-none focus:border-emerald-500 focus:ring-0 transition-colors"
+                                >
+                                    <option value="summary">Summary Report</option>
+                                    <option value="patients">Patients Report</option>
+                                    <option value="activity">Activity Report</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Report Title</label>
+                                <input
+                                    type="text"
+                                    value={reportForm.title}
+                                    onChange={(e) => setReportForm({...reportForm, title: e.target.value})}
+                                    className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg outline-none focus:border-emerald-500 focus:ring-0 transition-colors"
+                                    placeholder="e.g., Monthly Summary Report"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                                <textarea
+                                    value={reportForm.description}
+                                    onChange={(e) => setReportForm({...reportForm, description: e.target.value})}
+                                    className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg outline-none focus:border-emerald-500 focus:ring-0 transition-colors"
+                                    placeholder="Brief description of the report"
+                                    rows="2"
+                                />
+                            </div>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">From Date</label>
+                                    <input
+                                        type="date"
+                                        value={reportForm.dateFrom}
+                                        onChange={(e) => setReportForm({...reportForm, dateFrom: e.target.value})}
+                                        className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg outline-none focus:border-emerald-500 focus:ring-0 transition-colors"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">To Date</label>
+                                    <input
+                                        type="date"
+                                        value={reportForm.dateTo}
+                                        onChange={(e) => setReportForm({...reportForm, dateTo: e.target.value})}
+                                        className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg outline-none focus:border-emerald-500 focus:ring-0 transition-colors"
+                                    />
+                                </div>
+                            </div>
+                            <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-3">
+                                <p className="text-sm text-emerald-700">
+                                    <strong>Note:</strong> The report will be generated and stored locally. You can download or delete it anytime from the reports list.
+                                </p>
+                            </div>
+                            <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3 pt-4">
+                                <button
+                                    type="submit"
+                                    className="flex-1 bg-emerald-600 text-white py-2 rounded-lg hover:bg-emerald-700"
+                                >
+                                    Generate Report
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setShowReportModal(false)}
+                                    className="flex-1 bg-gray-200 text-gray-700 py-2 rounded-lg hover:bg-gray-300"
+                                >
+                                    Cancel
                                 </button>
                             </div>
                         </form>

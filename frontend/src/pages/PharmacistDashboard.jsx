@@ -1191,6 +1191,15 @@ const PharmacistDashboard = () => {
                     <div className="max-w-2xl space-y-6">
                         {/* Profile Information */}
                         <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                            <div className="flex items-center gap-4 p-4 sm:p-6 border-b border-gray-100">
+                                <div className="w-14 h-14 bg-blue-100 rounded-full flex items-center justify-center text-xl font-bold text-blue-600">
+                                    {user?.fullName?.charAt(0)?.toUpperCase() || user?.email?.charAt(0)?.toUpperCase() || 'P'}
+                                </div>
+                                <div>
+                                    <h3 className="font-semibold text-gray-900">{user?.fullName || profileForm.name || 'Pharmacist'}</h3>
+                                    <p className="text-sm text-gray-500">{user?.email || 'No email'}</p>
+                                </div>
+                            </div>
                             <div className="px-4 sm:px-6 py-4 border-b border-gray-100">
                                 <h3 className="font-semibold text-gray-900">Profile Information</h3>
                             </div>
@@ -1228,15 +1237,6 @@ const PharmacistDashboard = () => {
                                             className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg outline-none focus:border-blue-500 focus:ring-0 transition-colors"
                                         />
                                     </div>
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                                    <input
-                                        type="email"
-                                        disabled
-                                        value={user?.email || ''}
-                                        className="w-full px-3 py-2 border border-gray-200 rounded-lg bg-gray-50 text-gray-500"
-                                    />
                                 </div>
                                 <div className="pt-2">
                                     <button
