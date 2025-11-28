@@ -193,10 +193,6 @@ const DoctorDashboard = () => {
                         </div>
                         
                         <div className="flex items-center space-x-2 sm:space-x-4">
-                            <div className="text-right hidden sm:block">
-                                <p className="text-sm font-medium text-gray-900">Dr. {user.fullName || user.email}</p>
-                                <p className="text-xs text-gray-500">Medical Doctor</p>
-                            </div>
                             <button
                                 onClick={handleLogout}
                                 className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200"
@@ -308,11 +304,11 @@ const DoctorDashboard = () => {
                         )}
 
                         <div className="bg-white rounded-xl shadow-sm border border-gray-100">
-                            <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center">
-                                <h3 className="text-lg font-semibold text-gray-900">Patient Records</h3>
+                            <div className="px-4 sm:px-6 py-4 border-b border-gray-100 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
+                                <h3 className="text-base sm:text-lg font-semibold text-gray-900">Patient Records</h3>
                                 <button 
                                     onClick={openAddPatientModal}
-                                    className="bg-green-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-green-700 flex items-center gap-2"
+                                    className="bg-green-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-green-700 flex items-center justify-center gap-2 w-full sm:w-auto"
                                 >
                                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
@@ -322,22 +318,22 @@ const DoctorDashboard = () => {
                             </div>
 
                             {loading && (
-                                <div className="text-center py-12">
-                                    <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-500"></div>
-                                    <p className="mt-4 text-gray-600">Loading patients...</p>
+                                <div className="text-center py-8 sm:py-12">
+                                    <div className="inline-block animate-spin rounded-full h-10 w-10 sm:h-12 sm:w-12 border-b-2 border-emerald-500"></div>
+                                    <p className="mt-4 text-gray-600 text-sm">Loading patients...</p>
                                 </div>
                             )}
 
                             {!loading && patients.length === 0 && (
-                                <div className="text-center py-12">
-                                    <svg className="w-16 h-16 mx-auto text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <div className="text-center py-8 sm:py-12 px-4">
+                                    <svg className="w-12 h-12 sm:w-16 sm:h-16 mx-auto text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                                     </svg>
-                                    <h3 className="text-lg font-semibold text-gray-700 mb-2">No Patients Yet</h3>
-                                    <p className="text-gray-500 mb-4">Start by adding your first patient</p>
+                                    <h3 className="text-base sm:text-lg font-semibold text-gray-700 mb-2">No Patients Yet</h3>
+                                    <p className="text-gray-500 mb-4 text-sm">Start by adding your first patient</p>
                                     <button
                                         onClick={openAddPatientModal}
-                                        className="bg-emerald-500 text-white px-6 py-2 rounded-lg hover:bg-emerald-600 transition-colors"
+                                        className="bg-emerald-500 text-white px-6 py-2 rounded-lg hover:bg-emerald-600 transition-colors text-sm"
                                     >
                                         Add Your First Patient
                                     </button>
@@ -347,28 +343,28 @@ const DoctorDashboard = () => {
                             {!loading && patients.length > 0 && (
                                 <div className="divide-y divide-gray-200">
                                     {patients.map((patient) => (
-                                        <div key={patient._id} className="px-6 py-4 hover:bg-gray-50">
+                                        <div key={patient._id} className="px-4 sm:px-6 py-4 hover:bg-gray-50">
                                             <div className="flex items-center justify-between">
-                                                <div className="flex items-center space-x-4">
+                                                <div className="flex items-center space-x-3 sm:space-x-4 min-w-0">
                                                     <div className="flex-shrink-0">
-                                                        <div className="w-10 h-10 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-full flex items-center justify-center">
+                                                        <div className="w-9 h-9 sm:w-10 sm:h-10 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-full flex items-center justify-center">
                                                             <span className="text-sm font-medium text-white">
                                                                 {patient.fullname?.charAt(0).toUpperCase() || 'P'}
                                                             </span>
                                                         </div>
                                                     </div>
-                                                    <div>
-                                                        <p className="text-sm font-medium text-gray-900">{patient.fullname || 'Unknown Patient'}</p>
-                                                        <p className="text-sm text-gray-500">{patient.email}</p>
+                                                    <div className="min-w-0">
+                                                        <p className="text-sm font-medium text-gray-900 truncate">{patient.fullname || 'Unknown Patient'}</p>
+                                                        <p className="text-xs sm:text-sm text-gray-500 truncate">{patient.email}</p>
                                                     </div>
                                                 </div>
-                                                <div className="flex items-center space-x-3">
+                                                <div className="flex items-center space-x-2 sm:space-x-3 flex-shrink-0">
                                                     <button 
                                                         onClick={() => handleRemovePatient(patient._id)}
                                                         className="text-red-600 hover:text-red-800 hover:bg-red-50 p-2 rounded-lg transition-colors"
                                                         title="Remove patient"
                                                     >
-                                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                                                         </svg>
                                                     </button>
@@ -383,30 +379,30 @@ const DoctorDashboard = () => {
                 )}
 
                 {activeTab === 'prescriptions' && (
-                    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-                        <h3 className="text-lg font-semibold text-gray-900 mb-4">Prescription Management</h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-emerald-400 transition-colors">
-                                <div className="flex justify-center mb-4">
-                                    <svg className="w-12 h-12 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 sm:p-6">
+                        <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-4">Prescription Management</h3>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+                            <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 sm:p-6 text-center hover:border-emerald-400 transition-colors">
+                                <div className="flex justify-center mb-3 sm:mb-4">
+                                    <svg className="w-10 h-10 sm:w-12 sm:h-12 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
                                     </svg>
                                 </div>
-                                <h4 className="font-medium text-gray-900 mb-2">Create New Prescription</h4>
-                                <p className="text-sm text-gray-600 mb-4">Generate digital prescriptions for your patients</p>
-                                <button className="bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-emerald-700">
+                                <h4 className="font-medium text-gray-900 mb-2 text-sm sm:text-base">Create New Prescription</h4>
+                                <p className="text-xs sm:text-sm text-gray-600 mb-4">Generate digital prescriptions for your patients</p>
+                                <button className="bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-emerald-700 w-full sm:w-auto">
                                     Create Prescription
                                 </button>
                             </div>
-                            <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-slate-400 transition-colors">
-                                <div className="flex justify-center mb-4">
-                                    <svg className="w-12 h-12 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 sm:p-6 text-center hover:border-slate-400 transition-colors">
+                                <div className="flex justify-center mb-3 sm:mb-4">
+                                    <svg className="w-10 h-10 sm:w-12 sm:h-12 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                                     </svg>
                                 </div>
-                                <h4 className="font-medium text-gray-900 mb-2">Prescription History</h4>
-                                <p className="text-sm text-gray-600 mb-4">View and manage past prescriptions</p>
-                                <button className="bg-slate-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-slate-700">
+                                <h4 className="font-medium text-gray-900 mb-2 text-sm sm:text-base">Prescription History</h4>
+                                <p className="text-xs sm:text-sm text-gray-600 mb-4">View and manage past prescriptions</p>
+                                <button className="bg-slate-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-slate-700 w-full sm:w-auto">
                                     View History
                                 </button>
                             </div>
@@ -415,27 +411,27 @@ const DoctorDashboard = () => {
                 )}
 
                 {activeTab === 'reports' && (
-                    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-                        <h3 className="text-lg font-semibold text-gray-900 mb-4">Medical Reports</h3>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <div className="p-4 bg-blue-50 rounded-lg">
-                                <h4 className="font-medium text-blue-900 mb-2">Lab Results</h4>
-                                <p className="text-sm text-blue-700">3 pending reviews</p>
-                                <button className="mt-2 text-blue-600 hover:text-blue-800 text-sm font-medium">
+                    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 sm:p-6">
+                        <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-4">Medical Reports</h3>
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+                            <div className="p-3 sm:p-4 bg-blue-50 rounded-lg">
+                                <h4 className="font-medium text-blue-900 mb-1 sm:mb-2 text-sm sm:text-base">Lab Results</h4>
+                                <p className="text-xs sm:text-sm text-blue-700">3 pending reviews</p>
+                                <button className="mt-2 text-blue-600 hover:text-blue-800 text-xs sm:text-sm font-medium">
                                     Review Now
                                 </button>
                             </div>
-                            <div className="p-4 bg-green-50 rounded-lg">
-                                <h4 className="font-medium text-green-900 mb-2">Imaging Reports</h4>
-                                <p className="text-sm text-green-700">2 new reports</p>
-                                <button className="mt-2 text-green-600 hover:text-green-800 text-sm font-medium">
+                            <div className="p-3 sm:p-4 bg-green-50 rounded-lg">
+                                <h4 className="font-medium text-green-900 mb-1 sm:mb-2 text-sm sm:text-base">Imaging Reports</h4>
+                                <p className="text-xs sm:text-sm text-green-700">2 new reports</p>
+                                <button className="mt-2 text-green-600 hover:text-green-800 text-xs sm:text-sm font-medium">
                                     View Reports
                                 </button>
                             </div>
-                            <div className="p-4 bg-purple-50 rounded-lg">
-                                <h4 className="font-medium text-purple-900 mb-2">Consultation Notes</h4>
-                                <p className="text-sm text-purple-700">12 notes today</p>
-                                <button className="mt-2 text-purple-600 hover:text-purple-800 text-sm font-medium">
+                            <div className="p-3 sm:p-4 bg-purple-50 rounded-lg">
+                                <h4 className="font-medium text-purple-900 mb-1 sm:mb-2 text-sm sm:text-base">Consultation Notes</h4>
+                                <p className="text-xs sm:text-sm text-purple-700">12 notes today</p>
+                                <button className="mt-2 text-purple-600 hover:text-purple-800 text-xs sm:text-sm font-medium">
                                     Manage Notes
                                 </button>
                             </div>

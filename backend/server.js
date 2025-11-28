@@ -1,6 +1,7 @@
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
+import os from "os";
 import { connectDB } from "./db.js";
 import authRoutes from "./routes/authRoutes.js";
 import adminRoutes from "./routes/adminRoutes.js";
@@ -12,6 +13,19 @@ dotenv.config();
 connectDB();
 
 const app = express();
+
+// Function to get local IP address
+const getLocalIP = () => {
+  const interfaces = os.networkInterfaces();
+  for (const name of Object.keys(interfaces)) {
+    for (const iface of interfaces[name]) {
+      if (iface.family === 'IPv4' && !iface.internal) {
+        return iface.address;
+      }
+    }
+  }
+  return 'localhost';
+};
 
 // Add CORS headers to ALL responses - this must be first
 app.use((req, res, next) => {
@@ -91,9 +105,13 @@ app.use((err, req, res, next) => {
 // For local development
 if (process.env.NODE_ENV !== 'production') {
   const PORT = process.env.PORT || 5000;
-  app.listen(PORT, () =>
-    console.log(`🚀 Server running on port ${PORT}`)
-  );
+  const localIP = getLocalIP();
+  
+  app.listen(PORT, '0.0.0.0', () => {
+    console.log(`\n🚀 Server is running!\n`);
+    console.log(`   Local:   http://localhost:${PORT}`);
+    console.log(`   Network: http://${localIP}:${PORT}\n`);
+  });
 }
 
 // Export for Vercel serverless

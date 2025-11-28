@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { pharmacistAPI } from '../services/api';
-import { LayoutDashboard, Package, ArrowLeftRight, BarChart3, User, LogOut, Settings, FileText, Download, Trash2, Plus } from 'lucide-react';
+import { LayoutDashboard, Package, ArrowLeftRight, BarChart3, User, LogOut, Settings, FileText, Download, Trash2, Plus, Menu, X } from 'lucide-react';
 
 const PharmacistDashboard = () => {
     const navigate = useNavigate();
     const [user, setUser] = useState(null);
     const [activeTab, setActiveTab] = useState('overview');
+    const [sidebarOpen, setSidebarOpen] = useState(false);
     const [medicines, setMedicines] = useState([]);
     const [transactions, setTransactions] = useState([]);
     const [stats, setStats] = useState(null);
@@ -413,24 +414,41 @@ const PharmacistDashboard = () => {
 
     return (
         <div className="flex h-screen bg-gray-50">
+            {/* Mobile Overlay */}
+            {sidebarOpen && (
+                <div 
+                    className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+                    onClick={() => setSidebarOpen(false)}
+                />
+            )}
+
             {/* Sidebar */}
-            <div className="w-64 bg-white border-r border-gray-200 flex flex-col">
+            <div className={`w-64 bg-white border-r border-gray-200 flex flex-col fixed inset-y-0 left-0 z-50 transform transition-transform duration-300 lg:translate-x-0 lg:static ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
                 {/* Logo */}
-                <div className="h-16 flex items-center px-6 border-b border-gray-200">
+                <div className="h-16 flex items-center justify-between px-4 sm:px-6 border-b border-gray-200">
                     <div className="flex items-center space-x-3">
                         <img src="/favicon.svg" alt="Health Track" className="w-8 h-8" />
                         <span className="text-lg font-bold text-gray-900">Health Track</span>
                     </div>
+                    <button 
+                        onClick={() => setSidebarOpen(false)}
+                        className="lg:hidden p-2 rounded-lg hover:bg-gray-100"
+                    >
+                        <X className="w-5 h-5 text-gray-500" />
+                    </button>
                 </div>
 
                 {/* Navigation */}
-                <nav className="flex-1 p-4 space-y-1">
+                <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
                     {sidebarItems.map((item) => {
                         const IconComponent = item.icon;
                         return (
                             <button
                                 key={item.id}
-                                onClick={() => setActiveTab(item.id)}
+                                onClick={() => {
+                                    setActiveTab(item.id);
+                                    setSidebarOpen(false);
+                                }}
                                 className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-sm font-medium transition-all ${
                                     activeTab === item.id
                                         ? 'bg-blue-50 text-blue-600'
@@ -446,10 +464,6 @@ const PharmacistDashboard = () => {
 
                 {/* User Profile */}
                 <div className="p-4 border-t border-gray-200">
-                    <div className="mb-4">
-                        <p className="text-sm font-medium text-gray-900 truncate">{user?.email || user?.fullName}</p>
-                        <p className="text-xs text-gray-500 mt-0.5">Pharmacist</p>
-                    </div>
                     <button
                         onClick={handleLogout}
                         className="w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-sm font-medium transition-all text-gray-700 hover:bg-gray-50"
@@ -463,14 +477,24 @@ const PharmacistDashboard = () => {
             {/* Main Content */}
             <div className="flex-1 flex flex-col overflow-hidden">
                 {/* Header */}
-                <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-end px-8">
-                    <div className="text-sm text-gray-500">
-                        {new Date().toLocaleDateString('en-US', { 
+                <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-4 sm:px-8">
+                    <button 
+                        onClick={() => setSidebarOpen(true)}
+                        className="lg:hidden p-2 rounded-lg hover:bg-gray-100"
+                    >
+                        <Menu className="w-6 h-6 text-gray-600" />
+                    </button>
+                    <div className="text-sm text-gray-500 ml-auto">
+                        <span className="hidden sm:inline">{new Date().toLocaleDateString('en-US', { 
                             weekday: 'long', 
                             year: 'numeric', 
                             month: 'long', 
                             day: 'numeric' 
-                        })}
+                        })}</span>
+                        <span className="sm:hidden">{new Date().toLocaleDateString('en-US', { 
+                            month: 'short', 
+                            day: 'numeric' 
+                        })}</span>
                     </div>
                 </header>
 
@@ -507,30 +531,30 @@ const PharmacistDashboard = () => {
                 )}
 
                 {/* Content Area */}
-                <main className="flex-1 overflow-y-auto p-8">
+                <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
                 {activeTab === 'overview' && (
-                    <div className="space-y-6">
+                    <div className="space-y-4 sm:space-y-6">
                         {/* Stats Cards */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                            <div className="bg-white rounded-xl border border-gray-200 p-5">
+                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+                            <div className="bg-white rounded-xl border border-gray-200 p-4 sm:p-5">
                                 <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Total Medicines</p>
-                                <p className="text-3xl font-semibold text-gray-900 mt-2">{stats?.totalItems || 0}</p>
-                                <p className="text-sm text-gray-500 mt-1">items in inventory</p>
+                                <p className="text-2xl sm:text-3xl font-semibold text-gray-900 mt-2">{stats?.totalItems || 0}</p>
+                                <p className="text-xs sm:text-sm text-gray-500 mt-1">items in inventory</p>
                             </div>
-                            <div className="bg-white rounded-xl border border-gray-200 p-5">
+                            <div className="bg-white rounded-xl border border-gray-200 p-4 sm:p-5">
                                 <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Total Stock</p>
-                                <p className="text-3xl font-semibold text-gray-900 mt-2">{stats?.totalQuantity || 0}</p>
-                                <p className="text-sm text-gray-500 mt-1">units available</p>
+                                <p className="text-2xl sm:text-3xl font-semibold text-gray-900 mt-2">{stats?.totalQuantity || 0}</p>
+                                <p className="text-xs sm:text-sm text-gray-500 mt-1">units available</p>
                             </div>
-                            <div className="bg-white rounded-xl border border-gray-200 p-5">
+                            <div className="bg-white rounded-xl border border-gray-200 p-4 sm:p-5">
                                 <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Low Stock</p>
-                                <p className="text-3xl font-semibold text-yellow-600 mt-2">{stats?.lowStock || 0}</p>
-                                <p className="text-sm text-gray-500 mt-1">items need restock</p>
+                                <p className="text-2xl sm:text-3xl font-semibold text-yellow-600 mt-2">{stats?.lowStock || 0}</p>
+                                <p className="text-xs sm:text-sm text-gray-500 mt-1">need restock</p>
                             </div>
-                            <div className="bg-white rounded-xl border border-gray-200 p-5">
+                            <div className="bg-white rounded-xl border border-gray-200 p-4 sm:p-5">
                                 <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Out of Stock</p>
-                                <p className="text-3xl font-semibold text-red-600 mt-2">{stats?.outOfStock || 0}</p>
-                                <p className="text-sm text-gray-500 mt-1">items unavailable</p>
+                                <p className="text-2xl sm:text-3xl font-semibold text-red-600 mt-2">{stats?.outOfStock || 0}</p>
+                                <p className="text-xs sm:text-sm text-gray-500 mt-1">unavailable</p>
                             </div>
                         </div>
 
@@ -689,41 +713,66 @@ const PharmacistDashboard = () => {
                 )}
 
                 {activeTab === 'transactions' && (
-                    <div className="space-y-6">
+                    <div className="space-y-4 sm:space-y-6">
                         <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-                            <div className="px-6 py-4 border-b border-gray-200">
-                                <h3 className="text-lg font-semibold text-gray-900">Transaction History</h3>
+                            <div className="px-4 sm:px-6 py-4 border-b border-gray-200">
+                                <h3 className="text-base sm:text-lg font-semibold text-gray-900">Transaction History</h3>
                             </div>
                             
                             {loading && transactions.length === 0 ? (
-                                <div className="p-16 text-center">
+                                <div className="p-8 sm:p-16 text-center">
                                     <div className="w-10 h-10 border-2 border-gray-900 border-t-transparent rounded-full animate-spin mx-auto"></div>
                                     <p className="text-gray-500 mt-4 text-sm">Loading transactions...</p>
                                 </div>
                             ) : transactions.length === 0 ? (
-                                <div className="p-16 text-center">
-                                    <ArrowLeftRight className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-                                    <h3 className="text-lg font-semibold text-gray-700 mb-2">No Transactions Yet</h3>
-                                    <p className="text-gray-500 text-sm">Transaction history will appear here</p>
+                                <div className="p-8 sm:p-16 text-center">
+                                    <ArrowLeftRight className="w-10 h-10 sm:w-12 sm:h-12 text-gray-300 mx-auto mb-4" />
+                                    <h3 className="text-base sm:text-lg font-semibold text-gray-700 mb-2">No Transactions Yet</h3>
+                                    <p className="text-gray-500 text-xs sm:text-sm">Transaction history will appear here</p>
                                 </div>
                             ) : (
                                 <div className="overflow-x-auto">
-                                    <table className="w-full">
+                                    {/* Mobile Card View */}
+                                    <div className="sm:hidden divide-y divide-gray-100">
+                                        {transactions.map((txn) => (
+                                            <div key={txn.id} className="p-4 space-y-2">
+                                                <div className="flex justify-between items-start">
+                                                    <div>
+                                                        <p className="font-medium text-gray-900 text-sm">{txn.medicineName}</p>
+                                                        <p className="text-xs text-gray-500">{txn.quantity} units • ₹{txn.totalAmount?.toFixed(2) || '0.00'}</p>
+                                                    </div>
+                                                    <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
+                                                        txn.type === 'add' ? 'bg-blue-50 text-blue-700' :
+                                                        txn.type === 'issue' ? 'bg-green-50 text-green-700' :
+                                                        txn.type === 'update' ? 'bg-yellow-50 text-yellow-700' :
+                                                        'bg-red-50 text-red-700'
+                                                    }`}>
+                                                        {txn.type.charAt(0).toUpperCase() + txn.type.slice(1)}
+                                                    </span>
+                                                </div>
+                                                <div className="flex justify-between text-xs text-gray-500">
+                                                    <span>{txn.patientName || 'No patient'}</span>
+                                                    <span>{new Date(txn.createdAt).toLocaleDateString('en-IN', { month: 'short', day: 'numeric' })}</span>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                    {/* Desktop Table View */}
+                                    <table className="w-full hidden sm:table">
                                         <thead>
                                             <tr className="border-b border-gray-200">
-                                                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Date & Time</th>
-                                                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Type</th>
-                                                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Medicine</th>
-                                                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Quantity</th>
-                                                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Amount</th>
-                                                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Patient</th>
-                                                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Notes</th>
+                                                <th className="px-4 lg:px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Date</th>
+                                                <th className="px-4 lg:px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Type</th>
+                                                <th className="px-4 lg:px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Medicine</th>
+                                                <th className="px-4 lg:px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Qty</th>
+                                                <th className="px-4 lg:px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Amount</th>
+                                                <th className="px-4 lg:px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider hidden lg:table-cell">Patient</th>
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-gray-100">
                                             {transactions.map((txn) => (
                                                 <tr key={txn.id} className="hover:bg-gray-50 transition-colors">
-                                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                    <td className="px-4 lg:px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                                         {new Date(txn.createdAt).toLocaleString('en-IN', {
                                                             month: 'short',
                                                             day: 'numeric',
@@ -731,8 +780,8 @@ const PharmacistDashboard = () => {
                                                             minute: '2-digit'
                                                         })}
                                                     </td>
-                                                    <td className="px-6 py-4 whitespace-nowrap">
-                                                        <span className={`inline-flex px-2.5 py-1 text-xs font-medium rounded-full ${
+                                                    <td className="px-4 lg:px-6 py-4 whitespace-nowrap">
+                                                        <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
                                                             txn.type === 'add' ? 'bg-blue-50 text-blue-700' :
                                                             txn.type === 'issue' ? 'bg-green-50 text-green-700' :
                                                             txn.type === 'update' ? 'bg-yellow-50 text-yellow-700' :
@@ -741,20 +790,17 @@ const PharmacistDashboard = () => {
                                                             {txn.type.charAt(0).toUpperCase() + txn.type.slice(1)}
                                                         </span>
                                                     </td>
-                                                    <td className="px-6 py-4 text-sm font-medium text-gray-900">
+                                                    <td className="px-4 lg:px-6 py-4 text-sm font-medium text-gray-900">
                                                         {txn.medicineName}
                                                     </td>
-                                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                                                        {txn.quantity} units
+                                                    <td className="px-4 lg:px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                                                        {txn.quantity}
                                                     </td>
-                                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                                    <td className="px-4 lg:px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                                                         ₹{txn.totalAmount ? txn.totalAmount.toFixed(2) : '0.00'}
                                                     </td>
-                                                    <td className="px-6 py-4 text-sm text-gray-600">
+                                                    <td className="px-4 lg:px-6 py-4 text-sm text-gray-600 hidden lg:table-cell">
                                                         {txn.patientName || '—'}
-                                                    </td>
-                                                    <td className="px-6 py-4 text-sm text-gray-500">
-                                                        {txn.notes || '—'}
                                                     </td>
                                                 </tr>
                                             ))}
@@ -767,9 +813,9 @@ const PharmacistDashboard = () => {
                 )}
 
                 {activeTab === 'inventory' && (
-                    <div className="space-y-6">
+                    <div className="space-y-4 sm:space-y-6">
                         {/* Inventory Header with Stats */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
                             <div className="bg-white rounded-lg border border-gray-200 p-4">
                                 <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Total Items</p>
                                 <p className="text-2xl font-semibold text-gray-900 mt-1">{stats?.totalItems || 0}</p>
@@ -818,75 +864,138 @@ const PharmacistDashboard = () => {
                                     </button>
                                 </div>
                             ) : (
-                                <div className="overflow-x-auto">
-                                    <table className="w-full">
-                                        <thead>
-                                            <tr className="border-b border-gray-200">
-                                                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Medicine</th>
-                                                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Category</th>
-                                                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Quantity</th>
-                                                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Price</th>
-                                                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Expiry</th>
-                                                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Actions</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody className="divide-y divide-gray-100">
-                                            {medicines.map((medicine) => (
-                                                <tr key={medicine.id} className="hover:bg-gray-50 transition-colors">
-                                                    <td className="px-6 py-4">
+                                <>
+                                    {/* Mobile Card View */}
+                                    <div className="lg:hidden divide-y divide-gray-100">
+                                        {medicines.map((medicine) => (
+                                            <div key={medicine.id} className="p-4 space-y-3">
+                                                <div className="flex items-start justify-between">
+                                                    <div>
                                                         <p className="text-sm font-medium text-gray-900">{medicine.name}</p>
                                                         {medicine.description && (
                                                             <p className="text-xs text-gray-500 mt-0.5">{medicine.description}</p>
                                                         )}
-                                                    </td>
-                                                    <td className="px-6 py-4">
-                                                        <span className="inline-flex px-2.5 py-1 text-xs font-medium bg-gray-100 text-gray-700 rounded-full">
-                                                            {medicine.category || 'General'}
-                                                        </span>
-                                                    </td>
-                                                    <td className="px-6 py-4">
-                                                        <span className={`inline-flex px-2.5 py-1 text-xs font-medium rounded-full ${
+                                                    </div>
+                                                    <span className="inline-flex px-2.5 py-1 text-xs font-medium bg-gray-100 text-gray-700 rounded-full">
+                                                        {medicine.category || 'General'}
+                                                    </span>
+                                                </div>
+                                                <div className="grid grid-cols-3 gap-2 text-sm">
+                                                    <div>
+                                                        <p className="text-xs text-gray-500">Quantity</p>
+                                                        <span className={`inline-flex px-2 py-0.5 text-xs font-medium rounded-full ${
                                                             medicine.quantity === 0 ? 'bg-red-50 text-red-700' :
                                                             medicine.quantity < 50 ? 'bg-yellow-50 text-yellow-700' :
                                                             'bg-green-50 text-green-700'
                                                         }`}>
-                                                            {medicine.quantity} units
+                                                            {medicine.quantity}
                                                         </span>
-                                                    </td>
-                                                    <td className="px-6 py-4">
-                                                        <span className="text-sm font-medium text-gray-900">₹{medicine.price || '0.00'}</span>
-                                                    </td>
-                                                    <td className="px-6 py-4 text-sm text-gray-500">
-                                                        {medicine.expiryDate ? new Date(medicine.expiryDate).toLocaleDateString() : '—'}
-                                                    </td>
-                                                    <td className="px-6 py-4">
-                                                        <div className="flex items-center space-x-3">
-                                                            <button 
-                                                                onClick={() => openIssueModal(medicine)}
-                                                                className="text-sm text-blue-600 hover:text-blue-700 font-medium hover:underline disabled:opacity-50 disabled:cursor-not-allowed disabled:no-underline"
-                                                                disabled={medicine.quantity === 0}
-                                                            >
-                                                                Issue
-                                                            </button>
-                                                            <button 
-                                                                onClick={() => openEditModal(medicine)}
-                                                                className="text-sm text-gray-600 hover:text-gray-700 font-medium hover:underline"
-                                                            >
-                                                                Edit
-                                                            </button>
-                                                            <button 
-                                                                onClick={() => handleRemoveMedicine(medicine.id, medicine.name)}
-                                                                className="text-sm text-red-600 hover:text-red-700 font-medium hover:underline"
-                                                            >
-                                                                Remove
-                                                            </button>
-                                                        </div>
-                                                    </td>
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-xs text-gray-500">Price</p>
+                                                        <p className="font-medium text-gray-900">₹{medicine.price || '0.00'}</p>
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-xs text-gray-500">Expiry</p>
+                                                        <p className="text-gray-600">{medicine.expiryDate ? new Date(medicine.expiryDate).toLocaleDateString() : '—'}</p>
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-center space-x-4 pt-2 border-t border-gray-100">
+                                                    <button 
+                                                        onClick={() => openIssueModal(medicine)}
+                                                        className="text-sm text-blue-600 hover:text-blue-700 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                                                        disabled={medicine.quantity === 0}
+                                                    >
+                                                        Issue
+                                                    </button>
+                                                    <button 
+                                                        onClick={() => openEditModal(medicine)}
+                                                        className="text-sm text-gray-600 hover:text-gray-700 font-medium"
+                                                    >
+                                                        Edit
+                                                    </button>
+                                                    <button 
+                                                        onClick={() => handleRemoveMedicine(medicine.id, medicine.name)}
+                                                        className="text-sm text-red-600 hover:text-red-700 font-medium"
+                                                    >
+                                                        Remove
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                    
+                                    {/* Desktop Table View */}
+                                    <div className="hidden lg:block overflow-x-auto">
+                                        <table className="w-full">
+                                            <thead>
+                                                <tr className="border-b border-gray-200">
+                                                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Medicine</th>
+                                                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Category</th>
+                                                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Quantity</th>
+                                                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Price</th>
+                                                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Expiry</th>
+                                                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Actions</th>
                                                 </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
-                                </div>
+                                            </thead>
+                                            <tbody className="divide-y divide-gray-100">
+                                                {medicines.map((medicine) => (
+                                                    <tr key={medicine.id} className="hover:bg-gray-50 transition-colors">
+                                                        <td className="px-6 py-4">
+                                                            <p className="text-sm font-medium text-gray-900">{medicine.name}</p>
+                                                            {medicine.description && (
+                                                                <p className="text-xs text-gray-500 mt-0.5">{medicine.description}</p>
+                                                            )}
+                                                        </td>
+                                                        <td className="px-6 py-4">
+                                                            <span className="inline-flex px-2.5 py-1 text-xs font-medium bg-gray-100 text-gray-700 rounded-full">
+                                                                {medicine.category || 'General'}
+                                                            </span>
+                                                        </td>
+                                                        <td className="px-6 py-4">
+                                                            <span className={`inline-flex px-2.5 py-1 text-xs font-medium rounded-full ${
+                                                                medicine.quantity === 0 ? 'bg-red-50 text-red-700' :
+                                                                medicine.quantity < 50 ? 'bg-yellow-50 text-yellow-700' :
+                                                                'bg-green-50 text-green-700'
+                                                            }`}>
+                                                                {medicine.quantity} units
+                                                            </span>
+                                                        </td>
+                                                        <td className="px-6 py-4">
+                                                            <span className="text-sm font-medium text-gray-900">₹{medicine.price || '0.00'}</span>
+                                                        </td>
+                                                        <td className="px-6 py-4 text-sm text-gray-500">
+                                                            {medicine.expiryDate ? new Date(medicine.expiryDate).toLocaleDateString() : '—'}
+                                                        </td>
+                                                        <td className="px-6 py-4">
+                                                            <div className="flex items-center space-x-3">
+                                                                <button 
+                                                                    onClick={() => openIssueModal(medicine)}
+                                                                    className="text-sm text-blue-600 hover:text-blue-700 font-medium hover:underline disabled:opacity-50 disabled:cursor-not-allowed disabled:no-underline"
+                                                                    disabled={medicine.quantity === 0}
+                                                                >
+                                                                    Issue
+                                                                </button>
+                                                                <button 
+                                                                    onClick={() => openEditModal(medicine)}
+                                                                    className="text-sm text-gray-600 hover:text-gray-700 font-medium hover:underline"
+                                                                >
+                                                                    Edit
+                                                                </button>
+                                                                <button 
+                                                                    onClick={() => handleRemoveMedicine(medicine.id, medicine.name)}
+                                                                    className="text-sm text-red-600 hover:text-red-700 font-medium hover:underline"
+                                                                >
+                                                                    Remove
+                                                                </button>
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </>
                             )}
                         </div>
                     </div>
@@ -925,119 +1034,184 @@ const PharmacistDashboard = () => {
                                     </button>
                                 </div>
                             ) : (
-                                <div className="overflow-x-auto">
-                                    <table className="w-full">
-                                        <thead>
-                                            <tr className="border-b border-gray-200">
-                                                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Report</th>
-                                                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Type</th>
-                                                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Generated</th>
-                                                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Size</th>
-                                                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Status</th>
-                                                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Actions</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody className="divide-y divide-gray-100">
-                                            {reports.map((report) => (
-                                                <tr key={report.id} className="hover:bg-gray-50 transition-colors">
-                                                    <td className="px-6 py-4">
-                                                        <div className="flex items-center space-x-3">
-                                                            <FileText className="w-5 h-5 text-gray-400" />
-                                                            <div>
-                                                                <p className="text-sm font-medium text-gray-900">{report.title}</p>
-                                                                {report.description && (
-                                                                    <p className="text-xs text-gray-500 mt-0.5">{report.description}</p>
-                                                                )}
-                                                            </div>
+                                <>
+                                    {/* Mobile Card View */}
+                                    <div className="lg:hidden divide-y divide-gray-100">
+                                        {reports.map((report) => (
+                                            <div key={report.id} className="p-4 space-y-3">
+                                                <div className="flex items-start justify-between">
+                                                    <div className="flex items-center space-x-3">
+                                                        <FileText className="w-5 h-5 text-gray-400" />
+                                                        <div>
+                                                            <p className="text-sm font-medium text-gray-900">{report.title}</p>
+                                                            {report.description && (
+                                                                <p className="text-xs text-gray-500 mt-0.5">{report.description}</p>
+                                                            )}
                                                         </div>
-                                                    </td>
-                                                    <td className="px-6 py-4">
-                                                        <span className={`inline-flex px-2.5 py-1 text-xs font-medium rounded-full ${
+                                                    </div>
+                                                    <span className={`inline-flex px-2 py-0.5 text-xs font-medium rounded-full ${
+                                                        report.status === 'completed' ? 'bg-green-50 text-green-700' :
+                                                        report.status === 'generating' ? 'bg-yellow-50 text-yellow-700' :
+                                                        'bg-red-50 text-red-700'
+                                                    }`}>
+                                                        {report.status.charAt(0).toUpperCase() + report.status.slice(1)}
+                                                    </span>
+                                                </div>
+                                                <div className="grid grid-cols-3 gap-2 text-sm">
+                                                    <div>
+                                                        <p className="text-xs text-gray-500">Type</p>
+                                                        <span className={`inline-flex px-2 py-0.5 text-xs font-medium rounded-full ${
                                                             report.reportType === 'inventory' ? 'bg-blue-50 text-blue-700' :
                                                             report.reportType === 'transaction' ? 'bg-green-50 text-green-700' :
                                                             'bg-purple-50 text-purple-700'
                                                         }`}>
                                                             {report.reportType.charAt(0).toUpperCase() + report.reportType.slice(1)}
                                                         </span>
-                                                    </td>
-                                                    <td className="px-6 py-4 text-sm text-gray-500">
-                                                        {new Date(report.generatedAt).toLocaleString('en-IN', {
-                                                            month: 'short',
-                                                            day: 'numeric',
-                                                            year: 'numeric',
-                                                            hour: '2-digit',
-                                                            minute: '2-digit'
-                                                        })}
-                                                    </td>
-                                                    <td className="px-6 py-4 text-sm text-gray-500">
-                                                        {formatFileSize(report.fileSize)}
-                                                    </td>
-                                                    <td className="px-6 py-4">
-                                                        <span className={`inline-flex px-2.5 py-1 text-xs font-medium rounded-full ${
-                                                            report.status === 'completed' ? 'bg-green-50 text-green-700' :
-                                                            report.status === 'generating' ? 'bg-yellow-50 text-yellow-700' :
-                                                            'bg-red-50 text-red-700'
-                                                        }`}>
-                                                            {report.status.charAt(0).toUpperCase() + report.status.slice(1)}
-                                                        </span>
-                                                    </td>
-                                                    <td className="px-6 py-4">
-                                                        <div className="flex items-center space-x-3">
-                                                            {report.status === 'completed' && (
-                                                                <button 
-                                                                    onClick={() => handleDownloadReport(report.id)}
-                                                                    className="text-blue-600 hover:text-blue-700 font-medium text-sm hover:underline flex items-center space-x-1"
-                                                                >
-                                                                    <Download className="w-4 h-4" />
-                                                                    <span>Download</span>
-                                                                </button>
-                                                            )}
-                                                            <button 
-                                                                onClick={() => handleDeleteReport(report.id, report.title)}
-                                                                className="text-red-600 hover:text-red-700 font-medium text-sm hover:underline flex items-center space-x-1"
-                                                            >
-                                                                <Trash2 className="w-4 h-4" />
-                                                                <span>Delete</span>
-                                                            </button>
-                                                        </div>
-                                                    </td>
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-xs text-gray-500">Size</p>
+                                                        <p className="text-gray-600">{formatFileSize(report.fileSize)}</p>
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-xs text-gray-500">Generated</p>
+                                                        <p className="text-gray-600">{new Date(report.generatedAt).toLocaleDateString()}</p>
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-center space-x-4 pt-2 border-t border-gray-100">
+                                                    {report.status === 'completed' && (
+                                                        <button 
+                                                            onClick={() => handleDownloadReport(report.id)}
+                                                            className="text-blue-600 hover:text-blue-700 font-medium text-sm flex items-center space-x-1"
+                                                        >
+                                                            <Download className="w-4 h-4" />
+                                                            <span>Download</span>
+                                                        </button>
+                                                    )}
+                                                    <button 
+                                                        onClick={() => handleDeleteReport(report.id, report.title)}
+                                                        className="text-red-600 hover:text-red-700 font-medium text-sm flex items-center space-x-1"
+                                                    >
+                                                        <Trash2 className="w-4 h-4" />
+                                                        <span>Delete</span>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                    
+                                    {/* Desktop Table View */}
+                                    <div className="hidden lg:block overflow-x-auto">
+                                        <table className="w-full">
+                                            <thead>
+                                                <tr className="border-b border-gray-200">
+                                                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Report</th>
+                                                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Type</th>
+                                                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Generated</th>
+                                                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Size</th>
+                                                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Status</th>
+                                                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Actions</th>
                                                 </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
-                                </div>
+                                            </thead>
+                                            <tbody className="divide-y divide-gray-100">
+                                                {reports.map((report) => (
+                                                    <tr key={report.id} className="hover:bg-gray-50 transition-colors">
+                                                        <td className="px-6 py-4">
+                                                            <div className="flex items-center space-x-3">
+                                                                <FileText className="w-5 h-5 text-gray-400" />
+                                                                <div>
+                                                                    <p className="text-sm font-medium text-gray-900">{report.title}</p>
+                                                                    {report.description && (
+                                                                        <p className="text-xs text-gray-500 mt-0.5">{report.description}</p>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                        </td>
+                                                        <td className="px-6 py-4">
+                                                            <span className={`inline-flex px-2.5 py-1 text-xs font-medium rounded-full ${
+                                                                report.reportType === 'inventory' ? 'bg-blue-50 text-blue-700' :
+                                                                report.reportType === 'transaction' ? 'bg-green-50 text-green-700' :
+                                                                'bg-purple-50 text-purple-700'
+                                                            }`}>
+                                                                {report.reportType.charAt(0).toUpperCase() + report.reportType.slice(1)}
+                                                            </span>
+                                                        </td>
+                                                        <td className="px-6 py-4 text-sm text-gray-500">
+                                                            {new Date(report.generatedAt).toLocaleString('en-IN', {
+                                                                month: 'short',
+                                                                day: 'numeric',
+                                                                year: 'numeric',
+                                                                hour: '2-digit',
+                                                                minute: '2-digit'
+                                                            })}
+                                                        </td>
+                                                        <td className="px-6 py-4 text-sm text-gray-500">
+                                                            {formatFileSize(report.fileSize)}
+                                                        </td>
+                                                        <td className="px-6 py-4">
+                                                            <span className={`inline-flex px-2.5 py-1 text-xs font-medium rounded-full ${
+                                                                report.status === 'completed' ? 'bg-green-50 text-green-700' :
+                                                                report.status === 'generating' ? 'bg-yellow-50 text-yellow-700' :
+                                                                'bg-red-50 text-red-700'
+                                                            }`}>
+                                                                {report.status.charAt(0).toUpperCase() + report.status.slice(1)}
+                                                            </span>
+                                                        </td>
+                                                        <td className="px-6 py-4">
+                                                            <div className="flex items-center space-x-3">
+                                                                {report.status === 'completed' && (
+                                                                    <button 
+                                                                        onClick={() => handleDownloadReport(report.id)}
+                                                                        className="text-blue-600 hover:text-blue-700 font-medium text-sm hover:underline flex items-center space-x-1"
+                                                                    >
+                                                                        <Download className="w-4 h-4" />
+                                                                        <span>Download</span>
+                                                                    </button>
+                                                                )}
+                                                                <button 
+                                                                    onClick={() => handleDeleteReport(report.id, report.title)}
+                                                                    className="text-red-600 hover:text-red-700 font-medium text-sm hover:underline flex items-center space-x-1"
+                                                                >
+                                                                    <Trash2 className="w-4 h-4" />
+                                                                    <span>Delete</span>
+                                                                </button>
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </>
                             )}
                         </div>
                     </div>
                 )}
 
                 {activeTab === 'personal-details' && (
-                    <div className="max-w-4xl grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div className="max-w-2xl space-y-6">
                         {/* Profile Information */}
-                        <div className="bg-white rounded-xl border border-gray-200 p-5">
-                            <div className="flex items-center space-x-2 mb-4">
-                                <User className="w-5 h-5 text-blue-600" />
-                                <h3 className="text-lg font-semibold text-gray-900">Profile</h3>
+                        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                            <div className="px-4 sm:px-6 py-4 border-b border-gray-100">
+                                <h3 className="font-semibold text-gray-900">Profile Information</h3>
                             </div>
-                            <form onSubmit={handleUpdateProfile} className="space-y-3">
+                            <form onSubmit={handleUpdateProfile} className="p-4 sm:p-6 space-y-4">
                                 <div>
-                                    <label className="block text-xs font-medium text-gray-700 mb-1">Full Name *</label>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
                                     <input
                                         type="text"
                                         required
                                         value={profileForm.name}
                                         onChange={(e) => setProfileForm({...profileForm, name: e.target.value})}
-                                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                        placeholder="Your name"
+                                        className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg outline-none focus:border-blue-500 focus:ring-0 transition-colors"
                                     />
                                 </div>
-                                <div className="grid grid-cols-2 gap-3">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                     <div>
-                                        <label className="block text-xs font-medium text-gray-700 mb-1">Gender</label>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">Gender</label>
                                         <select
                                             value={profileForm.gender}
                                             onChange={(e) => setProfileForm({...profileForm, gender: e.target.value})}
-                                            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                            className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg outline-none focus:border-blue-500 focus:ring-0 transition-colors"
                                         >
                                             <option value="">Select</option>
                                             <option value="male">Male</option>
@@ -1046,30 +1220,29 @@ const PharmacistDashboard = () => {
                                         </select>
                                     </div>
                                     <div>
-                                        <label className="block text-xs font-medium text-gray-700 mb-1">Phone</label>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
                                         <input
                                             type="tel"
                                             value={profileForm.phone}
                                             onChange={(e) => setProfileForm({...profileForm, phone: e.target.value})}
-                                            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                            placeholder="Phone number"
+                                            className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg outline-none focus:border-blue-500 focus:ring-0 transition-colors"
                                         />
                                     </div>
                                 </div>
                                 <div>
-                                    <label className="block text-xs font-medium text-gray-700 mb-1">Email</label>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
                                     <input
                                         type="email"
                                         disabled
                                         value={user?.email || ''}
-                                        className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg bg-gray-50 text-gray-500 cursor-not-allowed"
+                                        className="w-full px-3 py-2 border border-gray-200 rounded-lg bg-gray-50 text-gray-500"
                                     />
                                 </div>
-                                <div className="flex justify-end pt-2">
+                                <div className="pt-2">
                                     <button
                                         type="submit"
                                         disabled={loading}
-                                        className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:bg-gray-400 disabled:cursor-not-allowed"
+                                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
                                     >
                                         {loading ? 'Saving...' : 'Save Changes'}
                                     </button>
@@ -1077,55 +1250,53 @@ const PharmacistDashboard = () => {
                             </form>
                         </div>
 
-                        {/* Security */}
-                        <div className="bg-white rounded-xl border border-gray-200 p-5">
-                            <div className="flex items-center space-x-2 mb-4">
-                                <Settings className="w-5 h-5 text-purple-600" />
-                                <h3 className="text-lg font-semibold text-gray-900">Security</h3>
+                        {/* Change Password */}
+                        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                            <div className="px-6 py-4 border-b border-gray-100">
+                                <h3 className="font-semibold text-gray-900">Change Password</h3>
                             </div>
-                            <form onSubmit={handleUpdatePassword} className="space-y-3">
+                            <form onSubmit={handleUpdatePassword} className="p-6 space-y-4">
                                 <div>
-                                    <label className="block text-xs font-medium text-gray-700 mb-1">Current Password *</label>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Current Password</label>
                                     <input
                                         type="password"
                                         required
                                         value={passwordForm.currentPassword}
                                         onChange={(e) => setPasswordForm({...passwordForm, currentPassword: e.target.value})}
-                                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                        placeholder="Current password"
+                                        className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg outline-none focus:border-blue-500 focus:ring-0 transition-colors"
                                     />
                                 </div>
-                                <div>
-                                    <label className="block text-xs font-medium text-gray-700 mb-1">New Password *</label>
-                                    <input
-                                        type="password"
-                                        required
-                                        value={passwordForm.newPassword}
-                                        onChange={(e) => setPasswordForm({...passwordForm, newPassword: e.target.value})}
-                                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                        placeholder="New password (min 6 chars)"
-                                        minLength="6"
-                                    />
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">New Password</label>
+                                        <input
+                                            type="password"
+                                            required
+                                            value={passwordForm.newPassword}
+                                            onChange={(e) => setPasswordForm({...passwordForm, newPassword: e.target.value})}
+                                            className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg outline-none focus:border-blue-500 focus:ring-0 transition-colors"
+                                            minLength="6"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">Confirm Password</label>
+                                        <input
+                                            type="password"
+                                            required
+                                            value={passwordForm.confirmPassword}
+                                            onChange={(e) => setPasswordForm({...passwordForm, confirmPassword: e.target.value})}
+                                            className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg outline-none focus:border-blue-500 focus:ring-0 transition-colors"
+                                            minLength="6"
+                                        />
+                                    </div>
                                 </div>
-                                <div>
-                                    <label className="block text-xs font-medium text-gray-700 mb-1">Confirm Password *</label>
-                                    <input
-                                        type="password"
-                                        required
-                                        value={passwordForm.confirmPassword}
-                                        onChange={(e) => setPasswordForm({...passwordForm, confirmPassword: e.target.value})}
-                                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                        placeholder="Confirm password"
-                                        minLength="6"
-                                    />
-                                </div>
-                                <div className="flex justify-end pt-2">
+                                <div className="pt-2">
                                     <button
                                         type="submit"
                                         disabled={loading}
-                                        className="px-4 py-2 text-sm bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-medium disabled:bg-gray-400 disabled:cursor-not-allowed"
+                                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
                                     >
-                                        {loading ? 'Saving...' : 'Update Password'}
+                                        {loading ? 'Updating...' : 'Update Password'}
                                     </button>
                                 </div>
                             </form>
