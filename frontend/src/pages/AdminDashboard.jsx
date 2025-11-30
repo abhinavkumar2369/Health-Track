@@ -26,7 +26,6 @@ const AdminDashboard = () => {
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [doctors, setDoctors] = useState([]);
     const [pharmacists, setPharmacists] = useState([]);
-    const [patients, setPatients] = useState([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [successMessage, setSuccessMessage] = useState('');
@@ -38,7 +37,6 @@ const AdminDashboard = () => {
     const [stats, setStats] = useState({
         totalDoctors: 0,
         totalPharmacists: 0,
-        totalPatients: 0,
         totalRevenue: 0
     });
     const [profileForm, setProfileForm] = useState({
@@ -80,20 +78,17 @@ const AdminDashboard = () => {
     const loadData = async () => {
         setLoading(true);
         try {
-            const [doctorsRes, pharmacistsRes, patientsRes] = await Promise.all([
+            const [doctorsRes, pharmacistsRes] = await Promise.all([
                 adminAPI.getUsers('doctor'),
-                adminAPI.getUsers('pharmacist'),
-                adminAPI.getPatients()
+                adminAPI.getUsers('pharmacist')
             ]);
 
             if (doctorsRes.success) setDoctors(doctorsRes.data || []);
             if (pharmacistsRes.success) setPharmacists(pharmacistsRes.data || []);
-            if (patientsRes.success) setPatients(patientsRes.data || []);
 
             setStats({
                 totalDoctors: doctorsRes.data?.length || 0,
                 totalPharmacists: pharmacistsRes.data?.length || 0,
-                totalPatients: patientsRes.data?.length || 0,
                 totalRevenue: 45287
             });
         } catch (error) {
@@ -249,9 +244,6 @@ const AdminDashboard = () => {
             } else if (modalType === 'pharmacist') {
                 await adminAPI.addPharmacist(payload);
                 setSuccessMessage('Pharmacist added successfully!');
-            } else if (modalType === 'patient') {
-                await adminAPI.addPatient(payload);
-                setSuccessMessage('Patient added successfully!');
             }
 
             setFormData(initialFormState);
@@ -277,11 +269,7 @@ const AdminDashboard = () => {
         setSuccessMessage('');
         setLoading(true);
         try {
-            if (role === 'patient') {
-                await adminAPI.removePatient(userId);
-            } else {
-                await adminAPI.removeUser(userId, role);
-            }
+            await adminAPI.removeUser(userId, role);
             
             await loadData();
             setSuccessMessage(`${role.charAt(0).toUpperCase() + role.slice(1)} removed successfully!`);
@@ -390,7 +378,6 @@ const AdminDashboard = () => {
     const sidebarItems = [
         { id: 'dashboard', icon: LayoutDashboard, label: 'Dashboard' },
         { id: 'doctors', icon: Stethoscope, label: 'Doctors' },
-        { id: 'patients', icon: Users, label: 'Patients' },
         { id: 'pharmacists', icon: Pill, label: 'Pharmacists' },
         { id: 'reports', icon: BarChart3, label: 'Reports' },
         { id: 'settings', icon: Settings, label: 'Settings' }
@@ -450,7 +437,7 @@ const AdminDashboard = () => {
                 <div className="p-4 border-t border-gray-200">
                     <button
                         onClick={handleLogout}
-                        className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-900 font-semibold bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors"
+                        className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-900 font-semibold hover:text-gray-700 rounded-lg transition-colors"
                     >
                         <LogOut className="w-4 h-4 text-gray-900" />
                         <span className="text-gray-900 font-semibold">Log out</span>
@@ -639,19 +626,9 @@ const AdminDashboard = () => {
                                             <span className="text-sm font-semibold text-gray-900 mb-1">{stats.totalDoctors}</span>
                                             <div 
                                                 className="w-12 sm:w-16 bg-gradient-to-t from-blue-600 to-blue-400 rounded-t-lg transition-all duration-500"
-                                                style={{ height: `${Math.max((stats.totalDoctors / Math.max(stats.totalDoctors, stats.totalPatients, stats.totalPharmacists, 1)) * 100, 10)}%`, minHeight: '20px' }}
+                                                style={{ height: `${Math.max((stats.totalDoctors / Math.max(stats.totalDoctors, stats.totalPharmacists, 1)) * 100, 10)}%`, minHeight: '20px' }}
                                             ></div>
                                             <span className="text-xs font-medium text-gray-600 mt-2">Doctors</span>
-                                        </div>
-                                        
-                                        {/* Patients Bar */}
-                                        <div className="flex flex-col items-center">
-                                            <span className="text-sm font-semibold text-gray-900 mb-1">{stats.totalPatients}</span>
-                                            <div 
-                                                className="w-12 sm:w-16 bg-gradient-to-t from-green-600 to-green-400 rounded-t-lg transition-all duration-500"
-                                                style={{ height: `${Math.max((stats.totalPatients / Math.max(stats.totalDoctors, stats.totalPatients, stats.totalPharmacists, 1)) * 100, 10)}%`, minHeight: '20px' }}
-                                            ></div>
-                                            <span className="text-xs font-medium text-gray-600 mt-2">Patients</span>
                                         </div>
                                         
                                         {/* Pharmacists Bar */}
@@ -659,7 +636,7 @@ const AdminDashboard = () => {
                                             <span className="text-sm font-semibold text-gray-900 mb-1">{stats.totalPharmacists}</span>
                                             <div 
                                                 className="w-12 sm:w-16 bg-gradient-to-t from-purple-600 to-purple-400 rounded-t-lg transition-all duration-500"
-                                                style={{ height: `${Math.max((stats.totalPharmacists / Math.max(stats.totalDoctors, stats.totalPatients, stats.totalPharmacists, 1)) * 100, 10)}%`, minHeight: '20px' }}
+                                                style={{ height: `${Math.max((stats.totalPharmacists / Math.max(stats.totalDoctors, stats.totalPharmacists, 1)) * 100, 10)}%`, minHeight: '20px' }}
                                             ></div>
                                             <span className="text-xs font-medium text-gray-600 mt-2">Pharmacists</span>
                                         </div>
@@ -670,87 +647,12 @@ const AdminDashboard = () => {
                                         <div className="flex items-center justify-between">
                                             <div>
                                                 <p className="text-xs text-gray-500">Total Users</p>
-                                                <p className="text-2xl font-bold text-gray-900">{stats.totalDoctors + stats.totalPatients + stats.totalPharmacists}</p>
+                                                <p className="text-2xl font-bold text-gray-900">{stats.totalDoctors + stats.totalPharmacists}</p>
                                             </div>
                                             <div className="flex items-center space-x-1">
                                                 <span className="text-green-500 text-sm">↑ 8%</span>
                                                 <span className="text-xs text-gray-500">this month</span>
                                             </div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Active Patients - Line Chart */}
-                                <div className="bg-white rounded-xl border border-gray-200 p-5">
-                                    <div className="flex items-center justify-between mb-4">
-                                        <h3 className="text-lg font-semibold text-gray-900">Active Patients</h3>
-                                        <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">Last 6 months</span>
-                                    </div>
-                                    
-                                    {/* Line Chart */}
-                                    <div className="relative h-44">
-                                        <svg className="w-full h-full" viewBox="0 0 300 150" preserveAspectRatio="none">
-                                            {/* Grid lines */}
-                                            <line x1="0" y1="30" x2="300" y2="30" stroke="#f3f4f6" strokeWidth="1" />
-                                            <line x1="0" y1="60" x2="300" y2="60" stroke="#f3f4f6" strokeWidth="1" />
-                                            <line x1="0" y1="90" x2="300" y2="90" stroke="#f3f4f6" strokeWidth="1" />
-                                            <line x1="0" y1="120" x2="300" y2="120" stroke="#f3f4f6" strokeWidth="1" />
-                                            
-                                            {/* Area fill */}
-                                            <defs>
-                                                <linearGradient id="patientGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                                                    <stop offset="0%" stopColor="#22c55e" stopOpacity="0.3" />
-                                                    <stop offset="100%" stopColor="#22c55e" stopOpacity="0.05" />
-                                                </linearGradient>
-                                            </defs>
-                                            <path
-                                                d="M 0 110 L 60 95 L 120 100 L 180 65 L 240 45 L 300 25 L 300 150 L 0 150 Z"
-                                                fill="url(#patientGradient)"
-                                            />
-                                            
-                                            {/* Line */}
-                                            <path
-                                                d="M 0 110 L 60 95 L 120 100 L 180 65 L 240 45 L 300 25"
-                                                fill="none"
-                                                stroke="#22c55e"
-                                                strokeWidth="3"
-                                                strokeLinecap="round"
-                                                strokeLinejoin="round"
-                                            />
-                                            
-                                            {/* Data points */}
-                                            <circle cx="0" cy="110" r="5" fill="#fff" stroke="#22c55e" strokeWidth="2" />
-                                            <circle cx="60" cy="95" r="5" fill="#fff" stroke="#22c55e" strokeWidth="2" />
-                                            <circle cx="120" cy="100" r="5" fill="#fff" stroke="#22c55e" strokeWidth="2" />
-                                            <circle cx="180" cy="65" r="5" fill="#fff" stroke="#22c55e" strokeWidth="2" />
-                                            <circle cx="240" cy="45" r="5" fill="#fff" stroke="#22c55e" strokeWidth="2" />
-                                            <circle cx="300" cy="25" r="5" fill="#22c55e" stroke="#22c55e" strokeWidth="2" />
-                                        </svg>
-                                    </div>
-                                    
-                                    {/* X-axis labels */}
-                                    <div className="flex justify-between text-xs text-gray-500 mt-2 px-1">
-                                        <span>Jun</span>
-                                        <span>Jul</span>
-                                        <span>Aug</span>
-                                        <span>Sep</span>
-                                        <span>Oct</span>
-                                        <span>Nov</span>
-                                    </div>
-                                    
-                                    {/* Stats summary */}
-                                    <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-100">
-                                        <div>
-                                            <p className="text-xs text-gray-500">Current Active</p>
-                                            <p className="text-lg font-semibold text-gray-900">267</p>
-                                        </div>
-                                        <div>
-                                            <p className="text-xs text-gray-500">Avg/Month</p>
-                                            <p className="text-lg font-semibold text-gray-900">185</p>
-                                        </div>
-                                        <div className="flex items-center space-x-1">
-                                            <span className="text-green-500 text-sm">↑ 14%</span>
-                                            <span className="text-xs text-gray-500">growth</span>
                                         </div>
                                     </div>
                                 </div>
@@ -845,103 +747,6 @@ const AdminDashboard = () => {
                                                             <td className="px-4 lg:px-6 py-4">
                                                                 <button
                                                                     onClick={() => handleRemoveUser(doctor.id, 'doctor')}
-                                                                    className="text-sm text-red-600 hover:text-red-700 font-medium hover:underline"
-                                                                >
-                                                                    Remove
-                                                                </button>
-                                                            </td>
-                                                        </tr>
-                                                    ))}
-                                                </tbody>
-                                            </table>
-                                        </div>
-                                    </>
-                                )}
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Patients Section */}
-                    {activeSection === 'patients' && (
-                        <div className="space-y-4 sm:space-y-6">
-                            {/* Table Card */}
-                            <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-                                <div className="px-4 sm:px-6 py-4 border-b border-gray-200">
-                                    <h3 className="text-lg font-semibold text-gray-900">Patients</h3>
-                                </div>
-                                
-                                {loading ? (
-                                    <div className="p-8 sm:p-16 text-center">
-                                        <div className="w-10 h-10 border-2 border-gray-900 border-t-transparent rounded-full animate-spin mx-auto"></div>
-                                        <p className="text-gray-500 mt-4 text-sm">Loading patients...</p>
-                                    </div>
-                                ) : patients.length === 0 ? (
-                                    <div className="p-8 sm:p-16 text-center">
-                                        <Users className="w-10 h-10 sm:w-12 sm:h-12 text-gray-300 mx-auto mb-4" />
-                                        <h3 className="text-base sm:text-lg font-semibold text-gray-700 mb-2">No Patients Found</h3>
-                                        <p className="text-gray-500 mb-6 text-sm">Add your first patient to get started</p>
-                                        <button
-                                            onClick={() => openAddUserModal('patient')}
-                                            className="px-5 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 text-sm font-medium"
-                                        >
-                                            Add First Patient
-                                        </button>
-                                    </div>
-                                ) : (
-                                    <>
-                                        {/* Mobile Card View */}
-                                        <div className="sm:hidden divide-y divide-gray-100">
-                                            {patients.map((patient) => (
-                                                <div key={patient.id} className="p-4 space-y-2">
-                                                    <div className="flex justify-between items-start">
-                                                        <div className="min-w-0 flex-1">
-                                                            <p className="font-medium text-gray-900 text-sm truncate">{patient.name || '—'}</p>
-                                                            <p className="text-xs text-gray-500 truncate">{patient.email || '—'}</p>
-                                                        </div>
-                                                        <span className="inline-flex px-2 py-1 text-xs font-medium bg-green-50 text-green-700 rounded-full ml-2">
-                                                            Active
-                                                        </span>
-                                                    </div>
-                                                    <div className="flex justify-between items-center">
-                                                        <span className="text-xs text-gray-400">ID: {patient.uniqueId || patient.id}</span>
-                                                        <button
-                                                            onClick={() => handleRemoveUser(patient.id, 'patient')}
-                                                            className="text-xs text-red-600 hover:text-red-700 font-medium"
-                                                        >
-                                                            Remove
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                        {/* Desktop Table View */}
-                                        <div className="hidden sm:block overflow-x-auto">
-                                            <table className="w-full">
-                                                <thead>
-                                                    <tr className="border-b border-gray-200">
-                                                        <th className="px-4 lg:px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">ID</th>
-                                                        <th className="px-4 lg:px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Name</th>
-                                                        <th className="px-4 lg:px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider hidden lg:table-cell">Email</th>
-                                                        <th className="px-4 lg:px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Status</th>
-                                                        <th className="px-4 lg:px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider hidden lg:table-cell">Created</th>
-                                                        <th className="px-4 lg:px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Actions</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody className="divide-y divide-gray-100">
-                                                    {patients.map((patient) => (
-                                                        <tr key={patient.id} className="hover:bg-gray-50 transition-colors">
-                                                            <td className="px-4 lg:px-6 py-4 text-sm font-mono text-gray-600">{patient.uniqueId || patient.id}</td>
-                                                            <td className="px-4 lg:px-6 py-4 text-sm font-medium text-gray-900">{patient.name || '—'}</td>
-                                                            <td className="px-4 lg:px-6 py-4 text-sm text-gray-600 hidden lg:table-cell">{patient.email || '—'}</td>
-                                                            <td className="px-4 lg:px-6 py-4">
-                                                                <span className="inline-flex px-2.5 py-1 text-xs font-medium bg-green-50 text-green-700 rounded-full">
-                                                                    Active
-                                                                </span>
-                                                            </td>
-                                                            <td className="px-4 lg:px-6 py-4 text-sm text-gray-500 hidden lg:table-cell">{formatDisplayDate(patient.createdAt)}</td>
-                                                            <td className="px-4 lg:px-6 py-4">
-                                                                <button
-                                                                    onClick={() => handleRemoveUser(patient.id, 'patient')}
                                                                     className="text-sm text-red-600 hover:text-red-700 font-medium hover:underline"
                                                                 >
                                                                     Remove

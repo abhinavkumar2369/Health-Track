@@ -409,7 +409,7 @@ const DoctorDashboard = () => {
                 <div className="p-4 border-t border-gray-200">
                     <button
                         onClick={handleLogout}
-                        className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-900 font-semibold bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors"
+                        className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-900 font-semibold hover:text-gray-700 rounded-lg transition-colors"
                     >
                         <LogOut className="w-4 h-4 text-gray-900" />
                         <span className="text-gray-900 font-semibold">Log out</span>

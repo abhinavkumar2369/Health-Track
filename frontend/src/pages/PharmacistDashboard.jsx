@@ -466,7 +466,7 @@ const PharmacistDashboard = () => {
                 <div className="p-4 border-t border-gray-200">
                     <button
                         onClick={handleLogout}
-                        className="w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-sm font-medium transition-all text-gray-700 hover:bg-gray-50"
+                        className="w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-sm font-medium transition-all text-gray-700 hover:text-gray-900"
                     >
                         <LogOut className="w-5 h-5" />
                         <span>Log out</span>
@@ -558,92 +558,56 @@ const PharmacistDashboard = () => {
                             </div>
                         </div>
 
-                        {/* Stock Distribution & Recent Activity */}
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                            {/* Stock Distribution */}
-                            <div className="bg-white rounded-xl border border-gray-200 p-5">
-                                <h3 className="text-lg font-semibold text-gray-900 mb-4">Stock Distribution</h3>
-                                {medicines.length === 0 ? (
-                                    <div className="text-center py-12">
-                                        <Package className="w-10 h-10 text-gray-300 mx-auto mb-3" />
-                                        <p className="text-gray-500 text-sm">No inventory data</p>
-                                    </div>
-                                ) : (
-                                    <div className="space-y-4">
-                                        {(() => {
-                                            const goodStock = medicines.filter(m => m.quantity >= 50).length;
-                                            const lowStock = medicines.filter(m => m.quantity > 0 && m.quantity < 50).length;
-                                            const outOfStock = medicines.filter(m => m.quantity === 0).length;
-                                            const total = medicines.length || 1;
+                        {/* Stock Distribution */}
+                        <div className="bg-white rounded-xl border border-gray-200 p-5">
+                            <h3 className="text-lg font-semibold text-gray-900 mb-4">Stock Distribution</h3>
+                            {medicines.length === 0 ? (
+                                <div className="text-center py-12">
+                                    <Package className="w-10 h-10 text-gray-300 mx-auto mb-3" />
+                                    <p className="text-gray-500 text-sm">No inventory data</p>
+                                </div>
+                            ) : (
+                                <div className="space-y-4">
+                                    {(() => {
+                                        const goodStock = medicines.filter(m => m.quantity >= 50).length;
+                                        const lowStock = medicines.filter(m => m.quantity > 0 && m.quantity < 50).length;
+                                        const outOfStock = medicines.filter(m => m.quantity === 0).length;
+                                        const total = medicines.length || 1;
 
-                                            return (
-                                                <>
-                                                    <div>
-                                                        <div className="flex justify-between mb-1">
-                                                            <span className="text-sm font-medium text-gray-700">Good Stock</span>
-                                                            <span className="text-sm font-medium text-gray-900">{goodStock}</span>
-                                                        </div>
-                                                        <div className="w-full bg-gray-100 rounded-full h-2">
-                                                            <div className="bg-green-500 h-2 rounded-full transition-all" style={{ width: `${(goodStock / total) * 100}%` }}></div>
-                                                        </div>
+                                        return (
+                                            <>
+                                                <div>
+                                                    <div className="flex justify-between mb-1">
+                                                        <span className="text-sm font-medium text-gray-700">Good Stock</span>
+                                                        <span className="text-sm font-medium text-gray-900">{goodStock}</span>
                                                     </div>
-                                                    <div>
-                                                        <div className="flex justify-between mb-1">
-                                                            <span className="text-sm font-medium text-gray-700">Low Stock</span>
-                                                            <span className="text-sm font-medium text-gray-900">{lowStock}</span>
-                                                        </div>
-                                                        <div className="w-full bg-gray-100 rounded-full h-2">
-                                                            <div className="bg-yellow-500 h-2 rounded-full transition-all" style={{ width: `${(lowStock / total) * 100}%` }}></div>
-                                                        </div>
-                                                    </div>
-                                                    <div>
-                                                        <div className="flex justify-between mb-1">
-                                                            <span className="text-sm font-medium text-gray-700">Out of Stock</span>
-                                                            <span className="text-sm font-medium text-gray-900">{outOfStock}</span>
-                                                        </div>
-                                                        <div className="w-full bg-gray-100 rounded-full h-2">
-                                                            <div className="bg-red-500 h-2 rounded-full transition-all" style={{ width: `${(outOfStock / total) * 100}%` }}></div>
-                                                        </div>
-                                                    </div>
-                                                </>
-                                            );
-                                        })()}
-                                    </div>
-                                )}
-                            </div>
-
-                            {/* Recent Transactions */}
-                            <div className="bg-white rounded-xl border border-gray-200 p-5">
-                                <h3 className="text-lg font-semibold text-gray-900 mb-4">Recent Activity</h3>
-                                {transactions.length === 0 ? (
-                                    <div className="text-center py-12">
-                                        <ArrowLeftRight className="w-10 h-10 text-gray-300 mx-auto mb-3" />
-                                        <p className="text-gray-500 text-sm">No recent activity</p>
-                                    </div>
-                                ) : (
-                                    <div className="space-y-3">
-                                        {transactions.slice(0, 5).map((txn) => (
-                                            <div key={txn.id} className="flex items-center justify-between py-2 border-b border-gray-100 last:border-0">
-                                                <div className="flex items-center space-x-3">
-                                                    <span className={`w-2 h-2 rounded-full ${
-                                                        txn.type === 'add' ? 'bg-blue-500' :
-                                                        txn.type === 'issue' ? 'bg-green-500' :
-                                                        txn.type === 'update' ? 'bg-yellow-500' :
-                                                        'bg-red-500'
-                                                    }`}></span>
-                                                    <div>
-                                                        <p className="text-sm font-medium text-gray-900">{txn.medicineName}</p>
-                                                        <p className="text-xs text-gray-500">{txn.type.charAt(0).toUpperCase() + txn.type.slice(1)} • {txn.quantity} units</p>
+                                                    <div className="w-full bg-gray-100 rounded-full h-2">
+                                                        <div className="bg-green-500 h-2 rounded-full transition-all" style={{ width: `${(goodStock / total) * 100}%` }}></div>
                                                     </div>
                                                 </div>
-                                                <span className="text-xs text-gray-400">
-                                                    {new Date(txn.createdAt).toLocaleDateString('en-IN', { month: 'short', day: 'numeric' })}
-                                                </span>
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
+                                                <div>
+                                                    <div className="flex justify-between mb-1">
+                                                        <span className="text-sm font-medium text-gray-700">Low Stock</span>
+                                                        <span className="text-sm font-medium text-gray-900">{lowStock}</span>
+                                                    </div>
+                                                    <div className="w-full bg-gray-100 rounded-full h-2">
+                                                        <div className="bg-yellow-500 h-2 rounded-full transition-all" style={{ width: `${(lowStock / total) * 100}%` }}></div>
+                                                    </div>
+                                                </div>
+                                                <div>
+                                                    <div className="flex justify-between mb-1">
+                                                        <span className="text-sm font-medium text-gray-700">Out of Stock</span>
+                                                        <span className="text-sm font-medium text-gray-900">{outOfStock}</span>
+                                                    </div>
+                                                    <div className="w-full bg-gray-100 rounded-full h-2">
+                                                        <div className="bg-red-500 h-2 rounded-full transition-all" style={{ width: `${(outOfStock / total) * 100}%` }}></div>
+                                                    </div>
+                                                </div>
+                                            </>
+                                        );
+                                    })()}
+                                </div>
+                            )}
                         </div>
 
                         {/* Categories */}
@@ -1188,10 +1152,23 @@ const PharmacistDashboard = () => {
                 )}
 
                 {activeTab === 'personal-details' && (
-                    <div className="max-w-2xl space-y-6">
-                        {/* Profile Information */}
-                        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-                            <div className="flex items-center gap-4 p-4 sm:p-6 border-b border-gray-100">
+                    <div className="space-y-4 sm:space-y-6">
+                        <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Settings</h2>
+
+                        {error && (
+                            <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                                <p className="text-red-700 text-sm">{error}</p>
+                            </div>
+                        )}
+                        {success && (
+                            <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                                <p className="text-green-700 text-sm">{success}</p>
+                            </div>
+                        )}
+
+                        {/* Profile Settings */}
+                        <div className="bg-white rounded-xl border border-gray-200 p-5">
+                            <div className="flex items-center gap-4 mb-6 pb-4 border-b border-gray-100">
                                 <div className="w-14 h-14 bg-blue-100 rounded-full flex items-center justify-center text-xl font-bold text-blue-600">
                                     {user?.fullName?.charAt(0)?.toUpperCase() || user?.email?.charAt(0)?.toUpperCase() || 'P'}
                                 </div>
@@ -1200,105 +1177,106 @@ const PharmacistDashboard = () => {
                                     <p className="text-sm text-gray-500">{user?.email || 'No email'}</p>
                                 </div>
                             </div>
-                            <div className="px-4 sm:px-6 py-4 border-b border-gray-100">
-                                <h3 className="font-semibold text-gray-900">Profile Information</h3>
-                            </div>
-                            <form onSubmit={handleUpdateProfile} className="p-4 sm:p-6 space-y-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
-                                    <input
-                                        type="text"
-                                        required
-                                        value={profileForm.name}
-                                        onChange={(e) => setProfileForm({...profileForm, name: e.target.value})}
-                                        className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg outline-none focus:border-blue-500 focus:ring-0 transition-colors"
-                                    />
-                                </div>
+                            <h3 className="text-lg font-semibold text-gray-900 mb-4">Profile Information</h3>
+                            <form onSubmit={handleUpdateProfile} className="space-y-4">
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">Gender</label>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">Full Name</label>
+                                        <input
+                                            type="text"
+                                            name="fullname"
+                                            required
+                                            value={profileForm.name}
+                                            onChange={(e) => setProfileForm({...profileForm, name: e.target.value})}
+                                            className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg outline-none focus:border-blue-500 focus:ring-0 transition-colors"
+                                            placeholder="Enter your name"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">Gender</label>
                                         <select
+                                            name="gender"
                                             value={profileForm.gender}
                                             onChange={(e) => setProfileForm({...profileForm, gender: e.target.value})}
-                                            className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg outline-none focus:border-blue-500 focus:ring-0 transition-colors"
+                                            className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg outline-none focus:border-blue-500 focus:ring-0 transition-colors"
                                         >
-                                            <option value="">Select</option>
+                                            <option value="">Select gender</option>
                                             <option value="male">Male</option>
                                             <option value="female">Female</option>
                                             <option value="other">Other</option>
                                         </select>
                                     </div>
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">Phone</label>
                                         <input
                                             type="tel"
+                                            name="phone"
                                             value={profileForm.phone}
                                             onChange={(e) => setProfileForm({...profileForm, phone: e.target.value})}
-                                            className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg outline-none focus:border-blue-500 focus:ring-0 transition-colors"
+                                            className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg outline-none focus:border-blue-500 focus:ring-0 transition-colors"
+                                            placeholder="Enter phone number"
                                         />
                                     </div>
                                 </div>
-                                <div className="pt-2">
-                                    <button
-                                        type="submit"
-                                        disabled={loading}
-                                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
-                                    >
-                                        {loading ? 'Saving...' : 'Save Changes'}
-                                    </button>
-                                </div>
+                                <button
+                                    type="submit"
+                                    disabled={loading}
+                                    className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors disabled:bg-gray-400"
+                                >
+                                    {loading ? 'Saving...' : 'Save Changes'}
+                                </button>
                             </form>
                         </div>
 
-                        {/* Change Password */}
-                        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-                            <div className="px-6 py-4 border-b border-gray-100">
-                                <h3 className="font-semibold text-gray-900">Change Password</h3>
-                            </div>
-                            <form onSubmit={handleUpdatePassword} className="p-6 space-y-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Current Password</label>
-                                    <input
-                                        type="password"
-                                        required
-                                        value={passwordForm.currentPassword}
-                                        onChange={(e) => setPasswordForm({...passwordForm, currentPassword: e.target.value})}
-                                        className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg outline-none focus:border-blue-500 focus:ring-0 transition-colors"
-                                    />
-                                </div>
-                                <div className="grid grid-cols-2 gap-4">
+                        {/* Password Change */}
+                        <div className="bg-white rounded-xl border border-gray-200 p-5">
+                            <h3 className="text-lg font-semibold text-gray-900 mb-4">Change Password</h3>
+                            <form onSubmit={handleUpdatePassword} className="space-y-4">
+                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">New Password</label>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">Current Password</label>
                                         <input
                                             type="password"
+                                            name="currentPassword"
+                                            required
+                                            value={passwordForm.currentPassword}
+                                            onChange={(e) => setPasswordForm({...passwordForm, currentPassword: e.target.value})}
+                                            className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg outline-none focus:border-blue-500 focus:ring-0 transition-colors"
+                                            placeholder="Current password"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">New Password</label>
+                                        <input
+                                            type="password"
+                                            name="newPassword"
                                             required
                                             value={passwordForm.newPassword}
                                             onChange={(e) => setPasswordForm({...passwordForm, newPassword: e.target.value})}
-                                            className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg outline-none focus:border-blue-500 focus:ring-0 transition-colors"
-                                            minLength="6"
+                                            className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg outline-none focus:border-blue-500 focus:ring-0 transition-colors"
+                                            placeholder="New password"
                                         />
                                     </div>
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">Confirm Password</label>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">Confirm Password</label>
                                         <input
                                             type="password"
+                                            name="confirmPassword"
                                             required
                                             value={passwordForm.confirmPassword}
                                             onChange={(e) => setPasswordForm({...passwordForm, confirmPassword: e.target.value})}
-                                            className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg outline-none focus:border-blue-500 focus:ring-0 transition-colors"
-                                            minLength="6"
+                                            className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg outline-none focus:border-blue-500 focus:ring-0 transition-colors"
+                                            placeholder="Confirm password"
                                         />
                                     </div>
                                 </div>
-                                <div className="pt-2">
-                                    <button
-                                        type="submit"
-                                        disabled={loading}
-                                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
-                                    >
-                                        {loading ? 'Updating...' : 'Update Password'}
-                                    </button>
-                                </div>
+                                <button
+                                    type="submit"
+                                    disabled={loading}
+                                    className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors disabled:bg-gray-400"
+                                >
+                                    {loading ? 'Updating...' : 'Update Password'}
+                                </button>
                             </form>
                         </div>
                     </div>
