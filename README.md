@@ -341,8 +341,10 @@ Health-Track/
 
 | Method | Endpoint    | Description                              | Request Body                                       |
 | ------ | ----------- | ---------------------------------------- | -------------------------------------------------- |
-| POST   | `/sign-up`  | Register new admin                       | `{ fullname, email, password, role: "admin" }`     |
+| POST   | `/sign-up`  | Register new admin (role must be "admin")| `{ fullname, email, password, role: "admin" }`     |
 | POST   | `/sign-in`  | Sign in for all roles                    | `{ email, password, role }`                        |
+
+> **Note**: The `/sign-up` endpoint only allows admin registration. The `role` field must be set to `"admin"`. Other user types (doctors, pharmacists, patients) are created by admins through the admin routes.
 
 **Response**: Returns JWT token and user object
 
