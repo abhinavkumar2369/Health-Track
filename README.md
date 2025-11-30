@@ -2,26 +2,15 @@
 
 ## Overview ✨
 
-Health-Track is a modern healthcare management platform designed to streamline patient care, clinical workflows, and data analytics for hospitals, doctors, and patients. Built with a robust Node.js/Express backend and a responsive React.js frontend, it provides role-based access control for administrators, doctors, pharmacists, and patients.
+**Health-Track** is a modern healthcare management platform that provides:
 
----
+- **Streamlined Patient Care** – Efficient management of patient records and medical workflows
+- **Clinical Workflows** – Optimized processes for hospitals, doctors, and healthcare staff
+- **Data Analytics** – Comprehensive insights and reporting for healthcare operations
+- **Role-Based Access Control** – Secure access for administrators, doctors, pharmacists, and patients
+- **Modern Tech Stack** – Built with Node.js/Express backend and React.js frontend
+- **Responsive Design** – Seamless experience across all devices
 
-## Table of Contents
-
-- [Features](#features-)
-- [Screenshots](#screenshots-️)
-- [Technologies Used](#technologies-used-️)
-- [Project Architecture](#project-architecture-)
-- [Data Structures](#data-structures-)
-- [API Documentation](#api-documentation-)
-- [Getting Started](#getting-started-)
-- [Environment Variables](#environment-variables-)
-- [Usage](#usage-)
-- [License](#license-)
-- [Contributing](#contributing)
-- [Credits](#credits)
-
----
 
 ## Features 🚀
 
@@ -60,7 +49,7 @@ Health-Track is a modern healthcare management platform designed to streamline p
 - **Secure File Storage**: Documents stored securely in AWS S3 with pre-signed URLs
 - Access to personal health records
 
----
+
 
 ## Screenshots 🖼️
 
@@ -165,7 +154,6 @@ Health-Track/
     └── roadmap.txt
 ```
 
----
 
 ## Data Structures 📊
 
@@ -321,7 +309,7 @@ Health-Track/
 }
 ```
 
----
+
 
 ## API Documentation 📡
 
@@ -409,7 +397,6 @@ The application uses **Mongoose** as the ODM (Object Document Mapper) for MongoD
 4. **Timestamps**: All models include automatic `createdAt` and `updatedAt` fields
 5. **Indexing**: Unique indexes on email fields for fast lookups
 
----
 
 ## Getting Started 🚀
 
@@ -472,7 +459,7 @@ The application uses **Mongoose** as the ODM (Object Document Mapper) for MongoD
    npm run build
    ```
 
----
+
 
 ## Environment Variables 🔐
 
@@ -511,7 +498,7 @@ Create a `.env` file in the `frontend` directory:
 VITE_API_URL=http://localhost:5000
 ```
 
----
+
 
 ## Usage 🏥
 
@@ -548,27 +535,12 @@ VITE_API_URL=http://localhost:5000
 - Upload and manage medical documents
 - View your health records
 
----
 
 ## License 📄
 
 This project is licensed under the Apache License, Version 2.0. See the [LICENSE](./LICENSE) file for details.
 
----
 
-## Contributing
-
-Contributions are welcome! Here's how you can contribute:
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-Please ensure your code follows the existing style and includes appropriate tests.
-
----
 
 ## Credits
 

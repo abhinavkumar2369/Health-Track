@@ -406,13 +406,13 @@ const DoctorDashboard = () => {
                 </nav>
 
                 {/* User Profile */}
-                <div className="p-4 border-t border-gray-200">
+                <div className="p-4 border-t border-gray-100">
                     <button
                         onClick={handleLogout}
-                        className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-900 font-semibold hover:text-gray-700 rounded-lg transition-colors"
+                        className="w-full flex items-center justify-center space-x-2 px-4 py-2 text-red-600 rounded-lg hover:text-red-700 transition-colors text-sm font-medium"
                     >
-                        <LogOut className="w-4 h-4 text-gray-900" />
-                        <span className="text-gray-900 font-semibold">Log out</span>
+                        <LogOut className="w-4 h-4" />
+                        <span>Logout</span>
                     </button>
                 </div>
             </div>
