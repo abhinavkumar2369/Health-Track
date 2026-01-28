@@ -1,0 +1,6 @@
+"""Core module initialization"""
+
+from .config import settings
+from .logger import setup_logging
+
+__all__ = ["settings", "setup_logging"]

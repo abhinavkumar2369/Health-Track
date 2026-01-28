@@ -8,6 +8,7 @@ import adminRoutes from "./routes/adminRoutes.js";
 import doctorRoutes from "./routes/doctorRoutes.js";
 import pharmacistRoutes from "./routes/pharmacistRoutes.js";
 import documentRoutes from "./routes/documentRoutes.js";
+import aiRoutes from "./routes/aiRoutes.js";
 
 dotenv.config();
 
@@ -75,7 +76,8 @@ app.get("/", (req, res) => {
       admin: "/admin",
       doctor: "/doctor",
       pharmacist: "/pharmacist",
-      documents: "/api/documents"
+      documents: "/api/documents",
+      ai: "/api/ai"
     }
   });
 });
@@ -94,6 +96,7 @@ app.use("/admin", adminRoutes);
 app.use("/doctor", doctorRoutes);
 app.use("/pharmacist", pharmacistRoutes);
 app.use("/api/documents", documentRoutes);
+app.use("/api/ai", aiRoutes);
 
 // 404 handler
 app.use((req, res) => {

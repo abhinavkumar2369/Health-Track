@@ -529,27 +529,27 @@ function Homepage() {
 
             </main>
 
-            <footer className="bg-white border-t border-slate-200">
+            <footer className="bg-slate-900 border-t border-slate-700">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10">
                     {/* Mobile view */}
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                         <div className="w-full block md:hidden mb-3">
-                            <p className="text-sm font-semibold text-slate-900 text-center">© 2025 Health Track</p>
+                            <p className="text-sm font-semibold text-white text-center">© 2025 Health Track</p>
                         </div>
-                        <div className="w-full flex md:hidden justify-around items-center gap-0 text-sm text-slate-800">
+                        <div className="w-full flex md:hidden justify-around items-center gap-0 text-sm text-white/90">
                             <span className="flex items-center gap-2">
-                                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                                <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
                                 Platform live
                             </span>
                             <span>Version 2.0</span>
                         </div>
                         {/* Desktop view */}
                         <div className="hidden md:block">
-                            <p className="text-sm font-semibold text-slate-900">© 2025 Health Track</p>
+                            <p className="text-sm font-semibold text-white">© 2025 Health Track</p>
                         </div>
-                        <div className="hidden md:flex flex-wrap items-center gap-6 text-sm text-slate-800">
+                        <div className="hidden md:flex flex-wrap items-center gap-6 text-sm text-white/90">
                             <span className="flex items-center gap-2">
-                                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                                <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
                                 Platform live
                             </span>
                             <span>Version 2.0</span>

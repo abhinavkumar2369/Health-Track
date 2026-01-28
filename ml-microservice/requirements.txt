@@ -1,0 +1,42 @@
+# Health Track ML Microservice - Python Dependencies
+
+# Core Framework
+fastapi==0.109.0
+uvicorn[standard]==0.27.0
+pydantic==2.5.3
+pydantic-settings==2.1.0
+
+# HTTP Client
+httpx==0.26.0
+requests==2.31.0
+
+# Data Processing
+numpy==1.26.3
+pandas==2.1.4
+
+# Machine Learning (add specific versions based on your needs)
+scikit-learn==1.4.0
+# tensorflow==2.15.0  # Uncomment if using TensorFlow
+# torch==2.1.2  # Uncomment if using PyTorch
+
+# Environment & Configuration
+python-dotenv==1.0.0
+
+# CORS & Security
+python-multipart==0.0.6
+
+# Logging & Monitoring
+python-json-logger==2.0.7
+
+# API Documentation
+# (Included with FastAPI)
+
+# Optional: If using OpenAI or HuggingFace
+# openai==1.10.0
+# transformers==4.37.0
+
+# Development Dependencies (optional)
+pytest==7.4.4
+pytest-asyncio==0.23.3
+black==24.1.1
+flake8==7.0.0

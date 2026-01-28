@@ -115,10 +115,10 @@ const SignIn = () => {
                             </div>
                             <h2 className="text-4xl font-bold text-gray-900 mb-4 leading-tight">
                                 Welcome Back to
-                                <span className="block mt-1 bg-gradient-to-r from-blue-600 to-green-600 bg-clip-text text-transparent">Smart Healthcare</span>
+                                <span className="block mt-1 bg-gradient-to-r from-blue-600 to-green-600 bg-clip-text text-transparent">Health Track</span>
                             </h2>
                             <p className="text-lg text-gray-600 leading-relaxed">
-                                Sign in to access your personalized healthcare dashboard and manage your health journey.
+                                Sign in to access your dashboard and manage your health journey.
                             </p>
                         </div>
                         
@@ -129,7 +129,7 @@ const SignIn = () => {
                                 </div>
                                 <div>
                                     <h3 className="font-semibold text-gray-900 mb-1">Secure & Encrypted</h3>
-                                    <p className="text-sm text-gray-600 leading-relaxed">Bank-level encryption protects your health data</p>
+                                    <p className="text-sm text-gray-600 leading-relaxed">Your health data is protected with advanced encryption</p>
                                 </div>
                             </div>
                             
@@ -138,7 +138,7 @@ const SignIn = () => {
                                     <Zap className="w-5 h-5 text-white" strokeWidth={2.5} />
                                 </div>
                                 <div>
-                                    <h3 className="font-semibold text-gray-900 mb-1">Lightning Fast</h3>
+                                    <h3 className="font-semibold text-gray-900 mb-1">Quick Access</h3>
                                     <p className="text-sm text-gray-600 leading-relaxed">Instant access to all your medical records</p>
                                 </div>
                             </div>
@@ -148,8 +148,8 @@ const SignIn = () => {
                                     <Users className="w-5 h-5 text-white" strokeWidth={2.5} />
                                 </div>
                                 <div>
-                                    <h3 className="font-semibold text-gray-900 mb-1">Multi-Role Platform</h3>
-                                    <p className="text-sm text-gray-600 leading-relaxed">Built for patients, doctors & administrators</p>
+                                    <h3 className="font-semibold text-gray-900 mb-1">All-in-One Platform</h3>
+                                    <p className="text-sm text-gray-600 leading-relaxed">For patients, doctors, and administrators</p>
                                 </div>
                             </div>
                         </div>
@@ -167,14 +167,14 @@ const SignIn = () => {
                                     <h1 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-green-600 bg-clip-text text-transparent">Health Track</h1>
                                 </div>
                                 <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">Welcome Back</h2>
-                                <p className="text-sm text-gray-500">Sign in to continue to your dashboard</p>
+                                <p className="text-sm text-gray-500">Sign in to your account</p>
                             </div>
                         </div>
 
                         {/* Desktop Header */}
                         <div className="hidden lg:block text-center">
-                            <h2 className="text-3xl font-bold text-gray-900 mb-2">Sign In</h2>
-                            <p className="text-gray-600">Enter your credentials to access your dashboard</p>
+                            <h2 className="text-3xl font-bold text-gray-900 mb-2">Welcome Back</h2>
+                            <p className="text-gray-600">Sign in to continue</p>
                         </div>
 
                 {/* Sign In Form */}
@@ -195,7 +195,7 @@ const SignIn = () => {
                         {/* Role Selection */}
                         <div>
                             <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                Select Your Role
+                                Sign in as
                             </label>
                             <div className="relative">
                                 <select
@@ -221,7 +221,7 @@ const SignIn = () => {
                         {/* Email */}
                         <div>
                             <label htmlFor="email" className="block text-sm font-semibold text-gray-700 mb-2">
-                                Email Address
+                                Email
                             </label>
                             <div className="relative">
                                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
@@ -238,7 +238,7 @@ const SignIn = () => {
                                             ? 'border-red-300 focus:border-red-500 bg-red-50/50'
                                             : 'border-gray-200 focus:border-blue-500 hover:border-gray-300'
                                     }`}
-                                    placeholder="your.email@example.com"
+                                    placeholder="Enter your email address"
                                 />
                             </div>
                             {errors.email && <p className="mt-2 text-sm text-red-600 flex items-center gap-1"><span className="w-1 h-1 bg-red-600 rounded-full"></span>{errors.email}</p>}
@@ -290,7 +290,7 @@ const SignIn = () => {
                                 </div>
                             ) : (
                                 <div className="flex items-center justify-center gap-2">
-                                    <span>Sign In to Dashboard</span>
+                                    <span>Sign In</span>
                                     <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" strokeWidth={2} />
                                 </div>
                             )}
@@ -299,13 +299,13 @@ const SignIn = () => {
                         {/* Sign Up Link - Mobile Friendly */}
                         <div className="text-center pt-2">
                             <p className="text-sm text-gray-500">
-                                Don't have an account?{' '}
+                                New to Health Track?{' '}
                                 <button 
                                     type="button"
-                                    onClick={() => navigate('/signup')}
+                                    onClick={() => navigate('/sign-up')}
                                     className="font-semibold text-blue-600 hover:text-blue-700 transition-colors"
                                 >
-                                    Sign Up
+                                    Create Account
                                 </button>
                             </p>
                         </div>

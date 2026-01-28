@@ -130,11 +130,11 @@ const SignUp = () => {
                                 </div>
                             </div>
                             <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-3 sm:mb-4 leading-tight">
-                                Start Your Journey in
-                                <span className="block mt-1 bg-gradient-to-r from-blue-600 to-green-600 bg-clip-text text-transparent">Healthcare Management</span>
+                                Join
+                                <span className="block mt-1 bg-gradient-to-r from-blue-600 to-green-600 bg-clip-text text-transparent">Health Track</span>
                             </h2>
                             <p className="text-base sm:text-lg text-gray-600 leading-relaxed">
-                                Create your administrator account and take control of your healthcare facility with powerful management tools.
+                                Create your admin account to manage your healthcare facility.
                             </p>
                         </div>
                         
@@ -144,8 +144,8 @@ const SignUp = () => {
                                     <Shield className="w-5 h-5 text-white" strokeWidth={2.5} />
                                 </div>
                                 <div>
-                                    <h3 className="font-semibold text-gray-900 mb-1">Admin Control Panel</h3>
-                                    <p className="text-sm text-gray-600 leading-relaxed">Full access to manage staff, patients & operations</p>
+                                    <h3 className="font-semibold text-gray-900 mb-1">Full Control</h3>
+                                    <p className="text-sm text-gray-600 leading-relaxed">Manage staff, patients, and operations</p>
                                 </div>
                             </div>
                             
@@ -154,8 +154,8 @@ const SignUp = () => {
                                     <Zap className="w-5 h-5 text-white" strokeWidth={2.5} />
                                 </div>
                                 <div>
-                                    <h3 className="font-semibold text-gray-900 mb-1">Instant Setup</h3>
-                                    <p className="text-sm text-gray-600 leading-relaxed">Get started immediately with your dashboard</p>
+                                    <h3 className="font-semibold text-gray-900 mb-1">Quick Setup</h3>
+                                    <p className="text-sm text-gray-600 leading-relaxed">Get started in minutes</p>
                                 </div>
                             </div>
                             
@@ -165,7 +165,7 @@ const SignUp = () => {
                                 </div>
                                 <div>
                                     <h3 className="font-semibold text-gray-900 mb-1">Team Management</h3>
-                                    <p className="text-sm text-gray-600 leading-relaxed">Add and manage doctors, staff & pharmacists</p>
+                                    <p className="text-sm text-gray-600 leading-relaxed">Add and manage your healthcare team</p>
                                 </div>
                             </div>
                         </div>
@@ -189,7 +189,8 @@ const SignUp = () => {
 
                         {/* Desktop Header */}
                         <div className="hidden lg:block text-center">
-                            <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">Admin Registration</h2>
+                            <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">Create Account</h2>
+                            <p className="text-gray-600 text-sm mt-1">Sign up as administrator</p>
                         </div>
 
                 {/* Sign Up Form */}
