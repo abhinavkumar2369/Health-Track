@@ -24,7 +24,25 @@ const documentSchema = new mongoose.Schema(
       type: String,
       enum: ['pending', 'verified', 'under-review'],
       default: 'pending'
-    }
+    },
+    // AI Summarization fields
+    aiSummary: {
+      summary: { type: String },
+      keyFindings: [{ type: String }],
+      medicalTerms: [{
+        term: { type: String },
+        explanation: { type: String }
+      }],
+      recommendations: [{ type: String }],
+      urgencyLevel: { 
+        type: String, 
+        enum: ['low', 'medium', 'high'],
+        default: 'low'
+      },
+      summarizedAt: { type: Date },
+      summarizedBy: { type: String, default: 'AI System' }
+    },
+    isSummarized: { type: Boolean, default: false }
   },
   { timestamps: true }
 );

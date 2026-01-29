@@ -2,10 +2,14 @@ import express from 'express';
 import multer from 'multer';
 import AWS from 'aws-sdk';
 import jwt from 'jsonwebtoken';
+import axios from 'axios';
 import { Document } from '../models/Document.js';
 import { Patient } from '../models/Patient.js';
 
 const router = express.Router();
+
+// ML Microservice URL
+const ML_SERVICE_URL = process.env.ML_SERVICE_URL || "http://localhost:8000/api/v1";
 
 // Configure AWS S3
 const s3 = new AWS.S3({
@@ -286,6 +290,153 @@ router.delete('/:documentId', async (req, res) => {
         res.status(500).json({
             success: false,
             message: error.message || 'Failed to delete document'
+        });
+    }
+});
+
+// Summarize document using AI
+router.post('/summarize/:documentId', async (req, res) => {
+    try {
+        const { token } = req.body;
+        const { documentId } = req.params;
+
+        if (!token) {
+            return res.status(401).json({ success: false, message: 'No token provided' });
+        }
+
+        const decoded = verifyToken(token);
+        
+        const document = await Document.findById(documentId);
+
+        if (!document) {
+            return res.status(404).json({ success: false, message: 'Document not found' });
+        }
+
+        // Verify patient owns the document
+        if (document.patient_id.toString() !== decoded.id && decoded.role !== 'doctor') {
+            return res.status(403).json({ success: false, message: 'Unauthorized' });
+        }
+
+        // Get document from S3
+        const s3Params = {
+            Bucket: process.env.AWS_BUCKET_NAME,
+            Key: document.s3Key
+        };
+
+        const s3Object = await s3.getObject(s3Params).promise();
+        
+        // Extract text from document (simplified - in production use proper parsers)
+        let documentText = '';
+        if (document.fileType === 'application/pdf') {
+            // For PDF, you would use a library like pdf-parse
+            // For now, using placeholder text
+            documentText = `Medical document: ${document.originalName}. Category: ${document.category}. Description: ${document.description || 'No description provided'}.`;
+        } else if (document.fileType.startsWith('image/')) {
+            // For images, you would use OCR (e.g., AWS Textract)
+            documentText = `Medical image: ${document.originalName}. Category: ${document.category}. Description: ${document.description || 'No description provided'}.`;
+        } else {
+            // For text-based documents
+            documentText = s3Object.Body.toString('utf-8');
+        }
+
+        // Call ML microservice for summarization
+        const mlResponse = await axios.post(
+            `${ML_SERVICE_URL}/document/summarize`,
+            {
+                patient_id: decoded.id,
+                document_id: documentId,
+                document_text: documentText,
+                document_type: document.category,
+                metadata: {
+                    originalName: document.originalName,
+                    fileType: document.fileType,
+                    fileSize: document.fileSize,
+                    uploadedAt: document.createdAt
+                }
+            },
+            {
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                timeout: 30000
+            }
+        );
+
+        // Save summary to database
+        document.aiSummary = {
+            summary: mlResponse.data.summary,
+            keyFindings: mlResponse.data.key_findings,
+            medicalTerms: mlResponse.data.medical_terms,
+            recommendations: mlResponse.data.recommendations,
+            urgencyLevel: mlResponse.data.urgency_level,
+            summarizedAt: new Date(),
+            summarizedBy: 'AI System'
+        };
+        document.isSummarized = true;
+
+        await document.save();
+
+        res.json({
+            success: true,
+            message: 'Document summarized successfully',
+            summary: mlResponse.data
+        });
+
+    } catch (error) {
+        console.error('Summarize document error:', error);
+        res.status(500).json({
+            success: false,
+            message: error.response?.data?.detail || error.message || 'Failed to summarize document'
+        });
+    }
+});
+
+// Get document summary
+router.post('/summary/:documentId', async (req, res) => {
+    try {
+        const { token } = req.body;
+        const { documentId } = req.params;
+
+        if (!token) {
+            return res.status(401).json({ success: false, message: 'No token provided' });
+        }
+
+        const decoded = verifyToken(token);
+        
+        const document = await Document.findById(documentId);
+
+        if (!document) {
+            return res.status(404).json({ success: false, message: 'Document not found' });
+        }
+
+        // Verify patient owns the document or is a doctor
+        if (document.patient_id.toString() !== decoded.id && decoded.role !== 'doctor') {
+            return res.status(403).json({ success: false, message: 'Unauthorized' });
+        }
+
+        if (!document.isSummarized) {
+            return res.status(404).json({ 
+                success: false, 
+                message: 'Document has not been summarized yet' 
+            });
+        }
+
+        res.json({
+            success: true,
+            document: {
+                id: document._id,
+                fileName: document.originalName,
+                category: document.category,
+                uploadedAt: document.createdAt,
+                summary: document.aiSummary
+            }
+        });
+
+    } catch (error) {
+        console.error('Get summary error:', error);
+        res.status(500).json({
+            success: false,
+            message: error.message || 'Failed to fetch document summary'
         });
     }
 });

@@ -254,6 +254,49 @@ router.post("/recommendations", async (req, res) => {
 });
 
 /**
+ * @route   POST /ai/summarize-document
+ * @desc    Summarize medical documents using AI
+ * @access  Protected
+ */
+router.post("/summarize-document", async (req, res) => {
+  try {
+    const { patient_id, document_id, document_text, document_type, metadata } = req.body;
+
+    // Validate required fields
+    if (!patient_id || !document_id || !document_text || !document_type) {
+      return res.status(400).json({
+        success: false,
+        error: "Validation error",
+        message: "Missing required fields: patient_id, document_id, document_text, and document_type are required"
+      });
+    }
+
+    // Forward request to ML microservice
+    const mlResponse = await axios.post(
+      `${ML_SERVICE_URL}/document/summarize`,
+      {
+        patient_id,
+        document_id,
+        document_text,
+        document_type,
+        metadata
+      },
+      {
+        headers: {
+          "Content-Type": "application/json"
+        },
+        timeout: 30000
+      }
+    );
+
+    res.json(mlResponse.data);
+
+  } catch (error) {
+    handleMLServiceError(error, res);
+  }
+});
+
+/**
  * @route   GET /ai/health
  * @desc    Check ML service health
  * @access  Public

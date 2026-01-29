@@ -8,7 +8,8 @@ from app.api.v1.endpoints import (
     diagnostic,
     prescription,
     report_analysis,
-    recommendations
+    recommendations,
+    document_summarization
 )
 
 api_router = APIRouter()
@@ -42,4 +43,10 @@ api_router.include_router(
     recommendations.router,
     prefix="/recommendations",
     tags=["Health Recommendations"]
+)
+
+api_router.include_router(
+    document_summarization.router,
+    prefix="/document",
+    tags=["Document Summarization"]
 )

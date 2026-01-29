@@ -202,6 +202,80 @@ export const patientAPI = {
     // Add patient-specific endpoints here when backend is ready
 };
 
+// Document API
+export const documentAPI = {
+    // Upload document
+    uploadDocument: async (formData) => {
+        const token = ensureToken();
+        formData.append('token', token);
+        
+        const response = await fetch(`${API_URL}/api/documents/upload`, {
+            method: 'POST',
+            body: formData, // Don't set Content-Type, let browser set it with boundary
+        });
+        
+        const data = await response.json();
+        if (!response.ok) {
+            throw new Error(data.message || 'Upload failed');
+        }
+        return data;
+    },
+
+    // List all documents
+    listDocuments: async () => {
+        const token = ensureToken();
+        return apiRequest('/api/documents/list', {
+            method: 'POST',
+            body: JSON.stringify({ token }),
+        });
+    },
+
+    // View document
+    viewDocument: async (documentId) => {
+        const token = ensureToken();
+        return apiRequest(`/api/documents/view/${documentId}`, {
+            method: 'POST',
+            body: JSON.stringify({ token }),
+        });
+    },
+
+    // Download document
+    downloadDocument: async (documentId) => {
+        const token = ensureToken();
+        return apiRequest(`/api/documents/download/${documentId}`, {
+            method: 'POST',
+            body: JSON.stringify({ token }),
+        });
+    },
+
+    // Delete document
+    deleteDocument: async (documentId) => {
+        const token = ensureToken();
+        return apiRequest(`/api/documents/${documentId}`, {
+            method: 'DELETE',
+            body: JSON.stringify({ token }),
+        });
+    },
+
+    // Summarize document using AI
+    summarizeDocument: async (documentId) => {
+        const token = ensureToken();
+        return apiRequest(`/api/documents/summarize/${documentId}`, {
+            method: 'POST',
+            body: JSON.stringify({ token }),
+        });
+    },
+
+    // Get document summary
+    getDocumentSummary: async (documentId) => {
+        const token = ensureToken();
+        return apiRequest(`/api/documents/summary/${documentId}`, {
+            method: 'POST',
+            body: JSON.stringify({ token }),
+        });
+    },
+};
+
 // Pharmacist API
 export const pharmacistAPI = {
     // Get all medicines in inventory
@@ -333,4 +407,5 @@ export default {
     doctor: doctorAPI,
     patient: patientAPI,
     pharmacist: pharmacistAPI,
+    document: documentAPI,
 };

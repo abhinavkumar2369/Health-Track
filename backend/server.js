@@ -9,6 +9,7 @@ import doctorRoutes from "./routes/doctorRoutes.js";
 import pharmacistRoutes from "./routes/pharmacistRoutes.js";
 import documentRoutes from "./routes/documentRoutes.js";
 import aiRoutes from "./routes/aiRoutes.js";
+import reportRoutes from "./routes/reportRoutes.js";
 
 dotenv.config();
 
@@ -77,7 +78,8 @@ app.get("/", (req, res) => {
       doctor: "/doctor",
       pharmacist: "/pharmacist",
       documents: "/api/documents",
-      ai: "/api/ai"
+      ai: "/api/ai",
+      reports: "/api/reports"
     }
   });
 });
@@ -97,6 +99,7 @@ app.use("/doctor", doctorRoutes);
 app.use("/pharmacist", pharmacistRoutes);
 app.use("/api/documents", documentRoutes);
 app.use("/api/ai", aiRoutes);
+app.use("/api/reports", reportRoutes);
 
 // 404 handler
 app.use((req, res) => {

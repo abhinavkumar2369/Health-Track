@@ -91,6 +91,25 @@ class RecommendationResponse(BaseModel):
     preventive_measures: List[str]
     timestamp: str
 
+# Document Summarization Models
+class DocumentSummarizationRequest(BaseModel):
+    patient_id: str
+    document_id: str
+    document_text: str
+    document_type: str = Field(..., pattern="^(lab-report|prescription|scan|consultation|other)$")
+    metadata: Optional[Dict[str, Any]] = None
+
+class DocumentSummarizationResponse(BaseModel):
+    success: bool
+    patient_id: str
+    document_id: str
+    summary: str
+    key_findings: List[str]
+    medical_terms: List[Dict[str, str]]
+    recommendations: List[str]
+    urgency_level: str
+    timestamp: str
+
 # Generic Error Response
 class ErrorResponse(BaseModel):
     success: bool = False
