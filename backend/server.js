@@ -100,6 +100,8 @@ app.use("/pharmacist", pharmacistRoutes);
 app.use("/api/documents", documentRoutes);
 app.use("/api/ai", aiRoutes);
 app.use("/api/reports", reportRoutes);
+// Backward compatibility for older frontend URLs
+app.use("/reports", reportRoutes);
 
 // 404 handler
 app.use((req, res) => {

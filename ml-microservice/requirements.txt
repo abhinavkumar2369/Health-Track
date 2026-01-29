@@ -31,9 +31,8 @@ python-json-logger==2.0.7
 # API Documentation
 # (Included with FastAPI)
 
-# Optional: If using OpenAI or HuggingFace
-# openai==1.10.0
-# transformers==4.37.0
+# AI Models for Document Summarization
+openai==1.10.0
 
 # Development Dependencies (optional)
 pytest==7.4.4

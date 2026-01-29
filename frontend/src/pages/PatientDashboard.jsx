@@ -33,7 +33,9 @@ import {
     AlertCircle
 } from 'lucide-react';
 
-const API_BASE_URL = (import.meta.env.VITE_API_URL || 'http://localhost:5000').replace(/\/$/, '');
+const API_BASE_URL = (import.meta.env.VITE_API_URL || 'http://localhost:5000')
+    .replace(/\/$/, '')
+    .replace(/\/api$/, '');
 const API_URL = `${API_BASE_URL}/api/documents`;
 
 const PatientDashboard = () => {
@@ -73,6 +75,7 @@ const PatientDashboard = () => {
         
         setUser(parsedUser);
         fetchMedicalRecords();
+        fetchHealthReports(); // Fetch existing reports
     }, [navigate]);
 
     const fetchMedicalRecords = async () => {
@@ -87,6 +90,21 @@ const PatientDashboard = () => {
             }
         } catch (error) {
             console.error('Error fetching medical records:', error);
+        }
+    };
+
+    const fetchHealthReports = async () => {
+        try {
+            const token = localStorage.getItem('token');
+            if (!token) return;
+            
+            const response = await axios.post(`${API_BASE_URL}/api/reports/list`, { token });
+            
+            if (response.data.success) {
+                setHealthReports(response.data.reports);
+            }
+        } catch (error) {
+            console.error('Error fetching health reports:', error);
         }
     };
 
@@ -299,6 +317,17 @@ const PatientDashboard = () => {
         });
     };
 
+
+    // Auto-dismiss uploadMessage after 3 seconds
+    useEffect(() => {
+        if (uploadMessage.text) {
+            const timer = setTimeout(() => {
+                setUploadMessage({ type: '', text: '' });
+            }, 3000);
+            return () => clearTimeout(timer);
+        }
+    }, [uploadMessage.text]);
+
     const handleGenerateReport = async () => {
         setGeneratingReport(true);
         setUploadMessage({ type: '', text: '' });
@@ -343,37 +372,47 @@ const PatientDashboard = () => {
 
     const handleViewReport = async (reportId) => {
         try {
-            // Find the report in the state
-            const report = healthReports.find(r => r.id === reportId);
-            if (report && report.downloadUrl) {
-                window.open(report.downloadUrl, '_blank');
+            const token = localStorage.getItem('token');
+            const response = await axios.post(`${API_BASE_URL}/api/reports/view/${reportId}`, { token });
+            
+            if (response.data.success && response.data.downloadUrl) {
+                window.open(response.data.downloadUrl, '_blank');
             } else {
                 setUploadMessage({ type: 'error', text: 'Report not available' });
             }
         } catch (error) {
             console.error('View report error:', error);
-            setUploadMessage({ type: 'error', text: 'Failed to view report' });
+            setUploadMessage({ 
+                type: 'error', 
+                text: error.response?.data?.message || 'Failed to view report' 
+            });
         }
     };
 
     const handleDownloadReport = async (reportId) => {
         try {
-            // Find the report in the state
-            const report = healthReports.find(r => r.id === reportId);
-            if (report && report.downloadUrl) {
+            const token = localStorage.getItem('token');
+            const response = await axios.post(`${API_BASE_URL}/api/reports/download/${reportId}`, { token });
+            
+            if (response.data.success && response.data.downloadUrl) {
                 // Create a temporary link to download
                 const link = document.createElement('a');
-                link.href = report.downloadUrl;
-                link.download = report.fileName || 'health_report.pdf';
+                link.href = response.data.downloadUrl;
+                link.download = response.data.fileName || 'health_report.pdf';
                 document.body.appendChild(link);
                 link.click();
                 document.body.removeChild(link);
+                
+                setUploadMessage({ type: 'success', text: 'Report download started' });
             } else {
                 setUploadMessage({ type: 'error', text: 'Report not available' });
             }
         } catch (error) {
             console.error('Download report error:', error);
-            setUploadMessage({ type: 'error', text: 'Failed to download report' });
+            setUploadMessage({ 
+                type: 'error', 
+                text: error.response?.data?.message || 'Failed to download report' 
+            });
         }
     };
 
@@ -561,7 +600,7 @@ const PatientDashboard = () => {
                                         {medicalRecords.slice(0, 3).map((record) => (
                                             <div key={record._id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-100">
                                                 <div className="flex items-center space-x-3 min-w-0">
-                                                    <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                                                    <div className="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center flex-shrink-0">
                                                         <FileText className="w-5 h-5 text-blue-600" />
                                                     </div>
                                                     <div className="min-w-0">
@@ -773,143 +812,135 @@ const PatientDashboard = () => {
                 )}
 
                 {activeSection === 'reports' && (
-                        <div className="space-y-4 sm:space-y-6">
-                            {uploadMessage.text && uploadMessage.type && (
-                                <div className={`p-3 sm:p-4 rounded-lg text-sm ${uploadMessage.type === 'success' ? 'bg-green-50 text-green-800' : 'bg-red-50 text-red-800'}`}>
-                                    {uploadMessage.text}
-                                </div>
-                            )}
+                    <div className="space-y-6">
+                        {/* Page Header - Only Button */}
+                        <div className="flex justify-end">
+                            <button 
+                                onClick={handleGenerateReport}
+                                disabled={generatingReport}
+                                className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium transition-colors shadow-sm disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+                            >
+                                {generatingReport ? (
+                                    <>
+                                        <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                        <span>Generating...</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <FileBarChart className="w-5 h-5" />
+                                        <span>Generate New Report</span>
+                                    </>
+                                )}
+                            </button>
+                        </div>
 
-                            {/* Report Generation Card */}
-                            <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl border border-blue-200 p-4 sm:p-8 text-center">
-                                <div className="w-14 h-14 sm:w-20 sm:h-20 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4">
-                                    <FileBarChart className="w-7 h-7 sm:w-10 sm:h-10 text-blue-600" />
-                                </div>
-                                <h3 className="text-lg sm:text-2xl font-bold text-gray-900 mb-2">Generate Health Report</h3>
-                                <p className="text-sm text-gray-600 mb-4 sm:mb-6 max-w-2xl mx-auto">
-                                    Create a detailed health summary including all your medical records, test results, and health metrics.
-                                </p>
-                                <div className="bg-white rounded-lg p-4 sm:p-6 mb-4 sm:mb-6 max-w-2xl mx-auto">
-                                    <h4 className="font-semibold text-gray-900 mb-3 text-sm sm:text-base">Report Includes:</h4>
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3 text-left">
-                                        <div className="flex items-center space-x-2">
-                                            <CheckCircle className="w-4 h-4 text-green-600 flex-shrink-0" />
-                                            <span className="text-xs sm:text-sm text-gray-700">Medical Records ({medicalRecords.length})</span>
-                                        </div>
-                                        <div className="flex items-center space-x-2">
-                                            <CheckCircle className="w-4 h-4 text-green-600 flex-shrink-0" />
-                                            <span className="text-xs sm:text-sm text-gray-700">Appointment History</span>
-                                        </div>
-                                        <div className="flex items-center space-x-2">
-                                            <CheckCircle className="w-4 h-4 text-green-600 flex-shrink-0" />
-                                            <span className="text-xs sm:text-sm text-gray-700">Prescription Records</span>
-                                        </div>
-                                        <div className="flex items-center space-x-2">
-                                            <CheckCircle className="w-4 h-4 text-green-600 flex-shrink-0" />
-                                            <span className="text-xs sm:text-sm text-gray-700">Health Metrics</span>
-                                        </div>
-                                        <div className="flex items-center space-x-2">
-                                            <CheckCircle className="w-4 h-4 text-green-600 flex-shrink-0" />
-                                            <span className="text-xs sm:text-sm text-gray-700">Patient Profile</span>
-                                        </div>
-                                        <div className="flex items-center space-x-2">
-                                            <CheckCircle className="w-4 h-4 text-green-600 flex-shrink-0" />
-                                            <span className="text-xs sm:text-sm text-gray-700">Timeline Summary</span>
-                                        </div>
+                        {/* Alert Messages */}
+                        {uploadMessage.text && uploadMessage.type && (
+                            <div className={`p-4 rounded-lg border text-sm flex items-start space-x-3 ${
+                                uploadMessage.type === 'success' 
+                                    ? 'bg-green-50 border-green-300 text-green-800' 
+                                    : 'bg-red-50 border-red-300 text-red-800'
+                            }`}>
+                                {uploadMessage.type === 'success' ? (
+                                    <CheckCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
+                                ) : (
+                                    <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
+                                )}
+                                <div className="flex-1">{uploadMessage.text}</div>
+                            </div>
+                        )}
+
+                        {/* Generated Reports List */}
+                        {healthReports.length > 0 ? (
+                            <div className="bg-white rounded-lg border border-gray-300">
+                                <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
+                                    <div className="flex items-center justify-between">
+                                        <h3 className="text-lg font-semibold text-gray-800">My Health Reports</h3>
+                                        <span className="px-3 py-1 bg-gray-200 text-gray-700 text-sm font-medium rounded">
+                                            {healthReports.length} {healthReports.length === 1 ? 'Report' : 'Reports'}
+                                        </span>
                                     </div>
                                 </div>
-                                <button 
-                                    onClick={handleGenerateReport}
-                                    disabled={generatingReport}
-                                    className="px-6 sm:px-8 py-2.5 sm:py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-all shadow-lg disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center space-x-2 mx-auto text-sm sm:text-base"
-                                >
-                                    {generatingReport ? (
-                                        <>
-                                            <div className="w-4 h-4 sm:w-5 sm:h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                                            <span>Generating...</span>
-                                        </>
-                                    ) : (
-                                        <>
-                                            <FileBarChart className="w-4 h-4 sm:w-5 sm:h-5" />
-                                            <span>Generate Full Report</span>
-                                        </>
-                                    )}
-                                </button>
-                                <p className="text-xs text-gray-500 mt-3 sm:mt-4">
-                                    <Shield className="w-3 h-3 inline mr-1" />
-                                    All reports are securely stored and encrypted
-                                </p>
-                            </div>
-
-                            {/* Generated Reports */}
-                            {healthReports.length > 0 ? (
-                                <div className="bg-white rounded-xl border border-gray-200 p-4 sm:p-6">
-                                    <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-4">My Health Reports</h3>
-                                    <div className="space-y-3">
-                                        {healthReports.map((report) => (
-                                            <div key={report.id || report._id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-3 sm:p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl border border-blue-200 hover:shadow-md transition-shadow gap-3">
-                                                <div className="flex items-center space-x-3 sm:space-x-4">
-                                                    <div className="w-10 h-10 sm:w-14 sm:h-14 bg-gradient-to-r from-blue-500 to-purple-500 rounded-xl flex items-center justify-center flex-shrink-0">
-                                                        <FileBarChart className="w-5 h-5 sm:w-7 sm:h-7 text-white" />
+                                <div className="p-4 sm:p-6 space-y-3">
+                                    {healthReports.map((report, index) => (
+                                        <div 
+                                            key={report.id || report._id} 
+                                            className="group relative bg-white border border-gray-300 rounded-lg p-5 hover:border-gray-400 hover:shadow-md transition-all"
+                                        >
+                                            <div className="flex items-center justify-between gap-4">
+                                                {/* Report Icon & Details */}
+                                                <div className="flex items-center space-x-4 flex-1 min-w-0">
+                                                    <div className="relative">
+                                                        <div className="w-12 h-12 bg-blue-50 rounded-lg flex items-center justify-center">
+                                                            <FileBarChart className="w-6 h-6 text-blue-600" />
+                                                        </div>
+                                                        <div className="absolute -top-1 -right-1 w-5 h-5 bg-blue-600 rounded-full flex items-center justify-center text-xs font-semibold text-white">
+                                                            {healthReports.length - index}
+                                                        </div>
                                                     </div>
-                                                    <div className="min-w-0">
-                                                        <h4 className="font-semibold text-gray-900 text-sm sm:text-base truncate">
+                                                    
+                                                    {/* Report Details */}
+                                                    <div className="flex-1 min-w-0">
+                                                        <h4 className="font-semibold text-gray-800 text-base truncate">
                                                             {report.title || 'Health Summary Report'}
                                                         </h4>
-                                                        <p className="text-xs sm:text-sm text-gray-600">
-                                                            {new Date(report.generatedAt || report.createdAt).toLocaleString()}
-                                                            {report.fileSize && ` • ${(report.fileSize / 1024).toFixed(2)} KB`}
-                                                        </p>
-                                                        <div className="flex flex-wrap items-center gap-1 sm:gap-2 mt-1">
-                                                            {report.totalDocuments !== undefined && (
-                                                                <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">
-                                                                    {report.totalDocuments} Docs
-                                                                </span>
-                                                            )}
-                                                            {report.summarizedDocuments !== undefined && (
-                                                                <span className="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full">
-                                                                    {report.summarizedDocuments} AI
-                                                                </span>
-                                                            )}
-                                                            <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full flex items-center">
-                                                                <Shield className="w-2.5 h-2.5 sm:w-3 sm:h-3 mr-1" />
-                                                                AWS S3
+                                                        <div className="flex flex-wrap items-center gap-2 mt-1 text-sm text-gray-600">
+                                                            <span className="flex items-center">
+                                                                <Calendar className="w-3.5 h-3.5 mr-1" />
+                                                                {new Date(report.generatedAt || report.createdAt).toLocaleString()}
                                                             </span>
-                                                            <span className="text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded-full">PDF</span>
+                                                            {report.fileSize && (
+                                                                <span className="flex items-center">
+                                                                    • {(report.fileSize / 1024).toFixed(1)} KB
+                                                                </span>
+                                                            )}
                                                         </div>
                                                     </div>
                                                 </div>
-                                                <div className="flex space-x-2 justify-end">
+
+                                                {/* Action Buttons */}
+                                                <div className="flex space-x-2">
                                                     <button 
                                                         onClick={() => handleViewReport(report.id || report._id)}
-                                                        className="p-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+                                                        className="p-2.5 bg-gray-700 text-white rounded-lg hover:bg-gray-800 transition-colors"
                                                         title="View Report"
                                                     >
                                                         <Eye className="w-4 h-4" />
                                                     </button>
                                                     <button 
                                                         onClick={() => handleDownloadReport(report.id || report._id)}
-                                                        className="p-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
+                                                        className="p-2.5 bg-gray-700 text-white rounded-lg hover:bg-gray-800 transition-colors"
                                                         title="Download Report"
                                                     >
                                                         <Download className="w-4 h-4" />
                                                     </button>
                                                 </div>
                                             </div>
-                                        ))}
-                                    </div>
+                                        </div>
+                                    ))}
                                 </div>
-                            ) : (
-                                <div className="bg-white rounded-xl border border-gray-200 p-6 sm:p-8 text-center">
-                                    <div className="w-12 h-12 sm:w-16 sm:h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4">
-                                        <FileBarChart className="w-6 h-6 sm:w-8 sm:h-8 text-gray-400" />
-                                    </div>
-                                    <h4 className="text-base sm:text-lg font-medium text-gray-900 mb-2">No Reports Generated Yet</h4>
-                                    <p className="text-xs sm:text-sm text-gray-500">Click the button above to generate your first health report</p>
+                            </div>
+                        ) : (
+                            <div className="bg-white rounded-lg border-2 border-dashed border-gray-300 p-12 text-center">
+                                <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                    <FileBarChart className="w-10 h-10 text-gray-400" />
                                 </div>
-                            )}
-                        </div>
-                    )}
+                                <h4 className="text-xl font-semibold text-gray-800 mb-2">No Reports Generated Yet</h4>
+                                <p className="text-gray-600 mb-6 max-w-md mx-auto">
+                                    Generate your first comprehensive health report to get AI-powered insights from your medical records
+                                </p>
+                                <button 
+                                    onClick={handleGenerateReport}
+                                    disabled={generatingReport || medicalRecords.length === 0}
+                                    className="px-6 py-3 bg-gray-800 text-white rounded-lg hover:bg-gray-900 font-medium transition-colors shadow-sm disabled:bg-gray-400 disabled:cursor-not-allowed inline-flex items-center space-x-2"
+                                >
+                                    <FileBarChart className="w-5 h-5" />
+                                    <span>{medicalRecords.length === 0 ? 'Upload Documents First' : 'Generate Your First Report'}</span>
+                                </button>
+                            </div>
+                        )}
+                    </div>
+                )}
 
                     {activeSection === 'profile' && (
                         <div className="space-y-6">
@@ -933,7 +964,7 @@ const PatientDashboard = () => {
                                         </div>
                                         <div>
                                             <h3 className="text-lg font-semibold text-gray-900">Personal Information</h3>
-                                            <p className="text-sm text-gray-500">Update your personal details and information</p>
+                                            <p className="text-gray-600">Update your personal details and information</p>
                                         </div>
                                     </div>
                                 </div>

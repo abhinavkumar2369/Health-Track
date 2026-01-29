@@ -5,6 +5,7 @@ import PDFDocument from 'pdfkit';
 import axios from 'axios';
 import { Document } from '../models/Document.js';
 import { Patient } from '../models/Patient.js';
+import { HealthReport } from '../models/HealthReport.js';
 
 const router = express.Router();
 
@@ -348,22 +349,52 @@ router.post('/generate', async (req, res) => {
 
         const downloadUrl = s3.getSignedUrl('getObject', downloadParams);
 
+        // Save report to database
+        console.log('Saving report to database...');
+        const healthReport = new HealthReport({
+            patient_id: decoded.id,
+            title: `Health Report - ${new Date().toLocaleDateString()}`,
+            fileName: fileName,
+            originalName: fileName,
+            fileSize: pdfBuffer.length,
+            s3Key: s3Key,
+            s3Url: s3UploadResult.Location,
+            totalDocuments: documents.length,
+            summarizedDocuments: documents.filter(d => d.isSummarized).length,
+            labReports: documents.filter(d => d.category === 'lab-report').length,
+            prescriptions: documents.filter(d => d.category === 'prescription').length,
+            scans: documents.filter(d => d.category === 'scan').length,
+            consultations: documents.filter(d => d.category === 'consultation').length,
+            documentIds: documents.map(d => d._id),
+            includeRecords,
+            includeAppointments,
+            includePrescriptions,
+            includeHealthMetrics,
+            status: 'completed'
+        });
+
+        await healthReport.save();
+
         console.log('Report generated successfully!');
 
         res.json({
             success: true,
             message: 'Health report generated successfully',
             report: {
-                id: `report_${timestamp}`,
-                title: `Health Report - ${new Date().toLocaleDateString()}`,
-                generatedAt: new Date().toISOString(),
-                fileName: fileName,
-                fileSize: pdfBuffer.length,
-                s3Key: s3Key,
-                s3Url: s3UploadResult.Location,
+                id: healthReport._id,
+                title: healthReport.title,
+                generatedAt: healthReport.generatedAt,
+                fileName: healthReport.fileName,
+                fileSize: healthReport.fileSize,
+                s3Key: healthReport.s3Key,
+                s3Url: healthReport.s3Url,
                 downloadUrl: downloadUrl,
-                totalDocuments: documents.length,
-                summarizedDocuments: documents.filter(d => d.isSummarized).length
+                totalDocuments: healthReport.totalDocuments,
+                summarizedDocuments: healthReport.summarizedDocuments,
+                labReports: healthReport.labReports,
+                prescriptions: healthReport.prescriptions,
+                scans: healthReport.scans,
+                consultations: healthReport.consultations
             }
         });
 
@@ -391,11 +422,41 @@ router.post('/list', async (req, res) => {
             return res.status(403).json({ success: false, message: 'Unauthorized' });
         }
 
-        // In production, you would fetch reports from database
-        // For now, return empty array
+        // Fetch reports from database
+        const reports = await HealthReport.find({ patient_id: decoded.id })
+            .sort({ createdAt: -1 })
+            .lean();
+
+        // Generate fresh pre-signed URLs for each report
+        const reportsWithUrls = reports.map(report => {
+            const downloadParams = {
+                Bucket: process.env.AWS_BUCKET_NAME,
+                Key: report.s3Key,
+                Expires: 3600
+            };
+            const downloadUrl = s3.getSignedUrl('getObject', downloadParams);
+
+            return {
+                id: report._id,
+                title: report.title,
+                generatedAt: report.generatedAt,
+                createdAt: report.createdAt,
+                fileName: report.fileName,
+                fileSize: report.fileSize,
+                downloadUrl: downloadUrl,
+                totalDocuments: report.totalDocuments,
+                summarizedDocuments: report.summarizedDocuments,
+                labReports: report.labReports,
+                prescriptions: report.prescriptions,
+                scans: report.scans,
+                consultations: report.consultations,
+                status: report.status
+            };
+        });
+
         res.json({
             success: true,
-            reports: []
+            reports: reportsWithUrls
         });
 
     } catch (error) {
@@ -419,10 +480,29 @@ router.post('/view/:reportId', async (req, res) => {
 
         const decoded = verifyToken(token);
         
-        // In production, fetch report from database and generate pre-signed URL
-        res.status(404).json({
-            success: false,
-            message: 'Report viewing not yet implemented'
+        // Fetch report from database
+        const report = await HealthReport.findById(reportId);
+        
+        if (!report) {
+            return res.status(404).json({ success: false, message: 'Report not found' });
+        }
+
+        // Verify ownership
+        if (report.patient_id.toString() !== decoded.id) {
+            return res.status(403).json({ success: false, message: 'Unauthorized access' });
+        }
+
+        // Generate pre-signed URL
+        const downloadParams = {
+            Bucket: process.env.AWS_BUCKET_NAME,
+            Key: report.s3Key,
+            Expires: 3600
+        };
+        const downloadUrl = s3.getSignedUrl('getObject', downloadParams);
+
+        res.json({
+            success: true,
+            downloadUrl: downloadUrl
         });
 
     } catch (error) {
@@ -446,10 +526,31 @@ router.post('/download/:reportId', async (req, res) => {
 
         const decoded = verifyToken(token);
         
-        // In production, fetch report from database and generate download URL
-        res.status(404).json({
-            success: false,
-            message: 'Report download not yet implemented'
+        // Fetch report from database
+        const report = await HealthReport.findById(reportId);
+        
+        if (!report) {
+            return res.status(404).json({ success: false, message: 'Report not found' });
+        }
+
+        // Verify ownership
+        if (report.patient_id.toString() !== decoded.id) {
+            return res.status(403).json({ success: false, message: 'Unauthorized access' });
+        }
+
+        // Generate pre-signed URL with content-disposition for download
+        const downloadParams = {
+            Bucket: process.env.AWS_BUCKET_NAME,
+            Key: report.s3Key,
+            Expires: 3600,
+            ResponseContentDisposition: `attachment; filename="${report.fileName}"`
+        };
+        const downloadUrl = s3.getSignedUrl('getObject', downloadParams);
+
+        res.json({
+            success: true,
+            downloadUrl: downloadUrl,
+            fileName: report.fileName
         });
 
     } catch (error) {

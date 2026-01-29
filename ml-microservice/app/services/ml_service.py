@@ -6,6 +6,8 @@ import logging
 from typing import Dict, Any, List
 from datetime import datetime
 import random
+import os
+from openai import OpenAI
 
 logger = logging.getLogger(__name__)
 
@@ -14,7 +16,246 @@ class MLService:
     
     def __init__(self):
         self.model_loaded = False
+        self.openai_client = None
+        self.use_openai = os.getenv('USE_OPENAI', 'false').lower() == 'true'
+        self.ai_model = os.getenv('AI_MODEL', 'gpt-3.5-turbo')
+        
+        # Initialize OpenAI client if API key is provided
+        openai_api_key = os.getenv('OPENAI_API_KEY')
+        if openai_api_key and openai_api_key != 'your-openai-api-key-here' and self.use_openai:
+            try:
+                self.openai_client = OpenAI(api_key=openai_api_key)
+                logger.info("OpenAI client initialized successfully")
+            except Exception as e:
+                logger.warning(f"Failed to initialize OpenAI client: {e}")
+                self.openai_client = None
+        
         logger.info("MLService initialized")
+    
+    async def _summarize_with_openai(self, text: str, doc_type: str, metadata: Dict) -> Dict[str, Any]:
+        """Use OpenAI GPT for deep AI-powered medical document summarization"""
+        try:
+            # Main summarization prompt
+            summary_prompt = f"""You are a medical AI assistant.
+
+Document text:
+{text[:3000]}  
+
+Please provide a comprehensive medical summary that includes:
+1. Main purpose and type of document
+2. Key medical findings or information
+3. Important values, measurements, or observations
+4. Any abnormalities or concerns mentioned
+5. Overall clinical significance
+
+Keep the summary professional, accurate, and concise (3-4 sentences)."""
+
+            # Get summary
+            summary_response = self.openai_client.chat.completions.create(
+                model=self.ai_model,
+                messages=[{"role": "user", "content": summary_prompt}],
+                temperature=0.3,
+                max_tokens=300
+            )
+            summary = summary_response.choices[0].message.content.strip()
+            
+            # Extract key findings
+            findings_prompt = f"""Based on this medical document, extract 3-5 key clinical findings or important points:
+
+{text[:2000]}
+
+List only the most critical findings, one per line. Be specific and concise."""
+
+            findings_response = self.openai_client.chat.completions.create(
+                model=self.ai_model,
+                messages=[{"role": "user", "content": findings_prompt}],
+                temperature=0.2,
+                max_tokens=200
+            )
+            findings_text = findings_response.choices[0].message.content.strip()
+            key_findings = [f.strip() for f in findings_text.split('\n') if f.strip() and not f.strip().startswith('#')][:5]
+            
+            # Extract medical terms
+            terms_prompt = f"""Identify 3-5 important medical terms from this document and provide brief explanations:
+
+{text[:2000]}
+
+Format: Term | Explanation
+List only the most significant medical terms."""
+
+            terms_response = self.openai_client.chat.completions.create(
+                model=self.ai_model,
+                messages=[{"role": "user", "content": terms_prompt}],
+                temperature=0.2,
+                max_tokens=300
+            )
+            terms_text = terms_response.choices[0].message.content.strip()
+            
+            medical_terms = []
+            for line in terms_text.split('\n'):
+                if '|' in line or ':' in line:
+                    separator = '|' if '|' in line else ':'
+                    parts = line.split(separator, 1)
+                    if len(parts) == 2:
+                        medical_terms.append({
+                            "term": parts[0].strip().strip('-*•').strip(),
+                            "explanation": parts[1].strip()
+                        })
+            
+            if not medical_terms:
+                medical_terms = [{"term": "Medical Document", "explanation": "Contains patient health information"}]
+            
+            # Generate recommendations
+            rec_prompt = f"""Based on this medical document, suggest 2-3 actionable recommendations or next steps:
+
+{text[:2000]}
+
+Be specific and practical. Focus on patient care and follow-up."""
+
+            rec_response = self.openai_client.chat.completions.create(
+                model=self.ai_model,
+                messages=[{"role": "user", "content": rec_prompt}],
+                temperature=0.4,
+                max_tokens=200
+            )
+            rec_text = rec_response.choices[0].message.content.strip()
+            recommendations = [r.strip() for r in rec_text.split('\n') if r.strip() and not r.strip().startswith('#')][:3]
+            
+            # Determine urgency
+            urgency_prompt = f"""Assess the urgency level of this medical document. Consider any abnormal findings, critical values, or urgent conditions mentioned.
+
+{text[:1500]}
+
+Respond with only ONE word: low, moderate, or high"""
+
+            urgency_response = self.openai_client.chat.completions.create(
+                model=self.ai_model,
+                messages=[{"role": "user", "content": urgency_prompt}],
+                temperature=0.1,
+                max_tokens=10
+            )
+            urgency_level = urgency_response.choices[0].message.content.strip().lower()
+            if urgency_level not in ['low', 'moderate', 'high']:
+                urgency_level = 'moderate'
+            
+            return {
+                'summary': summary,
+                'key_findings': key_findings if key_findings else ["Document has been analyzed by AI"],
+                'medical_terms': medical_terms[:5],
+                'recommendations': recommendations if recommendations else ["Consult with healthcare provider for detailed interpretation"],
+                'urgency_level': urgency_level
+            }
+            
+        except Exception as e:
+            logger.error(f"OpenAI summarization error: {str(e)}")
+            # Fallback to template-based
+            return self._summarize_with_template(text, doc_type)
+    
+    def _extract_key_findings_offline(self, text: str, doc_type: str) -> List[str]:
+        """Extract key findings using pattern matching and keywords"""
+        findings = []
+        text_lower = text.lower()
+        
+        # Medical keywords to look for
+        keywords = {
+            'lab_report': ['elevated', 'decreased', 'normal', 'abnormal', 'positive', 'negative'],
+            'prescription': ['prescribed', 'dosage', 'medication', 'treatment'],
+            'scan': ['observed', 'detected', 'visible', 'shows', 'indicates'],
+            'diagnosis': ['diagnosed', 'condition', 'symptoms', 'findings']
+        }
+        
+        relevant_keywords = keywords.get(doc_type, keywords['diagnosis'])
+        
+        # Simple sentence extraction based on keywords
+        sentences = text.split('.')
+        for sentence in sentences[:10]:  # Limit to first 10 sentences
+            sentence_lower = sentence.lower().strip()
+            if any(keyword in sentence_lower for keyword in relevant_keywords):
+                if len(sentence.strip()) > 20:  # Meaningful sentence
+                    findings.append(sentence.strip())
+                if len(findings) >= 5:  # Limit to 5 findings
+                    break
+        
+        return findings if findings else ["Key findings extracted from document"]
+    
+    def _extract_medical_terms_offline(self, text: str) -> List[Dict[str, str]]:
+        """Extract medical terms using pattern matching"""
+        terms = []
+        
+        # Common medical term patterns
+        medical_patterns = [
+            r'\b[A-Z][a-z]+itis\b',  # Inflammations
+            r'\b[A-Z][a-z]+osis\b',  # Conditions
+            r'\b[A-Z][a-z]+emia\b',  # Blood conditions
+            r'\b[A-Z][a-z]+pathy\b',  # Diseases
+        ]
+        
+        import re
+        found_terms = set()
+        
+        for pattern in medical_patterns:
+            matches = re.findall(pattern, text)
+            found_terms.update(matches)
+        
+        # Add some example terms
+        for term in list(found_terms)[:5]:
+            terms.append({
+                "term": term,
+                "definition": f"Medical term found in document: {term}"
+            })
+        
+        return terms if terms else [{"term": "Medical terminology", "definition": "Refer to medical glossary"}]
+    
+    def _generate_recommendations_offline(self, text: str, doc_type: str) -> List[str]:
+        """Generate recommendations based on document type and content"""
+        recommendations = []
+        text_lower = text.lower()
+        
+        # Generic recommendations based on document type
+        if doc_type == 'lab_report':
+            recommendations = [
+                "Follow up with your healthcare provider to discuss results",
+                "Maintain a healthy diet and regular exercise routine",
+                "Schedule regular health check-ups"
+            ]
+        elif doc_type == 'prescription':
+            recommendations = [
+                "Take medications as prescribed by your doctor",
+                "Note any side effects and report them",
+                "Do not stop medication without consulting your doctor"
+            ]
+        elif doc_type == 'scan':
+            recommendations = [
+                "Consult with your doctor about the scan findings",
+                "Follow recommended treatment or monitoring plan",
+                "Keep a record of all diagnostic tests"
+            ]
+        else:
+            recommendations = [
+                "Maintain regular communication with healthcare provider",
+                "Keep all medical records organized",
+                "Follow medical advice and treatment plans"
+            ]
+        
+        # Add urgency-based recommendations
+        if any(word in text_lower for word in ['urgent', 'immediate', 'critical', 'emergency']):
+            recommendations.insert(0, "⚠️ Seek immediate medical attention")
+        
+        return recommendations
+    
+    def _assess_urgency_offline(self, text: str) -> str:
+        """Assess urgency level based on keywords"""
+        text_lower = text.lower()
+        
+        urgent_keywords = ['urgent', 'immediate', 'critical', 'emergency', 'severe', 'acute']
+        moderate_keywords = ['elevated', 'abnormal', 'concern', 'monitor', 'follow-up']
+        
+        if any(keyword in text_lower for keyword in urgent_keywords):
+            return "high"
+        elif any(keyword in text_lower for keyword in moderate_keywords):
+            return "moderate"
+        else:
+            return "low"
     
     async def predict_health_risk(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """
@@ -301,7 +542,7 @@ class MLService:
     async def summarize_document(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """
         Summarize medical documents using AI/ML
-        In production, this would use advanced NLP models like BERT, GPT, or medical-specific models
+        Uses OpenAI GPT models for deep contextual understanding
         """
         try:
             logger.info(f"Processing document summarization for patient: {data.get('patient_id')}")
@@ -309,29 +550,147 @@ class MLService:
             document_text = data.get('document_text', '')
             document_type = data.get('document_type', 'other')
             document_id = data.get('document_id')
+            metadata = data.get('metadata', {})
             
-            # Generate summary based on document type
-            summary = self._generate_summary(document_text, document_type)
-            key_findings = self._extract_key_findings(document_text, document_type)
-            medical_terms = self._extract_medical_terms(document_text)
-            recommendations = self._generate_document_recommendations(key_findings, document_type)
-            urgency_level = self._determine_document_urgency(key_findings, document_type)
+            # Use OpenAI for real deep AI summary if available
+            if self.openai_client and self.use_openai:
+                logger.info("Using OpenAI for deep AI summarization")
+                result = await self._summarize_with_openai(document_text, document_type, metadata)
+            else:
+                logger.info("Using fallback template-based summarization")
+                result = self._summarize_with_template(document_text, document_type)
             
             return {
                 "success": True,
                 "patient_id": data.get('patient_id'),
                 "document_id": document_id,
-                "summary": summary,
-                "key_findings": key_findings,
-                "medical_terms": medical_terms,
-                "recommendations": recommendations,
-                "urgency_level": urgency_level,
+                "summary": result['summary'],
+                "key_findings": result['key_findings'],
+                "medical_terms": result['medical_terms'],
+                "recommendations": result['recommendations'],
+                "urgency_level": result['urgency_level'],
+                "ai_powered": self.openai_client is not None and self.use_openai,
                 "timestamp": datetime.utcnow().isoformat()
             }
             
         except Exception as e:
             logger.error(f"Error in document summarization: {str(e)}")
             raise
+        """Generate AI summary using Google Gemini API"""
+        try:
+            if not self.gemini_model:
+                raise Exception("Gemini model not initialized. Please configure GEMINI_API_KEY in .env file")
+            
+            logger.info(f"Generating Gemini AI summary for {document_type}")
+            
+            # Main summary prompt
+            summary_prompt = f"""You are a medical AI assistant analyzing healthcare documents.
+
+Document Type: {document_type}
+
+Document Content:
+{document_text[:4000]}
+
+Provide a comprehensive medical summary including:
+1. Main purpose and context of this document
+2. Key medical findings and observations
+3. Any abnormalities or concerns identified
+4. Clinical significance
+
+Keep the summary concise but informative (3-5 sentences)."""
+            
+            summary_response = self.gemini_model.generate_content(summary_prompt)
+            main_summary = summary_response.text.strip()
+            
+            # Key findings prompt
+            findings_prompt = f"""Based on this {document_type}:
+
+{document_text[:3000]}
+
+List 3-5 most critical clinical findings. Be specific and concise. Format as bullet points."""
+            
+            findings_response = self.gemini_model.generate_content(findings_prompt)
+            findings_text = findings_response.text.strip()
+            key_findings = [f.strip('- \u2022*').strip() for f in findings_text.split('\n') if f.strip() and len(f.strip()) > 10][:5]
+            
+            # Medical terms prompt
+            terms_prompt = f"""Identify 3-5 complex medical terms from this text and provide patient-friendly explanations:
+
+{document_text[:2000]}
+
+Format as: Term: explanation"""
+            
+            terms_response = self.gemini_model.generate_content(terms_prompt)
+            terms_text = terms_response.text.strip()
+            
+            medical_terms = []
+            for line in terms_text.split('\n'):
+                if ':' in line:
+                    term, explanation = line.split(':', 1)
+                    medical_terms.append({
+                        "term": term.strip('- \u2022*').strip(),
+                        "explanation": explanation.strip()
+                    })
+                if len(medical_terms) >= 5:
+                    break
+            
+            # Recommendations prompt
+            rec_prompt = f"""Based on this {document_type}, suggest 2-3 actionable next steps for the patient:
+
+{document_text[:2000]}
+
+Be specific and practical."""
+            
+            rec_response = self.gemini_model.generate_content(rec_prompt)
+            rec_text = rec_response.text.strip()
+            recommendations = [r.strip('- \u2022*').strip() for r in rec_text.split('\n') if r.strip() and len(r.strip()) > 10][:3]
+            
+            # Urgency assessment
+            urgency_prompt = f"""Assess the urgency level (low, moderate, or high) based on this medical document:
+
+{document_text[:2000]}
+
+Respond with only one word: low, moderate, or high."""
+            
+            urgency_response = self.gemini_model.generate_content(urgency_prompt)
+            urgency_level = urgency_response.text.strip().lower()
+            if urgency_level not in ['low', 'moderate', 'high']:
+                urgency_level = 'moderate'
+            
+            return {
+                "summary": main_summary,
+                "key_findings": key_findings if key_findings else ["Key findings extracted from document"],
+                "medical_terms": medical_terms if medical_terms else [{"term": "Medical terminology", "explanation": "Refer to medical glossary"}],
+                "recommendations": recommendations if recommendations else ["Follow up with healthcare provider"],
+                "urgency_level": urgency_level,
+                "ai_confidence": 0.90,
+                "model_used": f"Google Gemini ({os.getenv('GEMINI_MODEL', 'gemini-pro')})"
+            }
+        
+        except Exception as e:
+            logger.error(f"Error in Gemini summarization: {e}")
+            # Fallback to template
+            text = document_text  # Use document_text for backward compatibility
+            doc_type = document_type
+            return self._summarize_with_template(text, doc_type)
+    
+    def _summarize_with_template(self, text: str, doc_type: str) -> Dict[str, Any]:
+        """
+        Template-based summarization (fallback when OpenAI is not available)
+        """
+        summary = self._generate_summary(text, doc_type)
+        key_findings = self._extract_key_findings(text, doc_type)
+        medical_terms = self._extract_medical_terms(text)
+        recommendations = self._generate_document_recommendations(key_findings, doc_type)
+        urgency_level = self._determine_document_urgency(key_findings, doc_type)
+        
+        return {
+            'summary': summary,
+            'key_findings': key_findings,
+            'medical_terms': medical_terms,
+            'recommendations': recommendations,
+            'urgency_level': urgency_level
+        }
     
     def _generate_summary(self, text: str, doc_type: str) -> str:
         """
