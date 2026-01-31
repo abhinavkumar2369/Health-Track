@@ -130,8 +130,7 @@ const SignUp = () => {
                                 </div>
                             </div>
                             <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-3 sm:mb-4 leading-tight">
-                                Join
-                                <span className="block mt-1 bg-gradient-to-r from-blue-600 to-green-600 bg-clip-text text-transparent">Health Track</span>
+                                Join <span className="bg-gradient-to-r from-blue-600 to-green-600 bg-clip-text text-transparent">Health Track</span>
                             </h2>
                             <p className="text-base sm:text-lg text-gray-600 leading-relaxed">
                                 Create your admin account to manage your healthcare facility.
@@ -182,15 +181,11 @@ const SignUp = () => {
                                     </div>
                                     <h1 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-green-600 bg-clip-text text-transparent">Health Track</h1>
                                 </div>
-                                <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">Create Account</h2>
-                                <p className="text-sm text-gray-500">Setup your administrator profile</p>
                             </div>
                         </div>
 
                         {/* Desktop Header */}
                         <div className="hidden lg:block text-center">
-                            <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">Create Account</h2>
-                            <p className="text-gray-600 text-sm mt-1">Sign up as administrator</p>
                         </div>
 
                 {/* Sign Up Form */}

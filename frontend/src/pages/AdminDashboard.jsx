@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { adminAPI } from '../services/api';
 import authService from '../services/authService';
-import { LayoutDashboard, Stethoscope, Users, Pill, BarChart3, Settings, LogOut, User, Lock, Plus, Menu, X, FileText, Download, Trash2 } from 'lucide-react';
+import { LayoutDashboard, Stethoscope, Users, Pill, BarChart3, Settings, LogOut, User, Lock, Plus, Menu, X, FileText, Download, Trash2, Network } from 'lucide-react';
 
 const initialFormState = {
     email: '',
@@ -37,7 +37,22 @@ const AdminDashboard = () => {
     const [stats, setStats] = useState({
         totalDoctors: 0,
         totalPharmacists: 0,
+        totalPatients: 0,
         totalRevenue: 0
+    });
+    const [inventoryData, setInventoryData] = useState({
+        stats: {
+            totalItems: 0,
+            totalQuantity: 0,
+            lowStock: 0,
+            outOfStock: 0
+        },
+        chartData: []
+    });
+    const [diseaseData, setDiseaseData] = useState({
+        diseases: [],
+        totalCases: 0,
+        trend: 0
     });
     const [profileForm, setProfileForm] = useState({
         fullname: '',
@@ -62,6 +77,18 @@ const AdminDashboard = () => {
         dateFrom: '',
         dateTo: ''
     });
+    
+    // Interoperability state
+    const [interopConfig, setInteropConfig] = useState({
+        token: '',
+        address: '',
+        expiryDate: null,
+        isExpired: false
+    });
+    const [interopErrors, setInteropErrors] = useState({});
+    const [isInteropSaving, setIsInteropSaving] = useState(false);
+    const [interopSuccess, setInteropSuccess] = useState('');
+    const [isGeneratingToken, setIsGeneratingToken] = useState(false);
 
     useEffect(() => {
         const currentUser = authService.getCurrentUser();
@@ -73,14 +100,18 @@ const AdminDashboard = () => {
         loadData();
         loadProfile();
         loadReports();
+        loadApiToken();
     }, [navigate]);
 
     const loadData = async () => {
         setLoading(true);
         try {
-            const [doctorsRes, pharmacistsRes] = await Promise.all([
+            const [doctorsRes, pharmacistsRes, patientsRes, inventoryRes, diseasesRes] = await Promise.all([
                 adminAPI.getUsers('doctor'),
-                adminAPI.getUsers('pharmacist')
+                adminAPI.getUsers('pharmacist'),
+                adminAPI.getPatients(),
+                adminAPI.getPharmacyInventory(),
+                adminAPI.getCriticalDiseases()
             ]);
 
             if (doctorsRes.success) setDoctors(doctorsRes.data || []);
@@ -89,8 +120,29 @@ const AdminDashboard = () => {
             setStats({
                 totalDoctors: doctorsRes.data?.length || 0,
                 totalPharmacists: pharmacistsRes.data?.length || 0,
+                totalPatients: patientsRes.data?.length || 0,
                 totalRevenue: 45287
             });
+
+            if (inventoryRes.success) {
+                setInventoryData({
+                    stats: inventoryRes.stats || {
+                        totalItems: 0,
+                        totalQuantity: 0,
+                        lowStock: 0,
+                        outOfStock: 0
+                    },
+                    chartData: inventoryRes.chartData || []
+                });
+            }
+
+            if (diseasesRes.success) {
+                setDiseaseData({
+                    diseases: diseasesRes.diseases || [],
+                    totalCases: diseasesRes.totalCases || 0,
+                    trend: diseasesRes.trend || 0
+                });
+            }
         } catch (error) {
             console.error('Error loading data:', error);
             setError(error.message || 'Failed to load data');
@@ -118,6 +170,64 @@ const AdminDashboard = () => {
         const savedReports = localStorage.getItem('adminReports');
         if (savedReports) {
             setReports(JSON.parse(savedReports));
+        }
+    };
+
+    const loadApiToken = async () => {
+        try {
+            const response = await adminAPI.getApiToken();
+            if (response.success && response.apiToken) {
+                setInteropConfig({
+                    ...interopConfig,
+                    token: response.apiToken,
+                    expiryDate: response.expiryDate,
+                    isExpired: response.isExpired
+                });
+            }
+        } catch (error) {
+            console.error('Error loading API token:', error);
+        }
+    };
+
+    const handleGenerateApiToken = async () => {
+        setIsGeneratingToken(true);
+        setInteropErrors({});
+        setInteropSuccess('');
+        try {
+            const response = await adminAPI.generateApiToken(365);
+            if (response.success) {
+                setInteropConfig({
+                    ...interopConfig,
+                    token: response.apiToken,
+                    expiryDate: response.expiryDate,
+                    isExpired: false
+                });
+                setInteropSuccess('API token generated successfully!');
+            }
+        } catch (error) {
+            setInteropErrors({ general: error.message || 'Failed to generate token' });
+        } finally {
+            setIsGeneratingToken(false);
+        }
+    };
+
+    const handleRevokeApiToken = async () => {
+        if (!confirm('Are you sure you want to revoke the API token? This will invalidate all external access.')) {
+            return;
+        }
+        try {
+            const response = await adminAPI.revokeApiToken();
+            if (response.success) {
+                setInteropConfig({
+                    ...interopConfig,
+                    token: '',
+                    expiryDate: null,
+                    isExpired: false
+                });
+                setInteropSuccess('API token revoked successfully');
+            }
+        } catch (error) {
+            setInteropErrors({ general: error.message || 'Failed to revoke token' });
         }
     };
 
@@ -380,6 +490,7 @@ const AdminDashboard = () => {
         { id: 'doctors', icon: Stethoscope, label: 'Doctors' },
         { id: 'pharmacists', icon: Pill, label: 'Pharmacists' },
         { id: 'reports', icon: BarChart3, label: 'Reports' },
+        { id: 'interoperability', icon: Network, label: 'Interoperability' },
         { id: 'settings', icon: Settings, label: 'Settings' }
     ];
 
@@ -483,37 +594,48 @@ const AdminDashboard = () => {
                                     </div>
                                     
                                     {/* Horizontal Bar Chart for Diseases */}
-                                    <div className="space-y-3">
-                                        {[
-                                            { name: 'Diabetes', cases: 45, color: 'bg-red-500', percentage: 90 },
-                                            { name: 'Hypertension', cases: 38, color: 'bg-orange-500', percentage: 76 },
-                                            { name: 'Heart Disease', cases: 28, color: 'bg-pink-500', percentage: 56 },
-                                            { name: 'Respiratory', cases: 22, color: 'bg-yellow-500', percentage: 44 },
-                                            { name: 'Kidney Disease', cases: 15, color: 'bg-purple-500', percentage: 30 },
-                                        ].map((disease, index) => (
-                                            <div key={index} className="group">
-                                                <div className="flex items-center justify-between mb-1">
-                                                    <span className="text-sm font-medium text-gray-700">{disease.name}</span>
-                                                    <span className="text-sm font-semibold text-gray-900">{disease.cases} cases</span>
-                                                </div>
-                                                <div className="w-full bg-gray-100 rounded-full h-2.5 overflow-hidden">
-                                                    <div 
-                                                        className={`${disease.color} h-2.5 rounded-full transition-all duration-500 group-hover:opacity-80`}
-                                                        style={{ width: `${disease.percentage}%` }}
-                                                    ></div>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
+                                    {diseaseData.diseases.length > 0 ? (
+                                        <div className="space-y-3">
+                                            {diseaseData.diseases.map((disease, index) => {
+                                                const colors = [
+                                                    'bg-red-500',
+                                                    'bg-orange-500', 
+                                                    'bg-pink-500',
+                                                    'bg-yellow-500',
+                                                    'bg-purple-500'
+                                                ];
+                                                return (
+                                                    <div key={index} className="group">
+                                                        <div className="flex items-center justify-between mb-1">
+                                                            <span className="text-sm font-medium text-gray-700">{disease.name}</span>
+                                                            <span className="text-sm font-semibold text-gray-900">{disease.cases} cases</span>
+                                                        </div>
+                                                        <div className="w-full bg-gray-100 rounded-full h-2.5 overflow-hidden">
+                                                            <div 
+                                                                className={`${colors[index % colors.length]} h-2.5 rounded-full transition-all duration-500 group-hover:opacity-80`}
+                                                                style={{ width: `${disease.percentage}%` }}
+                                                            ></div>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    ) : (
+                                        <div className="flex items-center justify-center h-40 text-gray-400">
+                                            <p>No disease data available</p>
+                                        </div>
+                                    )}
                                     
                                     {/* Summary */}
                                     <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-100">
                                         <div>
                                             <p className="text-xs text-gray-500">Total Cases</p>
-                                            <p className="text-lg font-semibold text-gray-900">148</p>
+                                            <p className="text-lg font-semibold text-gray-900">{diseaseData.totalCases}</p>
                                         </div>
                                         <div className="flex items-center space-x-1">
-                                            <span className="text-red-500 text-sm">↑ 8%</span>
+                                            <span className={`${diseaseData.trend >= 0 ? 'text-red-500' : 'text-green-500'} text-sm`}>
+                                                {diseaseData.trend >= 0 ? '↑' : '↓'} {Math.abs(diseaseData.trend)}%
+                                            </span>
                                             <span className="text-xs text-gray-500">vs last month</span>
                                         </div>
                                     </div>
@@ -615,6 +737,132 @@ const AdminDashboard = () => {
 
                             {/* Staff Distribution & Quick Actions */}
                             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                {/* Pharmacy Inventory Line Chart */}
+                                <div className="bg-white rounded-xl border border-gray-200 p-5">
+                                    <div className="flex items-center justify-between mb-4">
+                                        <h3 className="text-lg font-semibold text-gray-900">Pharmacy Inventory</h3>
+                                        <select className="text-xs border border-gray-200 rounded-lg px-2 py-1 text-gray-600 focus:outline-none focus:ring-2 focus:ring-purple-500">
+                                            <option>Last 7 Days</option>
+                                            <option>Last 30 Days</option>
+                                            <option>Last 3 Months</option>
+                                        </select>
+                                    </div>
+                                    
+                                    {/* Line Chart using SVG */}
+                                    <div className="relative h-48">
+                                        {inventoryData.chartData.length === 0 ? (
+                                            <div className="flex items-center justify-center h-full">
+                                                <p className="text-gray-400 text-sm">No inventory data available</p>
+                                            </div>
+                                        ) : (
+                                            <>
+                                        {/* Y-axis labels */}
+                                        <div className="absolute left-0 top-0 bottom-6 flex flex-col justify-between text-xs text-gray-400 w-8">
+                                            {(() => {
+                                                const maxValue = Math.max(...inventoryData.chartData.map(d => d.value), 1);
+                                                const step = Math.ceil(maxValue / 4);
+                                                return [4, 3, 2, 1, 0].map(i => (
+                                                    <span key={i}>{step * i}</span>
+                                                ));
+                                            })()}
+                                        </div>
+                                        
+                                        {/* Chart area */}
+                                        <div className="ml-10 h-full">
+                                            <svg className="w-full h-[calc(100%-24px)]" viewBox="0 0 350 120" preserveAspectRatio="none">
+                                                {/* Grid lines */}
+                                                <line x1="0" y1="0" x2="350" y2="0" stroke="#f3f4f6" strokeWidth="1" />
+                                                <line x1="0" y1="30" x2="350" y2="30" stroke="#f3f4f6" strokeWidth="1" />
+                                                <line x1="0" y1="60" x2="350" y2="60" stroke="#f3f4f6" strokeWidth="1" />
+                                                <line x1="0" y1="90" x2="350" y2="90" stroke="#f3f4f6" strokeWidth="1" />
+                                                <line x1="0" y1="120" x2="350" y2="120" stroke="#f3f4f6" strokeWidth="1" />
+                                                
+                                                {(() => {
+                                                    const maxValue = Math.max(...inventoryData.chartData.map(d => d.value), 1);
+                                                    const points = inventoryData.chartData.map((data, index) => {
+                                                        const x = (index / (inventoryData.chartData.length - 1)) * 350;
+                                                        const y = 120 - ((data.value / maxValue) * 100);
+                                                        return { x, y, value: data.value };
+                                                    });
+                                                    
+                                                    const pathD = points.map((p, i) => 
+                                                        `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`
+                                                    ).join(' ');
+                                                    
+                                                    const areaD = `${pathD} L 350 120 L 0 120 Z`;
+                                                    
+                                                    return (
+                                                        <>
+                                                            {/* Area fill */}
+                                                            <path
+                                                                d={areaD}
+                                                                fill="url(#purpleGradient)"
+                                                                opacity="0.2"
+                                                            />
+                                                            
+                                                            {/* Line */}
+                                                            <path
+                                                                d={pathD}
+                                                                fill="none"
+                                                                stroke="#9333ea"
+                                                                strokeWidth="3"
+                                                                strokeLinecap="round"
+                                                                strokeLinejoin="round"
+                                                            />
+                                                            
+                                                            {/* Data points */}
+                                                            {points.map((point, index) => (
+                                                                <circle 
+                                                                    key={index}
+                                                                    cx={point.x} 
+                                                                    cy={point.y} 
+                                                                    r="4" 
+                                                                    fill="#9333ea" 
+                                                                    stroke="white" 
+                                                                    strokeWidth="2" 
+                                                                />
+                                                            ))}
+                                                        </>
+                                                    );
+                                                })()}
+                                                
+                                                {/* Gradient definition */}
+                                                <defs>
+                                                    <linearGradient id="purpleGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                                                        <stop offset="0%" stopColor="#9333ea" />
+                                                        <stop offset="100%" stopColor="#9333ea" stopOpacity="0" />
+                                                    </linearGradient>
+                                                </defs>
+                                            </svg>
+                                            
+                                            {/* X-axis labels */}
+                                            <div className="flex justify-between text-xs text-gray-400 mt-1">
+                                                {inventoryData.chartData.map((data, index) => (
+                                                    <span key={index}>{data.day}</span>
+                                                ))}
+                                            </div>
+                                        </div>
+                                        </>
+                                        )}
+                                    </div>
+                                    
+                                    {/* Stats summary */}
+                                    <div className="grid grid-cols-3 gap-4 mt-4 pt-4 border-t border-gray-100">
+                                        <div>
+                                            <p className="text-xs text-gray-500">Total Items</p>
+                                            <p className="text-lg font-semibold text-gray-900">{inventoryData.stats.totalItems}</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-xs text-gray-500">Low Stock</p>
+                                            <p className="text-lg font-semibold text-orange-600">{inventoryData.stats.lowStock}</p>
+                                        </div>
+                                        <div className="flex flex-col items-end">
+                                            <p className="text-xs text-gray-500">Out of Stock</p>
+                                            <p className="text-lg font-semibold text-red-600">{inventoryData.stats.outOfStock}</p>
+                                        </div>
+                                    </div>
+                                </div>
+
                                 {/* User Statistics - Vertical Bar Chart */}
                                 <div className="bg-white rounded-xl border border-gray-200 p-5">
                                     <h3 className="text-lg font-semibold text-gray-900 mb-4">User Statistics</h3>
@@ -625,8 +873,8 @@ const AdminDashboard = () => {
                                         <div className="flex flex-col items-center">
                                             <span className="text-sm font-semibold text-gray-900 mb-1">{stats.totalDoctors}</span>
                                             <div 
-                                                className="w-12 sm:w-16 bg-gradient-to-t from-blue-600 to-blue-400 rounded-t-lg transition-all duration-500"
-                                                style={{ height: `${Math.max((stats.totalDoctors / Math.max(stats.totalDoctors, stats.totalPharmacists, 1)) * 100, 10)}%`, minHeight: '20px' }}
+                                                className="w-10 sm:w-14 bg-gradient-to-t from-blue-600 to-blue-400 rounded-t-lg transition-all duration-500"
+                                                style={{ height: `${Math.max((stats.totalDoctors / Math.max(stats.totalDoctors, stats.totalPharmacists, stats.totalPatients, 1)) * 100, 10)}%`, minHeight: '20px' }}
                                             ></div>
                                             <span className="text-xs font-medium text-gray-600 mt-2">Doctors</span>
                                         </div>
@@ -635,10 +883,20 @@ const AdminDashboard = () => {
                                         <div className="flex flex-col items-center">
                                             <span className="text-sm font-semibold text-gray-900 mb-1">{stats.totalPharmacists}</span>
                                             <div 
-                                                className="w-12 sm:w-16 bg-gradient-to-t from-purple-600 to-purple-400 rounded-t-lg transition-all duration-500"
-                                                style={{ height: `${Math.max((stats.totalPharmacists / Math.max(stats.totalDoctors, stats.totalPharmacists, 1)) * 100, 10)}%`, minHeight: '20px' }}
+                                                className="w-10 sm:w-14 bg-gradient-to-t from-purple-600 to-purple-400 rounded-t-lg transition-all duration-500"
+                                                style={{ height: `${Math.max((stats.totalPharmacists / Math.max(stats.totalDoctors, stats.totalPharmacists, stats.totalPatients, 1)) * 100, 10)}%`, minHeight: '20px' }}
                                             ></div>
                                             <span className="text-xs font-medium text-gray-600 mt-2">Pharmacists</span>
+                                        </div>
+
+                                        {/* Patients Bar */}
+                                        <div className="flex flex-col items-center">
+                                            <span className="text-sm font-semibold text-gray-900 mb-1">{stats.totalPatients}</span>
+                                            <div 
+                                                className="w-10 sm:w-14 bg-gradient-to-t from-green-600 to-green-400 rounded-t-lg transition-all duration-500"
+                                                style={{ height: `${Math.max((stats.totalPatients / Math.max(stats.totalDoctors, stats.totalPharmacists, stats.totalPatients, 1)) * 100, 10)}%`, minHeight: '20px' }}
+                                            ></div>
+                                            <span className="text-xs font-medium text-gray-600 mt-2">Patients</span>
                                         </div>
                                     </div>
                                     
@@ -647,7 +905,7 @@ const AdminDashboard = () => {
                                         <div className="flex items-center justify-between">
                                             <div>
                                                 <p className="text-xs text-gray-500">Total Users</p>
-                                                <p className="text-2xl font-bold text-gray-900">{stats.totalDoctors + stats.totalPharmacists}</p>
+                                                <p className="text-2xl font-bold text-gray-900">{stats.totalDoctors + stats.totalPharmacists + stats.totalPatients}</p>
                                             </div>
                                             <div className="flex items-center space-x-1">
                                                 <span className="text-green-500 text-sm">↑ 8%</span>
@@ -1010,6 +1268,218 @@ const AdminDashboard = () => {
                                         {isSubmitting ? 'Updating...' : 'Update Password'}
                                     </button>
                                 </form>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Interoperability Section */}
+                    {activeSection === 'interoperability' && (
+                        <div className="space-y-4 sm:space-y-6">
+                            <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Interoperability</h2>
+                            
+                            {interopSuccess && (
+                                <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                                    <p className="text-green-700 text-sm">{interopSuccess}</p>
+                                </div>
+                            )}
+
+                            {interopErrors.general && (
+                                <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                                    <p className="text-red-700 text-sm">{interopErrors.general}</p>
+                                </div>
+                            )}
+
+                            {/* API Token Generation */}
+                            <div className="bg-white rounded-xl border border-gray-200 p-6">
+                                <div className="flex items-center justify-between mb-6">
+                                    <div className="flex items-center space-x-3">
+                                        <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
+                                            <Lock className="w-5 h-5 text-purple-600" />
+                                        </div>
+                                        <div>
+                                            <h3 className="text-lg font-semibold text-gray-900">API Access Token</h3>
+                                            <p className="text-sm text-gray-500">Generate token for external system access</p>
+                                        </div>
+                                    </div>
+                                    {interopConfig.token && (
+                                        <button
+                                            onClick={handleRevokeApiToken}
+                                            className="px-4 py-2 text-sm font-medium text-red-600 border border-red-300 rounded-lg hover:bg-red-50 transition-colors"
+                                        >
+                                            Revoke Token
+                                        </button>
+                                    )}
+                                </div>
+
+                                {interopConfig.token ? (
+                                    <div className="space-y-4">
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                Your API Token
+                                            </label>
+                                            <div className="flex space-x-2">
+                                                <input
+                                                    type="text"
+                                                    value={interopConfig.token}
+                                                    readOnly
+                                                    className="flex-1 px-4 py-2.5 border-2 border-gray-200 rounded-lg bg-gray-50 font-mono text-sm"
+                                                />
+                                                <button
+                                                    onClick={() => {
+                                                        navigator.clipboard.writeText(interopConfig.token);
+                                                        setInteropSuccess('Token copied to clipboard!');
+                                                        setTimeout(() => setInteropSuccess(''), 2000);
+                                                    }}
+                                                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+                                                >
+                                                    Copy
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        {interopConfig.expiryDate && (
+                                            <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                                                <span className="text-sm text-gray-600">Expires on:</span>
+                                                <span className={`text-sm font-medium ${interopConfig.isExpired ? 'text-red-600' : 'text-gray-900'}`}>
+                                                    {new Date(interopConfig.expiryDate).toLocaleDateString('en-US', { 
+                                                        year: 'numeric', 
+                                                        month: 'long', 
+                                                        day: 'numeric' 
+                                                    })}
+                                                    {interopConfig.isExpired && ' (Expired)'}
+                                                </span>
+                                            </div>
+                                        )}
+                                    </div>
+                                ) : (
+                                    <div className="text-center py-8">
+                                        <Lock className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+                                        <p className="text-gray-600 mb-4">No API token generated yet</p>
+                                        <button
+                                            onClick={handleGenerateApiToken}
+                                            disabled={isGeneratingToken}
+                                            className="px-6 py-2.5 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors disabled:bg-gray-400 text-sm font-medium"
+                                        >
+                                            {isGeneratingToken ? 'Generating...' : 'Generate API Token'}
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* API Routes Documentation */}
+                            <div className="bg-white rounded-xl border border-gray-200 p-6">
+                                <div className="flex items-center space-x-3 mb-4">
+                                    <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                                        <FileText className="w-5 h-5 text-blue-600" />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-lg font-semibold text-gray-900">API Routes</h3>
+                                        <p className="text-sm text-gray-500">Available endpoints for external access</p>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-3">
+                                    <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+                                        <div className="flex items-center justify-between mb-2">
+                                            <div className="flex items-center space-x-2">
+                                                <span className="px-2 py-0.5 text-xs font-semibold bg-green-100 text-green-700 rounded">GET</span>
+                                                <span className="font-mono text-sm text-gray-900">/admin/validate-token/:apiToken</span>
+                                            </div>
+                                        </div>
+                                        <p className="text-xs text-gray-600 mb-2">Validate the API token and get admin information</p>
+                                        <div className="bg-white p-2 rounded border border-gray-200 font-mono text-xs text-gray-700 overflow-x-auto">
+                                            <div className="text-green-600">// Example:</div>
+                                            <div>GET {window.location.origin}/admin/validate-token/YOUR_TOKEN_HERE</div>
+                                        </div>
+                                    </div>
+
+                                    <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                                        <p className="text-xs text-blue-800">
+                                            <strong>Note:</strong> Use the generated API token in the route to authenticate external requests.
+                                            The server address you configure will be where external systems can access this API.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Configuration Setup */}
+                            <div className="bg-white rounded-xl border border-gray-200 p-6">
+                                <div className="flex items-center space-x-3 mb-6">
+                                    <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center">
+                                        <Settings className="w-5 h-5 text-orange-600" />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-lg font-semibold text-gray-900">Server Configuration</h3>
+                                        <p className="text-sm text-gray-500">Set your server address for external access</p>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-4">
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                            Server Address / Base URL
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={interopConfig.address}
+                                            onChange={(e) => {
+                                                setInteropConfig({ ...interopConfig, address: e.target.value });
+                                            }}
+                                            className="w-full px-4 py-2.5 border-2 border-gray-200 rounded-lg outline-none focus:border-orange-500 focus:ring-0 transition-colors"
+                                            placeholder="https://your-server.com"
+                                        />
+                                        <p className="text-xs text-gray-500 mt-1">The base URL where your Health Track server is accessible</p>
+                                    </div>
+
+                                    <button
+                                        onClick={() => {
+                                            localStorage.setItem('interopServerAddress', interopConfig.address);
+                                            setInteropSuccess('Server address saved!');
+                                            setTimeout(() => setInteropSuccess(''), 2000);
+                                        }}
+                                        className="px-6 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors text-sm font-medium"
+                                    >
+                                        Save Server Address
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Connection Status */}
+                            <div className="bg-white rounded-xl border border-gray-200 p-6">
+                                <div className="flex items-center space-x-3 mb-4">
+                                    <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                                        <Network className="w-5 h-5 text-green-600" />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-lg font-semibold text-gray-900">Integration Status</h3>
+                                        <p className="text-sm text-gray-500">Current configuration status</p>
+                                    </div>
+                                </div>
+                                
+                                <div className="space-y-3">
+                                    <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                                        <span className="text-sm font-medium text-gray-700">API Token</span>
+                                        <span className={`text-xs font-semibold px-2 py-1 rounded-full ${
+                                            interopConfig.token && !interopConfig.isExpired
+                                                ? 'bg-green-100 text-green-700' 
+                                                : interopConfig.token && interopConfig.isExpired
+                                                ? 'bg-red-100 text-red-700'
+                                                : 'bg-gray-200 text-gray-600'
+                                        }`}>
+                                            {interopConfig.token ? (interopConfig.isExpired ? 'Expired' : 'Active') : 'Not Generated'}
+                                        </span>
+                                    </div>
+                                    <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                                        <span className="text-sm font-medium text-gray-700">Server Address</span>
+                                        <span className={`text-xs font-semibold px-2 py-1 rounded-full ${
+                                            interopConfig.address 
+                                                ? 'bg-green-100 text-green-700' 
+                                                : 'bg-gray-200 text-gray-600'
+                                        }`}>
+                                            {interopConfig.address ? 'Configured' : 'Not Set'}
+                                        </span>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     )}

@@ -7,7 +7,9 @@ const adminSchema = new mongoose.Schema(
     password: { type: String, required: true },
     role: { type: String, default: "admin" },
     gender: { type: String, enum: ["male", "female", "other", ""], default: "" },
-    phone: { type: String, default: "" }
+    phone: { type: String, default: "" },
+    apiToken: { type: String, default: "" },
+    apiTokenExpiry: { type: Date, default: null }
   },
   { timestamps: true }
 );

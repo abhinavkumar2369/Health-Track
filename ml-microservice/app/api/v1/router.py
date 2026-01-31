@@ -9,7 +9,8 @@ from app.api.v1.endpoints import (
     prescription,
     report_analysis,
     recommendations,
-    document_summarization
+    document_summarization,
+    appointment_scheduling
 )
 
 api_router = APIRouter()
@@ -50,3 +51,10 @@ api_router.include_router(
     prefix="/document",
     tags=["Document Summarization"]
 )
+
+api_router.include_router(
+    appointment_scheduling.router,
+    prefix="/appointments",
+    tags=["AI Appointment Scheduling"]
+)
+

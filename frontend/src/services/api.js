@@ -143,6 +143,32 @@ export const adminAPI = {
             body: JSON.stringify({ token, ...passwordData }),
         });
     },
+    getPharmacyInventory: async () => {
+        const token = ensureToken();
+        return apiRequest(`/admin/pharmacy-inventory?token=${token}`);
+    },
+    getCriticalDiseases: async () => {
+        const token = ensureToken();
+        return apiRequest(`/admin/critical-diseases?token=${token}`);
+    },
+    generateApiToken: async (expiryDays = 365) => {
+        const token = ensureToken();
+        return apiRequest('/admin/generate-api-token', {
+            method: 'POST',
+            body: JSON.stringify({ token, expiryDays }),
+        });
+    },
+    getApiToken: async () => {
+        const token = ensureToken();
+        return apiRequest(`/admin/api-token?token=${token}`);
+    },
+    revokeApiToken: async () => {
+        const token = ensureToken();
+        return apiRequest('/admin/api-token', {
+            method: 'DELETE',
+            body: JSON.stringify({ token }),
+        });
+    },
 };
 
 // Doctor API
@@ -199,9 +225,87 @@ export const doctorAPI = {
     },
 };
 
-// Patient API (placeholder for future endpoints)
+// Patient API
 export const patientAPI = {
-    // Add patient-specific endpoints here when backend is ready
+    // Get all doctors with specialties
+    getAllDoctors: async () => {
+        return apiRequest('/patient/doctors');
+    },
+
+    // Get available time slots for a doctor
+    getAvailableSlots: async (doctorId, dates) => {
+        return apiRequest('/patient/available-slots', {
+            method: 'POST',
+            body: JSON.stringify({ doctorId, dates }),
+        });
+    },
+
+    // Get AI-suggested appointment slots
+    getAISuggestedSlots: async (doctorId, preferredDates = null, preferredTimes = null) => {
+        const token = ensureToken();
+        return apiRequest('/patient/ai-suggest-slots', {
+            method: 'POST',
+            body: JSON.stringify({ 
+                token, 
+                doctorId, 
+                preferredDates, 
+                preferredTimes 
+            }),
+        });
+    },
+
+    // Request appointment
+    requestAppointment: async (doctorId, appointmentDate, appointmentTime, notes = '') => {
+        const token = ensureToken();
+        return apiRequest('/patient/request-appointment', {
+            method: 'POST',
+            body: JSON.stringify({ 
+                token, 
+                doctorId, 
+                appointmentDate, 
+                appointmentTime, 
+                notes 
+            }),
+        });
+    },
+
+    // Get patient's appointments
+    getMyAppointments: async () => {
+        const token = ensureToken();
+        return apiRequest(`/patient/my-appointments?token=${token}`);
+    },
+
+    // Cancel appointment
+    cancelAppointment: async (appointmentId) => {
+        const token = ensureToken();
+        return apiRequest(`/patient/cancel-appointment/${appointmentId}`, {
+            method: 'DELETE',
+            body: JSON.stringify({ token }),
+        });
+    },
+
+    // Get reschedule suggestions with AI
+    getRescheduleSuggestions: async (appointmentId) => {
+        const token = ensureToken();
+        return apiRequest(`/patient/reschedule-suggest/${appointmentId}`, {
+            method: 'POST',
+            body: JSON.stringify({ token }),
+        });
+    },
+
+    // Reschedule appointment
+    rescheduleAppointment: async (appointmentId, newDate, newTime, reason = '') => {
+        const token = ensureToken();
+        return apiRequest(`/patient/reschedule-appointment/${appointmentId}`, {
+            method: 'PUT',
+            body: JSON.stringify({ 
+                token, 
+                newDate, 
+                newTime, 
+                reason 
+            }),
+        });
+    },
 };
 
 // Document API

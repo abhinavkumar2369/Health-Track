@@ -2,25 +2,25 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { authAPI } from '../services/api';
 import authService from '../services/authService';
-import { Crown, Stethoscope, User, Pill, Shield, Zap, Users, Mail, Lock, Eye, EyeOff, ArrowRight, CheckCircle2 } from 'lucide-react';
+import { Crown, Stethoscope, User, Pill, Shield, Zap, Users, Mail, Lock, Eye, EyeOff, ArrowRight, CheckCircle2, X } from 'lucide-react';
 
 const SignIn = () => {
     const navigate = useNavigate();
     const [formData, setFormData] = useState({
         email: '',
         password: '',
-        role: 'patient'
+        role: ''
     });
     const [errors, setErrors] = useState({});
     const [isLoading, setIsLoading] = useState(false);
-
     const [showPassword, setShowPassword] = useState(false);
+    const [showRoleModal, setShowRoleModal] = useState(false);
 
     const roles = [
-        { value: 'admin', label: 'Admin', icon: Crown, color: 'text-yellow-600', bgColor: 'bg-yellow-50', borderColor: 'border-yellow-200' },
-        { value: 'doctor', label: 'Doctor', icon: Stethoscope, color: 'text-blue-600', bgColor: 'bg-blue-50', borderColor: 'border-blue-200' },
-        { value: 'patient', label: 'Patient', icon: User, color: 'text-green-600', bgColor: 'bg-green-50', borderColor: 'border-green-200' },
-        { value: 'pharmacist', label: 'Pharmacist', icon: Pill, color: 'text-purple-600', bgColor: 'bg-purple-50', borderColor: 'border-purple-200' }
+        { value: 'admin', label: 'Admin', icon: Crown, color: 'text-yellow-600', bgColor: 'bg-yellow-50', borderColor: 'border-yellow-200', hoverBg: 'hover:bg-yellow-100', gradientFrom: 'from-yellow-500', gradientTo: 'to-yellow-600' },
+        { value: 'doctor', label: 'Doctor', icon: Stethoscope, color: 'text-blue-600', bgColor: 'bg-blue-50', borderColor: 'border-blue-200', hoverBg: 'hover:bg-blue-100', gradientFrom: 'from-blue-500', gradientTo: 'to-blue-600' },
+        { value: 'patient', label: 'Patient', icon: User, color: 'text-green-600', bgColor: 'bg-green-50', borderColor: 'border-green-200', hoverBg: 'hover:bg-green-100', gradientFrom: 'from-green-500', gradientTo: 'to-green-600' },
+        { value: 'pharmacist', label: 'Pharmacist', icon: Pill, color: 'text-purple-600', bgColor: 'bg-purple-50', borderColor: 'border-purple-200', hoverBg: 'hover:bg-purple-100', gradientFrom: 'from-purple-500', gradientTo: 'to-purple-600' }
     ];
 
     const handleInputChange = (e) => {
@@ -114,8 +114,7 @@ const SignIn = () => {
                                 </div>
                             </div>
                             <h2 className="text-4xl font-bold text-gray-900 mb-4 leading-tight">
-                                Welcome Back to
-                                <span className="block mt-1 bg-gradient-to-r from-blue-600 to-green-600 bg-clip-text text-transparent">Health Track</span>
+                                Welcome Back to <span className="bg-gradient-to-r from-blue-600 to-green-600 bg-clip-text text-transparent">Health Track</span>
                             </h2>
                             <p className="text-lg text-gray-600 leading-relaxed">
                                 Sign in to access your dashboard and manage your health journey.
@@ -166,15 +165,11 @@ const SignIn = () => {
                                     </div>
                                     <h1 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-green-600 bg-clip-text text-transparent">Health Track</h1>
                                 </div>
-                                <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">Welcome Back</h2>
-                                <p className="text-sm text-gray-500">Sign in to your account</p>
                             </div>
                         </div>
 
                         {/* Desktop Header */}
                         <div className="hidden lg:block text-center">
-                            <h2 className="text-3xl font-bold text-gray-900 mb-2">Welcome Back</h2>
-                            <p className="text-gray-600">Sign in to continue</p>
                         </div>
 
                 {/* Sign In Form */}
@@ -197,24 +192,24 @@ const SignIn = () => {
                             <label className="block text-sm font-semibold text-gray-700 mb-2">
                                 Sign in as
                             </label>
-                            <div className="relative">
-                                <select
-                                    name="role"
-                                    value={formData.role}
-                                    onChange={handleInputChange}
-                                    className="w-full px-4 py-3 sm:py-3.5 text-sm sm:text-base rounded-xl border-2 border-gray-200 bg-white focus:border-blue-500 hover:border-gray-300 focus:outline-none focus:ring-0 transition-all duration-200 appearance-none cursor-pointer"
-                                >
-                                    <option value="patient">Patient</option>
-                                    <option value="doctor">Doctor</option>
-                                    <option value="admin">Admin</option>
-                                    <option value="pharmacist">Pharmacist</option>
-                                </select>
-                                <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none">
-                                    <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                                    </svg>
-                                </div>
-                            </div>
+                            <button
+                                type="button"
+                                onClick={() => setShowRoleModal(true)}
+                                className={`w-full px-4 py-3 sm:py-3.5 text-sm sm:text-base rounded-xl border-2 transition-all duration-200 text-left flex items-center justify-between ${
+                                    formData.role 
+                                        ? 'border-blue-500 bg-blue-50' 
+                                        : errors.role 
+                                            ? 'border-red-300 bg-red-50/50' 
+                                            : 'border-gray-200 hover:border-gray-300 bg-white'
+                                }`}
+                            >
+                                <span className={formData.role ? 'text-gray-900 font-medium' : 'text-gray-400'}>
+                                    {formData.role ? roles.find(r => r.value === formData.role)?.label : 'Select your role'}
+                                </span>
+                                <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                </svg>
+                            </button>
                             {errors.role && <p className="mt-2 text-sm text-red-600 flex items-center gap-1"><span className="w-1 h-1 bg-red-600 rounded-full"></span>{errors.role}</p>}
                         </div>
 
@@ -315,6 +310,49 @@ const SignIn = () => {
             </div>
         </div>
     </div>
+
+            {/* Role Selection Modal */}
+            {showRoleModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+                    <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full">
+                        <div className="border-b border-gray-200 px-6 py-4 flex items-center justify-between">
+                            <h3 className="text-lg font-semibold text-gray-900">Select Your Role</h3>
+                            <button
+                                onClick={() => setShowRoleModal(false)}
+                                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                            >
+                                <X className="w-5 h-5 text-gray-500" />
+                            </button>
+                        </div>
+                        
+                        <div className="p-6">
+                            <div className="space-y-3">
+                                {roles.map((role) => {
+                                    const isSelected = formData.role === role.value;
+                                    return (
+                                        <button
+                                            key={role.value}
+                                            type="button"
+                                            onClick={() => {
+                                                setFormData(prev => ({ ...prev, role: role.value }));
+                                                setErrors(prev => ({ ...prev, role: '' }));
+                                                setShowRoleModal(false);
+                                            }}
+                                            className={`w-full p-4 rounded-lg border-2 transition-all duration-200 text-center font-medium ${
+                                                isSelected 
+                                                    ? 'border-blue-500 bg-blue-50 text-blue-700' 
+                                                    : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50 text-gray-700'
+                                            }`}
+                                        >
+                                            {role.label}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
 </div>
     );
 };

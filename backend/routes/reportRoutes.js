@@ -100,7 +100,7 @@ const getOrGenerateSummary = async (document, patientId) => {
 };
 
 // Helper function to generate PDF report
-const generatePDFReport = async (patient, documents, documentsWithSummaries) => {
+const generatePDFReport = async (patient, documents, documentsWithSummaries, healthTrackerData = null) => {
     return new Promise((resolve, reject) => {
         try {
             const doc = new PDFDocument({ margin: 50, size: 'A4' });
@@ -155,6 +155,100 @@ const generatePDFReport = async (patient, documents, documentsWithSummaries) => 
                    .text(stat.value.toString(), 200, statY - 1);
                 statY += 20;
             });
+
+            // Health Tracker Data Section
+            if (healthTrackerData && (healthTrackerData.currentBmi || healthTrackerData.bmiHistory?.length > 0)) {
+                statY += 20;
+                doc.fillColor('#2563eb')
+                   .fontSize(16)
+                   .text('Health Tracker Data', 50, statY);
+
+                statY += 30;
+
+                // Current BMI
+                if (healthTrackerData.currentBmi) {
+                    const bmiValue = parseFloat(healthTrackerData.currentBmi);
+                    const bmiCategory = bmiValue < 18.5 ? 'Underweight' :
+                                       bmiValue < 25 ? 'Normal Weight' :
+                                       bmiValue < 30 ? 'Overweight' : 'Obese';
+                    const bmiColor = bmiValue < 18.5 ? '#eab308' :
+                                    bmiValue < 25 ? '#10b981' :
+                                    bmiValue < 30 ? '#f97316' : '#dc2626';
+
+                    doc.fillColor('#64748b')
+                       .fontSize(10)
+                       .text('Current BMI:', 60, statY)
+                       .fillColor(bmiColor)
+                       .fontSize(12)
+                       .text(`${bmiValue} (${bmiCategory})`, 200, statY - 1);
+                    statY += 20;
+
+                    if (healthTrackerData.currentHeight && healthTrackerData.currentWeight) {
+                        doc.fillColor('#64748b')
+                           .fontSize(10)
+                           .text(`Height: ${healthTrackerData.currentHeight} cm | Weight: ${healthTrackerData.currentWeight} kg`, 60, statY);
+                        statY += 20;
+                    }
+                }
+
+                // Vital Signs
+                if (healthTrackerData.bloodPressure?.systolic || healthTrackerData.heartRate || healthTrackerData.temperature) {
+                    statY += 10;
+                    doc.fillColor('#2563eb')
+                       .fontSize(12)
+                       .text('Vital Signs', 60, statY);
+                    statY += 20;
+
+                    if (healthTrackerData.bloodPressure?.systolic && healthTrackerData.bloodPressure?.diastolic) {
+                        doc.fillColor('#64748b')
+                           .fontSize(10)
+                           .text('Blood Pressure:', 60, statY)
+                           .fillColor('#334155')
+                           .text(`${healthTrackerData.bloodPressure.systolic}/${healthTrackerData.bloodPressure.diastolic} mmHg`, 200, statY);
+                        statY += 18;
+                    }
+
+                    if (healthTrackerData.heartRate) {
+                        doc.fillColor('#64748b')
+                           .fontSize(10)
+                           .text('Heart Rate:', 60, statY)
+                           .fillColor('#334155')
+                           .text(`${healthTrackerData.heartRate} bpm`, 200, statY);
+                        statY += 18;
+                    }
+
+                    if (healthTrackerData.temperature) {
+                        doc.fillColor('#64748b')
+                           .fontSize(10)
+                           .text('Temperature:', 60, statY)
+                           .fillColor('#334155')
+                           .text(`${healthTrackerData.temperature} °F`, 200, statY);
+                        statY += 18;
+                    }
+                }
+
+                // BMI History
+                if (healthTrackerData.bmiHistory && healthTrackerData.bmiHistory.length > 0) {
+                    statY += 10;
+                    doc.fillColor('#2563eb')
+                       .fontSize(12)
+                       .text('BMI History (Last 5 Records)', 60, statY);
+                    statY += 20;
+
+                    healthTrackerData.bmiHistory.slice(0, 5).forEach((entry, index) => {
+                        const entryBmi = entry.bmi || 0;
+                        const category = entryBmi < 18.5 ? 'Underweight' :
+                                        entryBmi < 25 ? 'Normal' :
+                                        entryBmi < 30 ? 'Overweight' : 'Obese';
+                        const date = new Date(entry.date).toLocaleDateString();
+
+                        doc.fillColor('#64748b')
+                           .fontSize(9)
+                           .text(`${date}: BMI ${entryBmi} (${category}) - ${entry.weight}kg, ${entry.height}cm`, 70, statY);
+                        statY += 15;
+                    });
+                }
+            }
 
             // Document Details
             doc.addPage();
@@ -283,7 +377,7 @@ const generatePDFReport = async (patient, documents, documentsWithSummaries) => 
 // Generate health report for patient
 router.post('/generate', async (req, res) => {
     try {
-        const { token, includeRecords, includeAppointments, includePrescriptions, includeHealthMetrics } = req.body;
+        const { token, includeRecords, includeAppointments, includePrescriptions, includeHealthMetrics, healthTrackerData } = req.body;
 
         if (!token) {
             return res.status(401).json({ success: false, message: 'No token provided' });
@@ -320,9 +414,9 @@ router.post('/generate', async (req, res) => {
             })
         );
 
-        console.log('Generating PDF report...');
-        // Generate PDF
-        const pdfBuffer = await generatePDFReport(patient, documents, documentsWithSummaries);
+        console.log('Generating PDF report with health tracker data...');
+        // Generate PDF with health tracker data
+        const pdfBuffer = await generatePDFReport(patient, documents, documentsWithSummaries, healthTrackerData);
 
         // Upload PDF to S3
         const timestamp = Date.now();

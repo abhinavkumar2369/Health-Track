@@ -7,6 +7,7 @@ import authRoutes from "./routes/authRoutes.js";
 import adminRoutes from "./routes/adminRoutes.js";
 import doctorRoutes from "./routes/doctorRoutes.js";
 import pharmacistRoutes from "./routes/pharmacistRoutes.js";
+import patientRoutes from "./routes/patientRoutes.js";
 import documentRoutes from "./routes/documentRoutes.js";
 import aiRoutes from "./routes/aiRoutes.js";
 import reportRoutes from "./routes/reportRoutes.js";
@@ -76,6 +77,7 @@ app.get("/", (req, res) => {
       auth: "/auth",
       admin: "/admin",
       doctor: "/doctor",
+      patient: "/patient",
       pharmacist: "/pharmacist",
       documents: "/api/documents",
       ai: "/api/ai",
@@ -96,6 +98,7 @@ app.get("/api/health", (req, res) => {
 app.use("/auth", authRoutes);
 app.use("/admin", adminRoutes);
 app.use("/doctor", doctorRoutes);
+app.use("/patient", patientRoutes);
 app.use("/pharmacist", pharmacistRoutes);
 app.use("/api/documents", documentRoutes);
 app.use("/api/ai", aiRoutes);
