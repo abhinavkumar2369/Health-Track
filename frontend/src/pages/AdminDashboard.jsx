@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { adminAPI } from '../services/api';
 import authService from '../services/authService';
-import { LayoutDashboard, Stethoscope, Users, Pill, BarChart3, Settings, LogOut, User, Lock, Plus, Menu, X, FileText, Download, Trash2, Network } from 'lucide-react';
+import { LayoutDashboard, Stethoscope, Users, Pill, BarChart3, Settings, LogOut, User, Lock, Plus, Menu, X, FileText, Download, Trash2, Network, AlertCircle, Search, Phone, Mail, Calendar, Activity } from 'lucide-react';
 
 const initialFormState = {
     email: '',
@@ -54,6 +54,15 @@ const AdminDashboard = () => {
         totalCases: 0,
         trend: 0
     });
+    const [activityData, setActivityData] = useState({
+        chartData: [],
+        stats: {
+            totalActivity: 0,
+            avgPerDay: 0,
+            totalDocuments: 0,
+            totalPatients: 0
+        }
+    });
     const [profileForm, setProfileForm] = useState({
         fullname: '',
         gender: '',
@@ -90,6 +99,12 @@ const AdminDashboard = () => {
     const [interopSuccess, setInteropSuccess] = useState('');
     const [isGeneratingToken, setIsGeneratingToken] = useState(false);
 
+    // Emergency Access state
+    const [emergencySearch, setEmergencySearch] = useState('');
+    const [emergencyPatient, setEmergencyPatient] = useState(null);
+    const [emergencyLoading, setEmergencyLoading] = useState(false);
+    const [emergencyError, setEmergencyError] = useState('');
+
     useEffect(() => {
         const currentUser = authService.getCurrentUser();
         if (!currentUser || currentUser.role !== 'admin') {
@@ -106,12 +121,13 @@ const AdminDashboard = () => {
     const loadData = async () => {
         setLoading(true);
         try {
-            const [doctorsRes, pharmacistsRes, patientsRes, inventoryRes, diseasesRes] = await Promise.all([
+            const [doctorsRes, pharmacistsRes, patientsRes, inventoryRes, diseasesRes, activityRes] = await Promise.all([
                 adminAPI.getUsers('doctor'),
                 adminAPI.getUsers('pharmacist'),
                 adminAPI.getPatients(),
                 adminAPI.getPharmacyInventory(),
-                adminAPI.getCriticalDiseases()
+                adminAPI.getCriticalDiseases(),
+                adminAPI.getWeeklyActivity()
             ]);
 
             if (doctorsRes.success) setDoctors(doctorsRes.data || []);
@@ -141,6 +157,18 @@ const AdminDashboard = () => {
                     diseases: diseasesRes.diseases || [],
                     totalCases: diseasesRes.totalCases || 0,
                     trend: diseasesRes.trend || 0
+                });
+            }
+
+            if (activityRes.success) {
+                setActivityData({
+                    chartData: activityRes.chartData || [],
+                    stats: activityRes.stats || {
+                        totalActivity: 0,
+                        avgPerDay: 0,
+                        totalDocuments: 0,
+                        totalPatients: 0
+                    }
                 });
             }
         } catch (error) {
@@ -231,6 +259,38 @@ const AdminDashboard = () => {
         }
     };
 
+    // Emergency Access Handlers
+    const handleEmergencySearch = async (e) => {
+        e.preventDefault();
+        if (!emergencySearch.trim()) {
+            setEmergencyError('Please enter a Patient ID');
+            return;
+        }
+
+        setEmergencyLoading(true);
+        setEmergencyError('');
+        setEmergencyPatient(null);
+
+        try {
+            const response = await adminAPI.getPatientEmergencyData(emergencySearch.trim());
+            if (response.success && response.patient) {
+                setEmergencyPatient(response.patient);
+            } else {
+                setEmergencyError(response.message || 'Patient not found');
+            }
+        } catch (error) {
+            setEmergencyError(error.message || 'Failed to fetch patient data');
+        } finally {
+            setEmergencyLoading(false);
+        }
+    };
+
+    const clearEmergencyData = () => {
+        setEmergencySearch('');
+        setEmergencyPatient(null);
+        setEmergencyError('');
+    };
+
     const handleGenerateReport = (e) => {
         e.preventDefault();
         const newReport = {
@@ -264,6 +324,42 @@ const AdminDashboard = () => {
             setSuccessMessage('Report deleted successfully!');
             setTimeout(() => setSuccessMessage(''), 3000);
         }
+    };
+
+    const handleDownloadReport = (report) => {
+        // Create a JSON blob with report data
+        const reportData = {
+            title: report.title || `${report.reportType.charAt(0).toUpperCase() + report.reportType.slice(1)} Report`,
+            type: report.reportType,
+            description: report.description,
+            generatedAt: report.generatedAt,
+            dateRange: {
+                from: report.dateFrom || 'N/A',
+                to: report.dateTo || 'N/A'
+            },
+            status: report.status,
+            // Add actual data based on report type
+            data: {
+                message: 'Report data would be generated here based on the report type'
+            }
+        };
+        
+        // Convert to JSON string
+        const dataStr = JSON.stringify(reportData, null, 2);
+        
+        // Create blob and download
+        const blob = new Blob([dataStr], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `${report.title || report.reportType}_${new Date(report.generatedAt).toISOString().split('T')[0]}.json`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+        
+        setSuccessMessage('Report downloaded successfully!');
+        setTimeout(() => setSuccessMessage(''), 3000);
     };
 
     const formatFileSize = (bytes) => {
@@ -490,6 +586,7 @@ const AdminDashboard = () => {
         { id: 'doctors', icon: Stethoscope, label: 'Doctors' },
         { id: 'pharmacists', icon: Pill, label: 'Pharmacists' },
         { id: 'reports', icon: BarChart3, label: 'Reports' },
+        { id: 'emergency', icon: AlertCircle, label: 'Emergency' },
         { id: 'interoperability', icon: Network, label: 'Interoperability' },
         { id: 'settings', icon: Settings, label: 'Settings' }
     ];
@@ -584,159 +681,113 @@ const AdminDashboard = () => {
                 <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
                     {activeSection === 'dashboard' && (
                         <div className="space-y-4 sm:space-y-6">
-                            {/* Two Charts Side by Side */}
-                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
-                                {/* Critical Diseases Chart */}
+                            {/* Staff Distribution & Quick Actions */}
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                {/* User Statistics - Pie Chart */}
                                 <div className="bg-white rounded-xl border border-gray-200 p-5">
-                                    <div className="flex items-center justify-between mb-4">
-                                        <h3 className="text-lg font-semibold text-gray-900">Critical Diseases</h3>
-                                        <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">This Month</span>
-                                    </div>
+                                    <h3 className="text-lg font-semibold text-gray-900 mb-4">User Statistics</h3>
                                     
-                                    {/* Horizontal Bar Chart for Diseases */}
-                                    {diseaseData.diseases.length > 0 ? (
-                                        <div className="space-y-3">
-                                            {diseaseData.diseases.map((disease, index) => {
-                                                const colors = [
-                                                    'bg-red-500',
-                                                    'bg-orange-500', 
-                                                    'bg-pink-500',
-                                                    'bg-yellow-500',
-                                                    'bg-purple-500'
-                                                ];
-                                                return (
-                                                    <div key={index} className="group">
-                                                        <div className="flex items-center justify-between mb-1">
-                                                            <span className="text-sm font-medium text-gray-700">{disease.name}</span>
-                                                            <span className="text-sm font-semibold text-gray-900">{disease.cases} cases</span>
-                                                        </div>
-                                                        <div className="w-full bg-gray-100 rounded-full h-2.5 overflow-hidden">
-                                                            <div 
-                                                                className={`${colors[index % colors.length]} h-2.5 rounded-full transition-all duration-500 group-hover:opacity-80`}
-                                                                style={{ width: `${disease.percentage}%` }}
-                                                            ></div>
-                                                        </div>
-                                                    </div>
-                                                );
-                                            })}
-                                        </div>
-                                    ) : (
-                                        <div className="flex items-center justify-center h-40 text-gray-400">
-                                            <p>No disease data available</p>
-                                        </div>
-                                    )}
-                                    
-                                    {/* Summary */}
-                                    <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-100">
-                                        <div>
-                                            <p className="text-xs text-gray-500">Total Cases</p>
-                                            <p className="text-lg font-semibold text-gray-900">{diseaseData.totalCases}</p>
-                                        </div>
-                                        <div className="flex items-center space-x-1">
-                                            <span className={`${diseaseData.trend >= 0 ? 'text-red-500' : 'text-green-500'} text-sm`}>
-                                                {diseaseData.trend >= 0 ? '↑' : '↓'} {Math.abs(diseaseData.trend)}%
-                                            </span>
-                                            <span className="text-xs text-gray-500">vs last month</span>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Activity Line Chart */}
-                                <div className="bg-white rounded-xl border border-gray-200 p-5">
-                                    <div className="flex items-center justify-between mb-4">
-                                        <h3 className="text-lg font-semibold text-gray-900">Weekly Activity</h3>
-                                        <select className="text-xs border border-gray-200 rounded-lg px-2 py-1 text-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                                            <option>This Week</option>
-                                            <option>Last Week</option>
-                                            <option>This Month</option>
-                                        </select>
-                                    </div>
-                                    
-                                    {/* Line Chart using SVG */}
-                                    <div className="relative h-40">
-                                        {/* Y-axis labels */}
-                                        <div className="absolute left-0 top-0 bottom-6 flex flex-col justify-between text-xs text-gray-400 w-6">
-                                            <span>50</span>
-                                            <span>25</span>
-                                            <span>0</span>
-                                        </div>
-                                        
-                                        {/* Chart area */}
-                                        <div className="ml-8 h-full">
-                                            <svg className="w-full h-[calc(100%-24px)]" viewBox="0 0 300 100" preserveAspectRatio="none">
-                                                {/* Grid lines */}
-                                                <line x1="0" y1="0" x2="300" y2="0" stroke="#f3f4f6" strokeWidth="1" />
-                                                <line x1="0" y1="50" x2="300" y2="50" stroke="#f3f4f6" strokeWidth="1" />
-                                                <line x1="0" y1="100" x2="300" y2="100" stroke="#f3f4f6" strokeWidth="1" />
-                                                
-                                                {/* Area fill */}
-                                                <path
-                                                    d="M 0 70 L 50 55 L 100 65 L 150 40 L 200 50 L 250 30 L 300 45 L 300 100 L 0 100 Z"
-                                                    fill="url(#blueGradient)"
-                                                    opacity="0.3"
-                                                />
-                                                
-                                                {/* Line */}
-                                                <path
-                                                    d="M 0 70 L 50 55 L 100 65 L 150 40 L 200 50 L 250 30 L 300 45"
-                                                    fill="none"
-                                                    stroke="#3b82f6"
-                                                    strokeWidth="2.5"
-                                                    strokeLinecap="round"
-                                                    strokeLinejoin="round"
-                                                />
-                                                
-                                                {/* Data points */}
-                                                <circle cx="0" cy="70" r="4" fill="#3b82f6" />
-                                                <circle cx="50" cy="55" r="4" fill="#3b82f6" />
-                                                <circle cx="100" cy="65" r="4" fill="#3b82f6" />
-                                                <circle cx="150" cy="40" r="4" fill="#3b82f6" />
-                                                <circle cx="200" cy="50" r="4" fill="#3b82f6" />
-                                                <circle cx="250" cy="30" r="4" fill="#3b82f6" />
-                                                <circle cx="300" cy="45" r="4" fill="#3b82f6" />
-                                                
-                                                {/* Gradient definition */}
-                                                <defs>
-                                                    <linearGradient id="blueGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                                                        <stop offset="0%" stopColor="#3b82f6" />
-                                                        <stop offset="100%" stopColor="#3b82f6" stopOpacity="0" />
-                                                    </linearGradient>
-                                                </defs>
+                                    {/* Pie Chart */}
+                                    <div className="flex items-center justify-center">
+                                        <div className="relative w-48 h-48">
+                                            <svg viewBox="0 0 200 200" className="transform -rotate-90">
+                                                {(() => {
+                                                    const total = stats.totalDoctors + stats.totalPharmacists + stats.totalPatients;
+                                                    if (total === 0) return null;
+                                                    
+                                                    const doctorsPercent = (stats.totalDoctors / total) * 100;
+                                                    const pharmacistsPercent = (stats.totalPharmacists / total) * 100;
+                                                    const patientsPercent = (stats.totalPatients / total) * 100;
+                                                    
+                                                    const radius = 80;
+                                                    const circumference = 2 * Math.PI * radius;
+                                                    
+                                                    let currentOffset = 0;
+                                                    
+                                                    return (
+                                                        <>
+                                                            {/* Doctors Slice */}
+                                                            <circle
+                                                                cx="100"
+                                                                cy="100"
+                                                                r={radius}
+                                                                fill="none"
+                                                                stroke="#3b82f6"
+                                                                strokeWidth="40"
+                                                                strokeDasharray={`${(doctorsPercent / 100) * circumference} ${circumference}`}
+                                                                strokeDashoffset={-currentOffset}
+                                                                className="transition-all duration-500"
+                                                            />
+                                                            {(() => { currentOffset += (doctorsPercent / 100) * circumference; return null; })()}
+                                                            
+                                                            {/* Pharmacists Slice */}
+                                                            <circle
+                                                                cx="100"
+                                                                cy="100"
+                                                                r={radius}
+                                                                fill="none"
+                                                                stroke="#a855f7"
+                                                                strokeWidth="40"
+                                                                strokeDasharray={`${(pharmacistsPercent / 100) * circumference} ${circumference}`}
+                                                                strokeDashoffset={-currentOffset}
+                                                                className="transition-all duration-500"
+                                                            />
+                                                            {(() => { currentOffset += (pharmacistsPercent / 100) * circumference; return null; })()}
+                                                            
+                                                            {/* Patients Slice */}
+                                                            <circle
+                                                                cx="100"
+                                                                cy="100"
+                                                                r={radius}
+                                                                fill="none"
+                                                                stroke="#22c55e"
+                                                                strokeWidth="40"
+                                                                strokeDasharray={`${(patientsPercent / 100) * circumference} ${circumference}`}
+                                                                strokeDashoffset={-currentOffset}
+                                                                className="transition-all duration-500"
+                                                            />
+                                                        </>
+                                                    );
+                                                })()}
                                             </svg>
-                                            
-                                            {/* X-axis labels */}
-                                            <div className="flex justify-between text-xs text-gray-400 mt-1">
-                                                <span>Mon</span>
-                                                <span>Tue</span>
-                                                <span>Wed</span>
-                                                <span>Thu</span>
-                                                <span>Fri</span>
-                                                <span>Sat</span>
-                                                <span>Sun</span>
+                                            {/* Center Text */}
+                                            <div className="absolute inset-0 flex items-center justify-center">
+                                                <div className="text-center">
+                                                    <p className="text-2xl font-bold text-gray-900">
+                                                        {stats.totalDoctors + stats.totalPharmacists + stats.totalPatients}
+                                                    </p>
+                                                    <p className="text-xs text-gray-500">Total Users</p>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
                                     
-                                    {/* Stats summary */}
-                                    <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-100">
-                                        <div>
-                                            <p className="text-xs text-gray-500">Total Visits</p>
-                                            <p className="text-lg font-semibold text-gray-900">1,248</p>
+                                    {/* Legend */}
+                                    <div className="mt-6 space-y-2">
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center space-x-2">
+                                                <div className="w-3 h-3 rounded-full bg-blue-500"></div>
+                                                <span className="text-sm text-gray-700">Doctors</span>
+                                            </div>
+                                            <span className="text-sm font-semibold text-gray-900">{stats.totalDoctors}</span>
                                         </div>
-                                        <div>
-                                            <p className="text-xs text-gray-500">Avg/Day</p>
-                                            <p className="text-lg font-semibold text-gray-900">178</p>
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center space-x-2">
+                                                <div className="w-3 h-3 rounded-full bg-purple-500"></div>
+                                                <span className="text-sm text-gray-700">Pharmacists</span>
+                                            </div>
+                                            <span className="text-sm font-semibold text-gray-900">{stats.totalPharmacists}</span>
                                         </div>
-                                        <div className="flex items-center space-x-1">
-                                            <span className="text-green-500 text-sm">↑ 12%</span>
-                                            <span className="text-xs text-gray-500">vs last week</span>
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center space-x-2">
+                                                <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                                                <span className="text-sm text-gray-700">Patients</span>
+                                            </div>
+                                            <span className="text-sm font-semibold text-gray-900">{stats.totalPatients}</span>
                                         </div>
                                     </div>
                                 </div>
-                            </div>
 
-                            {/* Staff Distribution & Quick Actions */}
-                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                                 {/* Pharmacy Inventory Line Chart */}
                                 <div className="bg-white rounded-xl border border-gray-200 p-5">
                                     <div className="flex items-center justify-between mb-4">
@@ -862,55 +913,179 @@ const AdminDashboard = () => {
                                         </div>
                                     </div>
                                 </div>
+                            </div>
 
-                                {/* User Statistics - Vertical Bar Chart */}
+                            {/* Two Charts Side by Side */}
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+                                {/* Activity Line Chart */}
                                 <div className="bg-white rounded-xl border border-gray-200 p-5">
-                                    <h3 className="text-lg font-semibold text-gray-900 mb-4">User Statistics</h3>
-                                    
-                                    {/* Vertical Bar Chart */}
-                                    <div className="flex items-end justify-around h-44 px-4">
-                                        {/* Doctors Bar */}
-                                        <div className="flex flex-col items-center">
-                                            <span className="text-sm font-semibold text-gray-900 mb-1">{stats.totalDoctors}</span>
-                                            <div 
-                                                className="w-10 sm:w-14 bg-gradient-to-t from-blue-600 to-blue-400 rounded-t-lg transition-all duration-500"
-                                                style={{ height: `${Math.max((stats.totalDoctors / Math.max(stats.totalDoctors, stats.totalPharmacists, stats.totalPatients, 1)) * 100, 10)}%`, minHeight: '20px' }}
-                                            ></div>
-                                            <span className="text-xs font-medium text-gray-600 mt-2">Doctors</span>
-                                        </div>
-                                        
-                                        {/* Pharmacists Bar */}
-                                        <div className="flex flex-col items-center">
-                                            <span className="text-sm font-semibold text-gray-900 mb-1">{stats.totalPharmacists}</span>
-                                            <div 
-                                                className="w-10 sm:w-14 bg-gradient-to-t from-purple-600 to-purple-400 rounded-t-lg transition-all duration-500"
-                                                style={{ height: `${Math.max((stats.totalPharmacists / Math.max(stats.totalDoctors, stats.totalPharmacists, stats.totalPatients, 1)) * 100, 10)}%`, minHeight: '20px' }}
-                                            ></div>
-                                            <span className="text-xs font-medium text-gray-600 mt-2">Pharmacists</span>
-                                        </div>
-
-                                        {/* Patients Bar */}
-                                        <div className="flex flex-col items-center">
-                                            <span className="text-sm font-semibold text-gray-900 mb-1">{stats.totalPatients}</span>
-                                            <div 
-                                                className="w-10 sm:w-14 bg-gradient-to-t from-green-600 to-green-400 rounded-t-lg transition-all duration-500"
-                                                style={{ height: `${Math.max((stats.totalPatients / Math.max(stats.totalDoctors, stats.totalPharmacists, stats.totalPatients, 1)) * 100, 10)}%`, minHeight: '20px' }}
-                                            ></div>
-                                            <span className="text-xs font-medium text-gray-600 mt-2">Patients</span>
-                                        </div>
+                                    <div className="flex items-center justify-between mb-4">
+                                        <h3 className="text-lg font-semibold text-gray-900">Weekly Activity</h3>
+                                        <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">Last 7 Days</span>
                                     </div>
                                     
-                                    {/* Total Summary */}
-                                    <div className="mt-6 pt-4 border-t border-gray-100">
-                                        <div className="flex items-center justify-between">
-                                            <div>
-                                                <p className="text-xs text-gray-500">Total Users</p>
-                                                <p className="text-2xl font-bold text-gray-900">{stats.totalDoctors + stats.totalPharmacists + stats.totalPatients}</p>
+                                    {/* Line Chart using SVG */}
+                                    <div className="relative h-40">
+                                        {activityData.chartData.length === 0 ? (
+                                            <div className="flex items-center justify-center h-full">
+                                                <p className="text-gray-400 text-sm">No activity data available</p>
                                             </div>
-                                            <div className="flex items-center space-x-1">
-                                                <span className="text-green-500 text-sm">↑ 8%</span>
-                                                <span className="text-xs text-gray-500">this month</span>
+                                        ) : (
+                                            <>
+                                        {/* Y-axis labels */}
+                                        <div className="absolute left-0 top-0 bottom-6 flex flex-col justify-between text-xs text-gray-400 w-6">
+                                            {(() => {
+                                                const maxValue = Math.max(...activityData.chartData.map(d => d.value), 1);
+                                                const step = Math.ceil(maxValue / 2);
+                                                return [2, 1, 0].map(i => (
+                                                    <span key={i}>{step * i}</span>
+                                                ));
+                                            })()}
+                                        </div>
+                                        
+                                        {/* Chart area */}
+                                        <div className="ml-8 h-full">
+                                            <svg className="w-full h-[calc(100%-24px)]" viewBox="0 0 300 100" preserveAspectRatio="none">
+                                                {/* Grid lines */}
+                                                <line x1="0" y1="0" x2="300" y2="0" stroke="#f3f4f6" strokeWidth="1" />
+                                                <line x1="0" y1="50" x2="300" y2="50" stroke="#f3f4f6" strokeWidth="1" />
+                                                <line x1="0" y1="100" x2="300" y2="100" stroke="#f3f4f6" strokeWidth="1" />
+                                                
+                                                {(() => {
+                                                    const maxValue = Math.max(...activityData.chartData.map(d => d.value), 1);
+                                                    const points = activityData.chartData.map((data, index) => {
+                                                        const x = (index / (activityData.chartData.length - 1)) * 300;
+                                                        const y = 100 - ((data.value / maxValue) * 90);
+                                                        return { x, y, value: data.value };
+                                                    });
+                                                    
+                                                    const pathD = points.map((p, i) => 
+                                                        `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`
+                                                    ).join(' ');
+                                                    
+                                                    const areaD = `${pathD} L 300 100 L 0 100 Z`;
+                                                    
+                                                    return (
+                                                        <>
+                                                            {/* Area fill */}
+                                                            <path
+                                                                d={areaD}
+                                                                fill="url(#blueGradient)"
+                                                                opacity="0.3"
+                                                            />
+                                                            
+                                                            {/* Line */}
+                                                            <path
+                                                                d={pathD}
+                                                                fill="none"
+                                                                stroke="#3b82f6"
+                                                                strokeWidth="2.5"
+                                                                strokeLinecap="round"
+                                                                strokeLinejoin="round"
+                                                            />
+                                                            
+                                                            {/* Data points */}
+                                                            {points.map((point, index) => (
+                                                                <circle 
+                                                                    key={index}
+                                                                    cx={point.x} 
+                                                                    cy={point.y} 
+                                                                    r="4" 
+                                                                    fill="#3b82f6" 
+                                                                />
+                                                            ))}
+                                                        </>
+                                                    );
+                                                })()}
+                                                
+                                                {/* Gradient definition */}
+                                                <defs>
+                                                    <linearGradient id="blueGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                                                        <stop offset="0%" stopColor="#3b82f6" />
+                                                        <stop offset="100%" stopColor="#3b82f6" stopOpacity="0" />
+                                                    </linearGradient>
+                                                </defs>
+                                            </svg>
+                                            
+                                            {/* X-axis labels */}
+                                            <div className="flex justify-between text-xs text-gray-400 mt-1">
+                                                {activityData.chartData.map((data, index) => (
+                                                    <span key={index}>{data.day}</span>
+                                                ))}
                                             </div>
+                                        </div>
+                                        </>
+                                        )}
+                                    </div>
+                                    
+                                    {/* Stats summary */}
+                                    <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-100">
+                                        <div>
+                                            <p className="text-xs text-gray-500">Total Activity</p>
+                                            <p className="text-lg font-semibold text-gray-900">{activityData.stats.totalActivity}</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-xs text-gray-500">Avg/Day</p>
+                                            <p className="text-lg font-semibold text-gray-900">{activityData.stats.avgPerDay}</p>
+                                        </div>
+                                        <div className="flex flex-col items-end">
+                                            <p className="text-xs text-gray-500">Documents</p>
+                                            <p className="text-sm font-semibold text-blue-600">{activityData.stats.totalDocuments}</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Critical Diseases Chart */}
+                                <div className="bg-white rounded-xl border border-gray-200 p-5">
+                                    <div className="flex items-center justify-between mb-4">
+                                        <h3 className="text-lg font-semibold text-gray-900">Critical Diseases</h3>
+                                        <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">This Month</span>
+                                    </div>
+                                    
+                                    {/* Horizontal Bar Chart for Diseases */}
+                                    {diseaseData.diseases.length > 0 ? (
+                                        <div className="space-y-3">
+                                            {diseaseData.diseases.map((disease, index) => {
+                                                const colors = [
+                                                    'bg-red-500',
+                                                    'bg-orange-500', 
+                                                    'bg-pink-500',
+                                                    'bg-yellow-500',
+                                                    'bg-purple-500'
+                                                ];
+                                                return (
+                                                    <div key={index} className="group">
+                                                        <div className="flex items-center justify-between mb-1">
+                                                            <span className="text-sm font-medium text-gray-700">{disease.name}</span>
+                                                            <span className="text-sm font-semibold text-gray-900">{disease.cases} cases</span>
+                                                        </div>
+                                                        <div className="w-full bg-gray-100 rounded-full h-2.5 overflow-hidden">
+                                                            <div 
+                                                                className={`${colors[index % colors.length]} h-2.5 rounded-full transition-all duration-500 group-hover:opacity-80`}
+                                                                style={{ width: `${disease.percentage}%` }}
+                                                            ></div>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    ) : (
+                                        <div className="flex items-center justify-center h-40 text-gray-400">
+                                            <p>No disease data available</p>
+                                        </div>
+                                    )}
+                                    
+                                    {/* Summary */}
+                                    <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-100">
+                                        <div>
+                                            <p className="text-xs text-gray-500">Total Cases</p>
+                                            <p className="text-lg font-semibold text-gray-900">{diseaseData.totalCases}</p>
+                                        </div>
+                                        <div className="flex items-center space-x-1">
+                                            <span className={`${diseaseData.trend >= 0 ? 'text-red-500' : 'text-green-500'} text-sm`}>
+                                                {diseaseData.trend >= 0 ? '↑' : '↓'} {Math.abs(diseaseData.trend)}%
+                                            </span>
+                                            <span className="text-xs text-gray-500">vs last month</span>
                                         </div>
                                     </div>
                                 </div>
@@ -966,7 +1141,7 @@ const AdminDashboard = () => {
                                                         </span>
                                                     </div>
                                                     <div className="flex justify-between items-center">
-                                                        <span className="text-xs text-gray-400">ID: {doctor.uniqueId || doctor.id}</span>
+                                                        <span className="text-xs text-gray-400">ID: {doctor.userId || doctor.uniqueId || doctor.id?.slice(-6)}</span>
                                                         <button
                                                             onClick={() => handleRemoveUser(doctor.id, 'doctor')}
                                                             className="text-xs text-red-600 hover:text-red-700 font-medium"
@@ -993,7 +1168,7 @@ const AdminDashboard = () => {
                                                 <tbody className="divide-y divide-gray-100">
                                                     {doctors.map((doctor) => (
                                                         <tr key={doctor.id} className="hover:bg-gray-50 transition-colors">
-                                                            <td className="px-4 lg:px-6 py-4 text-sm font-mono text-gray-600">{doctor.uniqueId || doctor.id}</td>
+                                                            <td className="px-4 lg:px-6 py-4 text-sm font-mono text-gray-600">{doctor.userId || doctor.uniqueId || doctor.id?.slice(-6)}</td>
                                                             <td className="px-4 lg:px-6 py-4 text-sm font-medium text-gray-900">{doctor.name || '—'}</td>
                                                             <td className="px-4 lg:px-6 py-4 text-sm text-gray-600 hidden lg:table-cell">{doctor.email || '—'}</td>
                                                             <td className="px-4 lg:px-6 py-4">
@@ -1069,7 +1244,7 @@ const AdminDashboard = () => {
                                                         </span>
                                                     </div>
                                                     <div className="flex justify-between items-center">
-                                                        <span className="text-xs text-gray-400">ID: {pharmacist.uniqueId || pharmacist.id}</span>
+                                                        <span className="text-xs text-gray-400">ID: {pharmacist.userId || pharmacist.uniqueId || pharmacist.id?.slice(-6)}</span>
                                                         <button
                                                             onClick={() => handleRemoveUser(pharmacist.id, 'pharmacist')}
                                                             className="text-xs text-red-600 hover:text-red-700 font-medium"
@@ -1096,7 +1271,7 @@ const AdminDashboard = () => {
                                                 <tbody className="divide-y divide-gray-100">
                                                     {pharmacists.map((pharmacist) => (
                                                         <tr key={pharmacist.id} className="hover:bg-gray-50 transition-colors">
-                                                            <td className="px-4 lg:px-6 py-4 text-sm font-mono text-gray-600">{pharmacist.uniqueId || pharmacist.id}</td>
+                                                            <td className="px-4 lg:px-6 py-4 text-sm font-mono text-gray-600">{pharmacist.userId || pharmacist.uniqueId || pharmacist.id?.slice(-6)}</td>
                                                             <td className="px-4 lg:px-6 py-4 text-sm font-medium text-gray-900">{pharmacist.name || '—'}</td>
                                                             <td className="px-4 lg:px-6 py-4 text-sm text-gray-600 hidden lg:table-cell">{pharmacist.email || '—'}</td>
                                                             <td className="px-4 lg:px-6 py-4">
@@ -1142,13 +1317,19 @@ const AdminDashboard = () => {
 
                             {/* Profile Settings */}
                             <div className="bg-white rounded-xl border border-gray-200 p-5">
-                                <div className="flex items-center gap-4 mb-6 pb-4 border-b border-gray-100">
-                                    <div className="w-14 h-14 bg-blue-100 rounded-full flex items-center justify-center text-xl font-bold text-blue-600">
-                                        {user?.fullName?.charAt(0)?.toUpperCase() || user?.email?.charAt(0)?.toUpperCase() || 'A'}
+                                <div className="flex items-center justify-between gap-4 mb-6 pb-4 border-b border-gray-100">
+                                    <div className="flex items-center gap-4">
+                                        <div className="w-14 h-14 bg-blue-100 rounded-full flex items-center justify-center text-xl font-bold text-blue-600">
+                                            {user?.fullName?.charAt(0)?.toUpperCase() || user?.email?.charAt(0)?.toUpperCase() || 'A'}
+                                        </div>
+                                        <div>
+                                            <h3 className="font-semibold text-gray-900">{user?.fullName || profileForm.fullname || 'Administrator'}</h3>
+                                            <p className="text-sm text-gray-500">{user?.email || 'No email'}</p>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <h3 className="font-semibold text-gray-900">{user?.fullName || profileForm.fullname || 'Administrator'}</h3>
-                                        <p className="text-sm text-gray-500">{user?.email || 'No email'}</p>
+                                    <div className="text-right">
+                                        <p className="text-xs text-gray-500">Admin ID</p>
+                                        <p className="text-lg font-mono font-bold text-blue-600">#{user?.userId || user?.id?.slice(-6) || 'N/A'}</p>
                                     </div>
                                 </div>
                                 <h3 className="text-lg font-semibold text-gray-900 mb-4">Profile Information</h3>
@@ -1268,6 +1449,247 @@ const AdminDashboard = () => {
                                         {isSubmitting ? 'Updating...' : 'Update Password'}
                                     </button>
                                 </form>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Emergency Access Section */}
+                    {activeSection === 'emergency' && (
+                        <div className="space-y-4 sm:space-y-6">
+                            <div className="flex items-center space-x-3">
+                                <div className="bg-blue-100 p-3 rounded-lg">
+                                    <AlertCircle className="w-6 h-6 text-blue-600" />
+                                </div>
+                                <div>
+                                    <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Emergency Access</h2>
+                                    <p className="text-sm text-gray-600">Quick access to patient data in emergency situations</p>
+                                </div>
+                            </div>
+
+                            {/* Search Card */}
+                            <div className="bg-white rounded-xl border border-gray-200 p-6">
+                                <h3 className="text-lg font-semibold text-gray-900 mb-4">Search Patient</h3>
+                                
+                                <form onSubmit={handleEmergencySearch} className="space-y-4">
+                                    <div className="flex flex-col sm:flex-row gap-3">
+                                        <div className="flex-1">
+                                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                Patient ID
+                                            </label>
+                                            <input
+                                                type="text"
+                                                value={emergencySearch}
+                                                onChange={(e) => setEmergencySearch(e.target.value)}
+                                                placeholder="Enter Patient ID or MongoDB ID"
+                                                className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg outline-none focus:border-blue-500 focus:ring-0 transition-colors"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    {emergencyError && (
+                                        <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                                            <p className="text-red-700 text-sm">{emergencyError}</p>
+                                        </div>
+                                    )}
+
+                                    <div className="flex flex-wrap gap-3">
+                                        <button
+                                            type="submit"
+                                            disabled={emergencyLoading}
+                                            className="flex items-center justify-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                        >
+                                            <Search className="w-4 h-4" />
+                                            <span>{emergencyLoading ? 'Searching...' : 'Search Patient'}</span>
+                                        </button>
+                                        {emergencyPatient && (
+                                            <button
+                                                type="button"
+                                                onClick={clearEmergencyData}
+                                                className="flex items-center justify-center space-x-2 bg-gray-200 hover:bg-gray-300 text-gray-700 px-5 py-2.5 rounded-lg font-medium transition-colors"
+                                            >
+                                                <X className="w-4 h-4" />
+                                                <span>Clear</span>
+                                            </button>
+                                        )}
+                                    </div>
+                                </form>
+                            </div>
+
+                            {/* Patient Data Display */}
+                            {emergencyPatient && (
+                                <div className="space-y-4">
+                                    {/* Patient Basic Info */}
+                                    <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-6">
+                                        <div className="flex items-center justify-between mb-4">
+                                            <h3 className="text-lg font-semibold text-blue-900">Patient Information</h3>
+                                            <span className="bg-blue-600 text-white text-xs px-3 py-1 rounded-full font-medium">
+                                                EMERGENCY ACCESS
+                                            </span>
+                                        </div>
+                                        
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div>
+                                                <label className="text-xs font-medium text-blue-700 uppercase">Patient Name</label>
+                                                <p className="text-lg font-semibold text-gray-900 mt-1">{emergencyPatient.name}</p>
+                                            </div>
+                                            <div>
+                                                <label className="text-xs font-medium text-blue-700 uppercase">Patient ID</label>
+                                                <p className="text-lg font-semibold text-gray-900 mt-1">{emergencyPatient._id}</p>
+                                            </div>
+                                            <div>
+                                                <label className="text-xs font-medium text-blue-700 uppercase">Email</label>
+                                                <div className="flex items-center space-x-2 mt-1">
+                                                    <Mail className="w-4 h-4 text-gray-500" />
+                                                    <p className="text-gray-900">{emergencyPatient.email}</p>
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <label className="text-xs font-medium text-blue-700 uppercase">Phone</label>
+                                                <div className="flex items-center space-x-2 mt-1">
+                                                    <Phone className="w-4 h-4 text-gray-500" />
+                                                    <p className="text-gray-900">{emergencyPatient.phone || 'N/A'}</p>
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <label className="text-xs font-medium text-blue-700 uppercase">Assigned Doctor</label>
+                                                <p className="text-gray-900 mt-1">
+                                                    {emergencyPatient.doctor_id?.name || 'Not Assigned'}
+                                                </p>
+                                            </div>
+                                            <div>
+                                                <label className="text-xs font-medium text-blue-700 uppercase">Registration Date</label>
+                                                <div className="flex items-center space-x-2 mt-1">
+                                                    <Calendar className="w-4 h-4 text-gray-500" />
+                                                    <p className="text-gray-900">
+                                                        {formatDisplayDate(emergencyPatient.createdAt)}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Medical Documents */}
+                                    {emergencyPatient.documents && emergencyPatient.documents.length > 0 && (
+                                        <div className="bg-white rounded-xl border border-gray-200 p-6">
+                                            <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center space-x-2">
+                                                <FileText className="w-5 h-5" />
+                                                <span>Medical Documents ({emergencyPatient.documents.length})</span>
+                                            </h3>
+                                            <div className="space-y-3">
+                                                {emergencyPatient.documents.map((doc) => (
+                                                    <div key={doc._id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                                                        <div className="flex-1">
+                                                            <p className="font-medium text-gray-900">{doc.title}</p>
+                                                            <p className="text-sm text-gray-600">{doc.description || 'No description'}</p>
+                                                            <div className="flex items-center space-x-4 mt-2 text-xs text-gray-500">
+                                                                <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded">
+                                                                    {doc.category || 'general'}
+                                                                </span>
+                                                                <span>{formatDisplayDate(doc.createdAt)}</span>
+                                                                {doc.fileSize && (
+                                                                    <span>{(doc.fileSize / 1024 / 1024).toFixed(2)} MB</span>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Health Reports */}
+                                    {emergencyPatient.healthReports && emergencyPatient.healthReports.length > 0 && (
+                                        <div className="bg-white rounded-xl border border-gray-200 p-6">
+                                            <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center space-x-2">
+                                                <Activity className="w-5 h-5" />
+                                                <span>Health Reports ({emergencyPatient.healthReports.length})</span>
+                                            </h3>
+                                            <div className="space-y-3">
+                                                {emergencyPatient.healthReports.map((report) => (
+                                                    <div key={report._id} className="p-4 bg-gray-50 rounded-lg">
+                                                        <div className="flex items-start justify-between">
+                                                            <div className="flex-1">
+                                                                <p className="font-medium text-gray-900">{report.reportType || 'General Health Report'}</p>
+                                                                {report.diagnosis && (
+                                                                    <p className="text-sm text-gray-600 mt-1"><strong>Diagnosis:</strong> {report.diagnosis}</p>
+                                                                )}
+                                                                {report.symptoms && report.symptoms.length > 0 && (
+                                                                    <p className="text-sm text-gray-600 mt-1">
+                                                                        <strong>Symptoms:</strong> {report.symptoms.join(', ')}
+                                                                    </p>
+                                                                )}
+                                                                {report.notes && (
+                                                                    <p className="text-sm text-gray-600 mt-1"><strong>Notes:</strong> {report.notes}</p>
+                                                                )}
+                                                                <p className="text-xs text-gray-500 mt-2">
+                                                                    {formatDisplayDate(report.createdAt)}
+                                                                </p>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Prescriptions / Medicines */}
+                                    {emergencyPatient.medicines && emergencyPatient.medicines.length > 0 && (
+                                        <div className="bg-white rounded-xl border border-gray-200 p-6">
+                                            <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center space-x-2">
+                                                <Pill className="w-5 h-5" />
+                                                <span>Prescribed Medicines ({emergencyPatient.medicines.length})</span>
+                                            </h3>
+                                            <div className="space-y-3">
+                                                {emergencyPatient.medicines.map((medicine) => (
+                                                    <div key={medicine._id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                                                        <div>
+                                                            <p className="font-medium text-gray-900">{medicine.name}</p>
+                                                            <p className="text-sm text-gray-600">{medicine.description || 'No description'}</p>
+                                                            <div className="flex items-center space-x-3 mt-2 text-xs text-gray-500">
+                                                                {medicine.category && (
+                                                                    <span className="bg-green-100 text-green-700 px-2 py-1 rounded">
+                                                                        {medicine.category}
+                                                                    </span>
+                                                                )}
+                                                                {medicine.expiryDate && (
+                                                                    <span>Exp: {formatDisplayDate(medicine.expiryDate)}</span>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                        {medicine.quantity !== undefined && (
+                                                            <div className="text-right">
+                                                                <p className="text-sm font-medium text-gray-700">Qty: {medicine.quantity}</p>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* No Data Message */}
+                                    {(!emergencyPatient.documents || emergencyPatient.documents.length === 0) &&
+                                     (!emergencyPatient.healthReports || emergencyPatient.healthReports.length === 0) &&
+                                     (!emergencyPatient.medicines || emergencyPatient.medicines.length === 0) && (
+                                        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6 text-center">
+                                            <p className="text-yellow-800">No medical history available for this patient.</p>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+
+                            {/* Warning Notice */}
+                            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                                <div className="flex items-start space-x-3">
+                                    <AlertCircle className="w-5 h-5 text-amber-600 mt-0.5" />
+                                    <div>
+                                        <p className="font-medium text-amber-900">Emergency Access Notice</p>
+                                        <p className="text-sm text-amber-800 mt-1">
+                                            This feature is intended for emergency situations only. All accesses are logged and audited. 
+                                            Misuse of this feature may result in disciplinary action.
+                                        </p>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     )}
@@ -1536,7 +1958,11 @@ const AdminDashboard = () => {
                                                             <p className="text-xs text-gray-500">Type</p>
                                                             <span className={`inline-flex px-2 py-0.5 text-xs font-medium rounded-full ${
                                                                 report.reportType === 'summary' ? 'bg-blue-50 text-blue-700' :
-                                                                report.reportType === 'users' ? 'bg-green-50 text-green-700' :
+                                                                report.reportType === 'patients' ? 'bg-green-50 text-green-700' :
+                                                                report.reportType === 'doctors' ? 'bg-indigo-50 text-indigo-700' :
+                                                                report.reportType === 'pharmacists' ? 'bg-orange-50 text-orange-700' :
+                                                                report.reportType === 'inventory' ? 'bg-yellow-50 text-yellow-700' :
+                                                                report.reportType === 'transactions' ? 'bg-pink-50 text-pink-700' :
                                                                 'bg-purple-50 text-purple-700'
                                                             }`}>
                                                                 {report.reportType.charAt(0).toUpperCase() + report.reportType.slice(1)}
@@ -1552,7 +1978,10 @@ const AdminDashboard = () => {
                                                         </div>
                                                     </div>
                                                     <div className="flex items-center space-x-4 pt-2 border-t border-gray-100">
-                                                        <button className="text-blue-600 hover:text-blue-700 font-medium text-sm flex items-center space-x-1">
+                                                        <button 
+                                                            onClick={() => handleDownloadReport(report)}
+                                                            className="text-blue-600 hover:text-blue-700 font-medium text-sm flex items-center space-x-1"
+                                                        >
                                                             <Download className="w-4 h-4" />
                                                             <span>Download</span>
                                                         </button>
@@ -1598,7 +2027,11 @@ const AdminDashboard = () => {
                                                             <td className="px-6 py-4">
                                                                 <span className={`inline-flex px-2.5 py-1 text-xs font-medium rounded-full ${
                                                                     report.reportType === 'summary' ? 'bg-blue-50 text-blue-700' :
-                                                                    report.reportType === 'users' ? 'bg-green-50 text-green-700' :
+                                                                    report.reportType === 'patients' ? 'bg-green-50 text-green-700' :
+                                                                    report.reportType === 'doctors' ? 'bg-indigo-50 text-indigo-700' :
+                                                                    report.reportType === 'pharmacists' ? 'bg-orange-50 text-orange-700' :
+                                                                    report.reportType === 'inventory' ? 'bg-yellow-50 text-yellow-700' :
+                                                                    report.reportType === 'transactions' ? 'bg-pink-50 text-pink-700' :
                                                                     'bg-purple-50 text-purple-700'
                                                                 }`}>
                                                                     {report.reportType.charAt(0).toUpperCase() + report.reportType.slice(1)}
@@ -1623,7 +2056,10 @@ const AdminDashboard = () => {
                                                             </td>
                                                             <td className="px-6 py-4">
                                                                 <div className="flex items-center space-x-3">
-                                                                    <button className="text-blue-600 hover:text-blue-700 font-medium text-sm hover:underline flex items-center space-x-1">
+                                                                    <button 
+                                                                        onClick={() => handleDownloadReport(report)}
+                                                                        className="text-blue-600 hover:text-blue-700 font-medium text-sm hover:underline flex items-center space-x-1"
+                                                                    >
                                                                         <Download className="w-4 h-4" />
                                                                         <span>Download</span>
                                                                     </button>
@@ -1831,7 +2267,11 @@ const AdminDashboard = () => {
                                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                                 >
                                     <option value="summary">Summary Report</option>
-                                    <option value="users">Users Report</option>
+                                    <option value="patients">Patients Data Report</option>
+                                    <option value="doctors">Doctors Data Report</option>
+                                    <option value="pharmacists">Pharmacists Data Report</option>
+                                    <option value="inventory">Inventory Report</option>
+                                    <option value="transactions">Transactions Report</option>
                                     <option value="activity">Activity Report</option>
                                 </select>
                             </div>

@@ -151,6 +151,10 @@ export const adminAPI = {
         const token = ensureToken();
         return apiRequest(`/admin/critical-diseases?token=${token}`);
     },
+    getWeeklyActivity: async () => {
+        const token = ensureToken();
+        return apiRequest(`/admin/weekly-activity?token=${token}`);
+    },
     generateApiToken: async (expiryDays = 365) => {
         const token = ensureToken();
         return apiRequest('/admin/generate-api-token', {
@@ -168,6 +172,11 @@ export const adminAPI = {
             method: 'DELETE',
             body: JSON.stringify({ token }),
         });
+    },
+    // Emergency access - get complete patient data
+    getPatientEmergencyData: async (patientId) => {
+        const token = ensureToken();
+        return apiRequest(`/admin/emergency/patient/${patientId}?token=${token}`);
     },
 };
 
@@ -222,6 +231,45 @@ export const doctorAPI = {
             method: 'PUT',
             body: JSON.stringify({ token, ...passwordData }),
         });
+    },
+
+    // Get all appointments
+    getAppointments: async () => {
+        const token = ensureToken();
+        return apiRequest(`/doctor/appointments?token=${token}`);
+    },
+
+    // Schedule new appointment
+    scheduleAppointment: async (patientId, appointmentDate, appointmentTime, notes = '') => {
+        const token = ensureToken();
+        return apiRequest('/doctor/appointments', {
+            method: 'POST',
+            body: JSON.stringify({ token, patientId, appointmentDate, appointmentTime, notes }),
+        });
+    },
+
+    // Update appointment
+    updateAppointment: async (appointmentId, status, notes) => {
+        const token = ensureToken();
+        return apiRequest(`/doctor/appointments/${appointmentId}`, {
+            method: 'PUT',
+            body: JSON.stringify({ token, status, notes }),
+        });
+    },
+
+    // Cancel appointment
+    cancelAppointment: async (appointmentId) => {
+        const token = ensureToken();
+        return apiRequest(`/doctor/appointments/${appointmentId}`, {
+            method: 'DELETE',
+            body: JSON.stringify({ token }),
+        });
+    },
+
+    // Get availability for a date
+    getAvailability: async (date) => {
+        const token = ensureToken();
+        return apiRequest(`/doctor/availability?token=${token}&date=${date}`);
     },
 };
 
@@ -438,6 +486,13 @@ export const pharmacistAPI = {
         return response;
     },
 
+    // Check ML microservice health via backend
+    getMlHealth: async () => {
+        const token = ensureToken();
+        const response = await apiRequest(`/pharmacist/ml-health?token=${token}`);
+        return response;
+    },
+
     // Get all transactions
     getTransactions: async () => {
         const token = ensureToken();
@@ -503,6 +558,13 @@ export const pharmacistAPI = {
             method: 'DELETE',
             body: JSON.stringify({ token }),
         });
+        return response;
+    },
+
+    // Get inventory predictions (ML-powered)
+    getInventoryPredictions: async () => {
+        const token = ensureToken();
+        const response = await apiRequest(`/pharmacist/inventory-prediction?token=${token}`);
         return response;
     },
 };

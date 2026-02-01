@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { doctorAPI } from '../services/api';
 import authService from '../services/authService';
-import { LayoutDashboard, Users, FileText, Pill, BarChart3, Settings, LogOut, Plus, Menu, X, Calendar, Clock, Download, Trash2 } from 'lucide-react';
+import { LayoutDashboard, Users, FileText, Pill, BarChart3, Settings, LogOut, Plus, Menu, X, Calendar, Clock, Download, Trash2, Eye, User, Grid3X3, List } from 'lucide-react';
 
 const initialFormState = {
     fullname: '',
@@ -85,6 +85,10 @@ const DoctorDashboard = () => {
     });
     const [appointmentErrors, setAppointmentErrors] = useState({});
     const [appointmentFilter, setAppointmentFilter] = useState('all'); // all, today, upcoming, past
+    const [selectedAppointment, setSelectedAppointment] = useState(null);
+    const [showPatientDetailsModal, setShowPatientDetailsModal] = useState(false);
+    const [selectedPatientDetails, setSelectedPatientDetails] = useState(null);
+    const [appointmentViewMode, setAppointmentViewMode] = useState('slots'); // slots or list
 
     useEffect(() => {
         const currentUser = authService.getCurrentUser();
@@ -659,10 +663,24 @@ const DoctorDashboard = () => {
         }
     };
 
-    const loadAppointments = () => {
-        const savedAppointments = JSON.parse(localStorage.getItem('appointments') || '[]');
-        const doctorAppointments = savedAppointments.filter(a => a.doctorId === user?.id);
-        setAppointments(doctorAppointments);
+    const loadAppointments = async () => {
+        try {
+            const response = await doctorAPI.getAppointments();
+            if (response.success) {
+                setAppointments(response.appointments || []);
+            } else {
+                // Fallback to localStorage if API fails
+                const savedAppointments = JSON.parse(localStorage.getItem('appointments') || '[]');
+                const doctorAppointments = savedAppointments.filter(a => a.doctorId === user?.id);
+                setAppointments(doctorAppointments);
+            }
+        } catch (err) {
+            console.error('Error loading appointments:', err);
+            // Fallback to localStorage
+            const savedAppointments = JSON.parse(localStorage.getItem('appointments') || '[]');
+            const doctorAppointments = savedAppointments.filter(a => a.doctorId === user?.id);
+            setAppointments(doctorAppointments);
+        }
     };
 
     const handleOpenAppointmentModal = () => {
@@ -744,24 +762,23 @@ const DoctorDashboard = () => {
         setSuccessMessage('');
         
         try {
-            const appointment = {
-                id: Date.now(),
-                ...appointmentForm,
-                doctorId: user?.id,
-                doctorName: user?.fullName || profileForm.fullname,
-                createdAt: new Date().toISOString()
-            };
+            const response = await doctorAPI.scheduleAppointment(
+                appointmentForm.patientId,
+                appointmentForm.appointmentDate,
+                appointmentForm.appointmentTime,
+                appointmentForm.notes
+            );
             
-            const savedAppointments = JSON.parse(localStorage.getItem('appointments') || '[]');
-            savedAppointments.push(appointment);
-            localStorage.setItem('appointments', JSON.stringify(savedAppointments));
-            
-            loadAppointments();
-            setSuccessMessage('Appointment scheduled successfully!');
-            setTimeout(() => {
-                handleCloseAppointmentModal();
-                setSuccessMessage('');
-            }, 2000);
+            if (response.success) {
+                loadAppointments();
+                setSuccessMessage('Appointment scheduled successfully!');
+                setTimeout(() => {
+                    handleCloseAppointmentModal();
+                    setSuccessMessage('');
+                }, 2000);
+            } else {
+                setError(response.message || 'Failed to schedule appointment');
+            }
         } catch (err) {
             console.error('Error creating appointment:', err);
             setError(err.message || 'Failed to schedule appointment');
@@ -770,14 +787,21 @@ const DoctorDashboard = () => {
         }
     };
 
-    const handleDeleteAppointment = (appointmentId) => {
+    const handleDeleteAppointment = async (appointmentId) => {
         if (window.confirm('Are you sure you want to cancel this appointment?')) {
-            const savedAppointments = JSON.parse(localStorage.getItem('appointments') || '[]');
-            const updatedAppointments = savedAppointments.filter(a => a.id !== appointmentId);
-            localStorage.setItem('appointments', JSON.stringify(updatedAppointments));
-            loadAppointments();
-            setSuccessMessage('Appointment cancelled successfully!');
-            setTimeout(() => setSuccessMessage(''), 3000);
+            try {
+                const response = await doctorAPI.cancelAppointment(appointmentId);
+                if (response.success) {
+                    loadAppointments();
+                    setSuccessMessage('Appointment cancelled successfully!');
+                    setTimeout(() => setSuccessMessage(''), 3000);
+                } else {
+                    setError(response.message || 'Failed to cancel appointment');
+                }
+            } catch (err) {
+                console.error('Error cancelling appointment:', err);
+                setError(err.message || 'Failed to cancel appointment');
+            }
         }
     };
 
@@ -812,6 +836,73 @@ const DoctorDashboard = () => {
             return { label: 'Upcoming', color: 'bg-blue-100 text-blue-700' };
         } else {
             return { label: 'Past', color: 'bg-gray-100 text-gray-700' };
+        }
+    };
+
+    // Group appointments by date for slot view
+    const getAppointmentsByDate = () => {
+        const filtered = getFilteredAppointments();
+        const grouped = {};
+        
+        filtered.forEach(appointment => {
+            const date = appointment.appointmentDate;
+            if (!grouped[date]) {
+                grouped[date] = [];
+            }
+            grouped[date].push(appointment);
+        });
+        
+        // Sort appointments within each date by time
+        Object.keys(grouped).forEach(date => {
+            grouped[date].sort((a, b) => {
+                const timeA = a.appointmentTime || '00:00';
+                const timeB = b.appointmentTime || '00:00';
+                return timeA.localeCompare(timeB);
+            });
+        });
+        
+        return grouped;
+    };
+
+    // Handle clicking on an appointment slot to view patient details
+    const handleAppointmentClick = (appointment) => {
+        setSelectedAppointment(appointment);
+        
+        // Find the patient details from the patients list
+        const patient = patients.find(p => p._id === appointment.patientId);
+        if (patient) {
+            setSelectedPatientDetails({
+                ...patient,
+                appointmentInfo: appointment
+            });
+        } else {
+            // Use the appointment data if patient not found in list
+            setSelectedPatientDetails({
+                _id: appointment.patientId,
+                name: appointment.patientName,
+                email: appointment.patientEmail || 'Not available',
+                userId: appointment.patientId?.slice(-6) || 'N/A',
+                appointmentInfo: appointment
+            });
+        }
+        setShowPatientDetailsModal(true);
+    };
+
+    const handleClosePatientDetailsModal = () => {
+        setShowPatientDetailsModal(false);
+        setSelectedAppointment(null);
+        setSelectedPatientDetails(null);
+    };
+
+    // Get time slot color based on status
+    const getSlotColor = (appointment) => {
+        const status = getAppointmentStatus(appointment);
+        if (status.label === 'Today') {
+            return 'bg-emerald-50 border-emerald-300 hover:bg-emerald-100';
+        } else if (status.label === 'Upcoming') {
+            return 'bg-blue-50 border-blue-300 hover:bg-blue-100';
+        } else {
+            return 'bg-gray-50 border-gray-300 hover:bg-gray-100';
         }
     };
 
@@ -1146,13 +1237,40 @@ const DoctorDashboard = () => {
                         <div className="space-y-4 sm:space-y-6">
                             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                                 <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Appointments</h2>
-                                <button 
-                                    onClick={handleOpenAppointmentModal}
-                                    className="flex items-center justify-center space-x-2 bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-700 transition-colors"
-                                >
-                                    <Plus className="w-5 h-5" />
-                                    <span>Schedule Appointment</span>
-                                </button>
+                                <div className="flex items-center gap-2">
+                                    {/* View Mode Toggle */}
+                                    <div className="flex bg-gray-100 p-1 rounded-lg">
+                                        <button
+                                            onClick={() => setAppointmentViewMode('slots')}
+                                            className={`p-2 rounded-md transition-colors ${
+                                                appointmentViewMode === 'slots'
+                                                    ? 'bg-white text-emerald-600 shadow-sm'
+                                                    : 'text-gray-600 hover:text-gray-900'
+                                            }`}
+                                            title="Slot View"
+                                        >
+                                            <Grid3X3 className="w-5 h-5" />
+                                        </button>
+                                        <button
+                                            onClick={() => setAppointmentViewMode('list')}
+                                            className={`p-2 rounded-md transition-colors ${
+                                                appointmentViewMode === 'list'
+                                                    ? 'bg-white text-emerald-600 shadow-sm'
+                                                    : 'text-gray-600 hover:text-gray-900'
+                                            }`}
+                                            title="List View"
+                                        >
+                                            <List className="w-5 h-5" />
+                                        </button>
+                                    </div>
+                                    <button 
+                                        onClick={handleOpenAppointmentModal}
+                                        className="flex items-center justify-center space-x-2 bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-700 transition-colors"
+                                    >
+                                        <Plus className="w-5 h-5" />
+                                        <span>Schedule Appointment</span>
+                                    </button>
+                                </div>
                             </div>
 
                             {/* Filter Tabs */}
@@ -1199,80 +1317,197 @@ const DoctorDashboard = () => {
                                 </button>
                             </div>
 
-                            {/* Appointments List */}
-                            <div className="bg-white rounded-xl border border-gray-200">
-                                {getFilteredAppointments().length === 0 ? (
-                                    <div className="p-12 text-center">
-                                        <Calendar className="w-16 h-16 mx-auto text-gray-400 mb-4" />
-                                        <h3 className="text-lg font-semibold text-gray-700 mb-2">No Appointments</h3>
-                                        <p className="text-gray-500 mb-4">
-                                            {appointmentFilter === 'all' 
-                                                ? "You don't have any appointments scheduled"
-                                                : `No ${appointmentFilter} appointments`}
-                                        </p>
-                                        <button
-                                            onClick={handleOpenAppointmentModal}
-                                            className="bg-emerald-600 text-white px-6 py-2 rounded-lg hover:bg-emerald-700 transition-colors"
-                                        >
-                                            Schedule Appointment
-                                        </button>
-                                    </div>
-                                ) : (
-                                    <div className="divide-y divide-gray-200">
-                                        {getFilteredAppointments().map((appointment) => {
-                                            const status = getAppointmentStatus(appointment);
-                                            return (
-                                                <div key={appointment.id} className="p-4 sm:p-6 hover:bg-gray-50 transition-colors">
-                                                    <div className="flex items-start justify-between">
-                                                        <div className="flex items-start space-x-4 min-w-0 flex-1">
-                                                            <div className="w-12 h-12 bg-emerald-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                                                                <Calendar className="w-6 h-6 text-emerald-600" />
-                                                            </div>
-                                                            <div className="min-w-0 flex-1">
-                                                                <div className="flex items-center gap-2 mb-1">
-                                                                    <h4 className="font-semibold text-gray-900">{appointment.patientName}</h4>
-                                                                    <span className={`text-xs px-2 py-1 rounded-full ${status.color}`}>
-                                                                        {status.label}
-                                                                    </span>
-                                                                </div>
-                                                                <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4 text-sm text-gray-600">
-                                                                    <div className="flex items-center space-x-1">
-                                                                        <Calendar className="w-4 h-4" />
-                                                                        <span>
-                                                                            {new Date(appointment.appointmentDate).toLocaleDateString('en-US', {
-                                                                                weekday: 'short',
-                                                                                year: 'numeric',
-                                                                                month: 'short',
-                                                                                day: 'numeric'
-                                                                            })}
+                            {/* Slot View */}
+                            {appointmentViewMode === 'slots' && (
+                                <div className="bg-white rounded-xl border border-gray-200">
+                                    {getFilteredAppointments().length === 0 ? (
+                                        <div className="p-12 text-center">
+                                            <Calendar className="w-16 h-16 mx-auto text-gray-400 mb-4" />
+                                            <h3 className="text-lg font-semibold text-gray-700 mb-2">No Appointments</h3>
+                                            <p className="text-gray-500 mb-4">
+                                                {appointmentFilter === 'all' 
+                                                    ? "You don't have any appointments scheduled"
+                                                    : `No ${appointmentFilter} appointments`}
+                                            </p>
+                                            <button
+                                                onClick={handleOpenAppointmentModal}
+                                                className="bg-emerald-600 text-white px-6 py-2 rounded-lg hover:bg-emerald-700 transition-colors"
+                                            >
+                                                Schedule Appointment
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <div className="p-4 sm:p-6">
+                                            {Object.entries(getAppointmentsByDate()).map(([date, dateAppointments]) => (
+                                                <div key={date} className="mb-6 last:mb-0">
+                                                    {/* Date Header */}
+                                                    <div className="flex items-center gap-2 mb-4">
+                                                        <Calendar className="w-5 h-5 text-emerald-600" />
+                                                        <h3 className="font-semibold text-gray-900">
+                                                            {new Date(date).toLocaleDateString('en-US', {
+                                                                weekday: 'long',
+                                                                year: 'numeric',
+                                                                month: 'long',
+                                                                day: 'numeric'
+                                                            })}
+                                                        </h3>
+                                                        <span className="text-sm text-gray-500">
+                                                            ({dateAppointments.length} appointment{dateAppointments.length > 1 ? 's' : ''})
+                                                        </span>
+                                                    </div>
+                                                    
+                                                    {/* Time Slots Grid */}
+                                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+                                                        {dateAppointments.map((appointment) => {
+                                                            const status = getAppointmentStatus(appointment);
+                                                            return (
+                                                                <div
+                                                                    key={appointment.id}
+                                                                    onClick={() => handleAppointmentClick(appointment)}
+                                                                    className={`p-4 rounded-xl border-2 cursor-pointer transition-all transform hover:scale-[1.02] hover:shadow-md ${getSlotColor(appointment)}`}
+                                                                >
+                                                                    {/* Time Badge */}
+                                                                    <div className="flex items-center justify-between mb-3">
+                                                                        <div className="flex items-center gap-2">
+                                                                            <Clock className="w-4 h-4 text-gray-600" />
+                                                                            <span className="font-bold text-gray-900">{appointment.appointmentTime}</span>
+                                                                        </div>
+                                                                        <span className={`text-xs px-2 py-1 rounded-full ${status.color}`}>
+                                                                            {status.label}
                                                                         </span>
                                                                     </div>
-                                                                    <div className="flex items-center space-x-1">
-                                                                        <Clock className="w-4 h-4" />
-                                                                        <span>{appointment.appointmentTime}</span>
+                                                                    
+                                                                    {/* Patient Info */}
+                                                                    <div className="flex items-center gap-2 mb-2">
+                                                                        <div className="w-8 h-8 bg-emerald-100 rounded-full flex items-center justify-center flex-shrink-0">
+                                                                            <User className="w-4 h-4 text-emerald-600" />
+                                                                        </div>
+                                                                        <div className="min-w-0 flex-1">
+                                                                            <p className="font-medium text-gray-900 truncate">{appointment.patientName}</p>
+                                                                            {appointment.patientEmail && (
+                                                                                <p className="text-xs text-gray-500 truncate">{appointment.patientEmail}</p>
+                                                                            )}
+                                                                        </div>
+                                                                    </div>
+                                                                    
+                                                                    {/* Notes Preview */}
+                                                                    {appointment.notes && (
+                                                                        <p className="text-xs text-gray-600 line-clamp-1 mt-2">
+                                                                            📝 {appointment.notes}
+                                                                        </p>
+                                                                    )}
+                                                                    
+                                                                    {/* Click to view hint */}
+                                                                    <div className="flex items-center justify-center gap-1 mt-3 pt-2 border-t border-gray-200">
+                                                                        <Eye className="w-3 h-3 text-emerald-600" />
+                                                                        <span className="text-xs text-emerald-600 font-medium">Click to view details</span>
                                                                     </div>
                                                                 </div>
-                                                                {appointment.notes && (
-                                                                    <p className="text-sm text-gray-500 mt-2 line-clamp-2">
-                                                                        <span className="font-medium">Notes:</span> {appointment.notes}
-                                                                    </p>
-                                                                )}
-                                                            </div>
-                                                        </div>
-                                                        <button
-                                                            onClick={() => handleDeleteAppointment(appointment.id)}
-                                                            className="text-red-600 hover:text-red-800 p-2 rounded-lg hover:bg-red-50 transition-colors flex-shrink-0"
-                                                            title="Cancel appointment"
-                                                        >
-                                                            <Trash2 className="w-5 h-5" />
-                                                        </button>
+                                                            );
+                                                        })}
                                                     </div>
                                                 </div>
-                                            );
-                                        })}
-                                    </div>
-                                )}
-                            </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+
+                            {/* List View */}
+                            {appointmentViewMode === 'list' && (
+                                <div className="bg-white rounded-xl border border-gray-200">
+                                    {getFilteredAppointments().length === 0 ? (
+                                        <div className="p-12 text-center">
+                                            <Calendar className="w-16 h-16 mx-auto text-gray-400 mb-4" />
+                                            <h3 className="text-lg font-semibold text-gray-700 mb-2">No Appointments</h3>
+                                            <p className="text-gray-500 mb-4">
+                                                {appointmentFilter === 'all' 
+                                                    ? "You don't have any appointments scheduled"
+                                                    : `No ${appointmentFilter} appointments`}
+                                            </p>
+                                            <button
+                                                onClick={handleOpenAppointmentModal}
+                                                className="bg-emerald-600 text-white px-6 py-2 rounded-lg hover:bg-emerald-700 transition-colors"
+                                            >
+                                                Schedule Appointment
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <div className="divide-y divide-gray-200">
+                                            {getFilteredAppointments().map((appointment) => {
+                                                const status = getAppointmentStatus(appointment);
+                                                return (
+                                                    <div 
+                                                        key={appointment.id} 
+                                                        className="p-4 sm:p-6 hover:bg-gray-50 transition-colors cursor-pointer"
+                                                        onClick={() => handleAppointmentClick(appointment)}
+                                                    >
+                                                        <div className="flex items-start justify-between">
+                                                            <div className="flex items-start space-x-4 min-w-0 flex-1">
+                                                                <div className="w-12 h-12 bg-emerald-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                                                                    <Calendar className="w-6 h-6 text-emerald-600" />
+                                                                </div>
+                                                                <div className="min-w-0 flex-1">
+                                                                    <div className="flex items-center gap-2 mb-1">
+                                                                        <h4 className="font-semibold text-gray-900">{appointment.patientName}</h4>
+                                                                        <span className={`text-xs px-2 py-1 rounded-full ${status.color}`}>
+                                                                            {status.label}
+                                                                        </span>
+                                                                    </div>
+                                                                    <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4 text-sm text-gray-600">
+                                                                        <div className="flex items-center space-x-1">
+                                                                            <Calendar className="w-4 h-4" />
+                                                                            <span>
+                                                                                {new Date(appointment.appointmentDate).toLocaleDateString('en-US', {
+                                                                                    weekday: 'short',
+                                                                                    year: 'numeric',
+                                                                                    month: 'short',
+                                                                                    day: 'numeric'
+                                                                                })}
+                                                                            </span>
+                                                                        </div>
+                                                                        <div className="flex items-center space-x-1">
+                                                                            <Clock className="w-4 h-4" />
+                                                                            <span>{appointment.appointmentTime}</span>
+                                                                        </div>
+                                                                    </div>
+                                                                    {appointment.notes && (
+                                                                        <p className="text-sm text-gray-500 mt-2 line-clamp-2">
+                                                                            <span className="font-medium">Notes:</span> {appointment.notes}
+                                                                        </p>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                            <div className="flex items-center gap-2 flex-shrink-0">
+                                                                <button
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        handleAppointmentClick(appointment);
+                                                                    }}
+                                                                    className="text-emerald-600 hover:text-emerald-800 p-2 rounded-lg hover:bg-emerald-50 transition-colors"
+                                                                    title="View patient details"
+                                                                >
+                                                                    <Eye className="w-5 h-5" />
+                                                                </button>
+                                                                <button
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        handleDeleteAppointment(appointment.id);
+                                                                    }}
+                                                                    className="text-red-600 hover:text-red-800 p-2 rounded-lg hover:bg-red-50 transition-colors"
+                                                                    title="Cancel appointment"
+                                                                >
+                                                                    <Trash2 className="w-5 h-5" />
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    )}
+                                </div>
+                            )}
                         </div>
                     )}
 
@@ -1427,13 +1662,19 @@ const DoctorDashboard = () => {
 
                             {/* Profile Settings */}
                             <div className="bg-white rounded-xl border border-gray-200 p-5">
-                                <div className="flex items-center gap-4 mb-6 pb-4 border-b border-gray-100">
-                                    <div className="w-14 h-14 bg-emerald-100 rounded-full flex items-center justify-center text-xl font-bold text-emerald-600">
-                                        {user?.fullName?.charAt(0)?.toUpperCase() || user?.email?.charAt(0)?.toUpperCase() || 'D'}
+                                <div className="flex items-center justify-between gap-4 mb-6 pb-4 border-b border-gray-100">
+                                    <div className="flex items-center gap-4">
+                                        <div className="w-14 h-14 bg-emerald-100 rounded-full flex items-center justify-center text-xl font-bold text-emerald-600">
+                                            {user?.fullName?.charAt(0)?.toUpperCase() || user?.email?.charAt(0)?.toUpperCase() || 'D'}
+                                        </div>
+                                        <div>
+                                            <h3 className="font-semibold text-gray-900">{user?.fullName || profileForm.fullname || 'Doctor'}</h3>
+                                            <p className="text-sm text-gray-500">{user?.email || 'No email'}</p>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <h3 className="font-semibold text-gray-900">{user?.fullName || profileForm.fullname || 'Doctor'}</h3>
-                                        <p className="text-sm text-gray-500">{user?.email || 'No email'}</p>
+                                    <div className="text-right">
+                                        <p className="text-xs text-gray-500">Doctor ID</p>
+                                        <p className="text-lg font-mono font-bold text-emerald-600">#{user?.userId || user?.id?.slice(-6) || 'N/A'}</p>
                                     </div>
                                 </div>
                                 <h3 className="text-lg font-semibold text-gray-900 mb-4">Profile Information</h3>
@@ -1818,7 +2059,7 @@ const DoctorDashboard = () => {
                                                     <td className="py-3 px-4 text-gray-600">{patient.email || 'N/A'}</td>
                                                     <td className="py-3 px-4">
                                                         <code className="text-xs bg-gray-100 px-2 py-1 rounded text-gray-700">
-                                                            {patient._id?.slice(-8) || 'N/A'}
+                                                            {patient.userId || patient._id?.slice(-6) || 'N/A'}
                                                         </code>
                                                     </td>
                                                     <td className="py-3 px-4 text-gray-600">
@@ -2405,6 +2646,151 @@ const DoctorDashboard = () => {
                                 </button>
                             </div>
                         </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Patient Details Modal */}
+            {showPatientDetailsModal && selectedPatientDetails && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 overflow-y-auto">
+                    <div className="bg-white rounded-2xl max-w-lg w-full shadow-xl animate-in fade-in zoom-in duration-200 my-8">
+                        {/* Modal Header */}
+                        <div className="bg-gradient-to-r from-emerald-500 to-teal-500 p-6 rounded-t-2xl">
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-4">
+                                    <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center">
+                                        <User className="w-8 h-8 text-white" />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-xl font-bold text-white">{selectedPatientDetails.name}</h3>
+                                        <p className="text-emerald-100 text-sm">
+                                            Patient ID: {selectedPatientDetails.userId || selectedPatientDetails._id?.slice(-6) || 'N/A'}
+                                        </p>
+                                    </div>
+                                </div>
+                                <button
+                                    onClick={handleClosePatientDetailsModal}
+                                    className="text-white/80 hover:text-white p-2 rounded-lg hover:bg-white/10 transition-colors"
+                                >
+                                    <X className="w-6 h-6" />
+                                </button>
+                            </div>
+                        </div>
+                        
+                        {/* Modal Content */}
+                        <div className="p-6 space-y-6">
+                            {/* Patient Contact Info */}
+                            <div className="bg-gray-50 rounded-xl p-4">
+                                <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                                    <Users className="w-5 h-5 text-emerald-600" />
+                                    Contact Information
+                                </h4>
+                                <div className="space-y-2">
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-sm text-gray-600">Email</span>
+                                        <span className="text-sm font-medium text-gray-900">
+                                            {selectedPatientDetails.email || 'Not available'}
+                                        </span>
+                                    </div>
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-sm text-gray-600">Patient ID</span>
+                                        <span className="text-sm font-medium text-emerald-600 font-mono">
+                                            {selectedPatientDetails.userId || selectedPatientDetails._id?.slice(-6) || 'N/A'}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Appointment Details */}
+                            {selectedPatientDetails.appointmentInfo && (
+                                <div className="bg-blue-50 rounded-xl p-4">
+                                    <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                                        <Calendar className="w-5 h-5 text-blue-600" />
+                                        Appointment Details
+                                    </h4>
+                                    <div className="space-y-2">
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-sm text-gray-600">Date</span>
+                                            <span className="text-sm font-medium text-gray-900">
+                                                {new Date(selectedPatientDetails.appointmentInfo.appointmentDate).toLocaleDateString('en-US', {
+                                                    weekday: 'long',
+                                                    year: 'numeric',
+                                                    month: 'long',
+                                                    day: 'numeric'
+                                                })}
+                                            </span>
+                                        </div>
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-sm text-gray-600">Time</span>
+                                            <span className="text-sm font-medium text-gray-900">
+                                                {selectedPatientDetails.appointmentInfo.appointmentTime}
+                                            </span>
+                                        </div>
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-sm text-gray-600">Status</span>
+                                            <span className={`text-xs px-2 py-1 rounded-full ${
+                                                getAppointmentStatus(selectedPatientDetails.appointmentInfo).color
+                                            }`}>
+                                                {getAppointmentStatus(selectedPatientDetails.appointmentInfo).label}
+                                            </span>
+                                        </div>
+                                        {selectedPatientDetails.appointmentInfo.notes && (
+                                            <div className="pt-2 border-t border-blue-200 mt-2">
+                                                <span className="text-sm text-gray-600 block mb-1">Notes</span>
+                                                <p className="text-sm text-gray-900 bg-white/50 rounded-lg p-2">
+                                                    {selectedPatientDetails.appointmentInfo.notes}
+                                                </p>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Quick Actions */}
+                            <div className="space-y-3">
+                                <h4 className="font-semibold text-gray-900">Quick Actions</h4>
+                                <div className="grid grid-cols-2 gap-3">
+                                    <button
+                                        onClick={() => {
+                                            handleClosePatientDetailsModal();
+                                            // Pre-fill prescription form with patient
+                                            setPrescriptionForm(prev => ({
+                                                ...prev,
+                                                patientId: selectedPatientDetails._id,
+                                                patientName: selectedPatientDetails.name
+                                            }));
+                                            setShowPrescriptionModal(true);
+                                        }}
+                                        className="flex items-center justify-center gap-2 px-4 py-3 bg-emerald-50 text-emerald-700 rounded-xl hover:bg-emerald-100 transition-colors font-medium"
+                                    >
+                                        <Pill className="w-5 h-5" />
+                                        <span>Write Prescription</span>
+                                    </button>
+                                    <button
+                                        onClick={() => {
+                                            handleClosePatientDetailsModal();
+                                            if (selectedAppointment) {
+                                                handleDeleteAppointment(selectedAppointment.id);
+                                            }
+                                        }}
+                                        className="flex items-center justify-center gap-2 px-4 py-3 bg-red-50 text-red-700 rounded-xl hover:bg-red-100 transition-colors font-medium"
+                                    >
+                                        <Trash2 className="w-5 h-5" />
+                                        <span>Cancel Appointment</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Modal Footer */}
+                        <div className="px-6 pb-6">
+                            <button
+                                onClick={handleClosePatientDetailsModal}
+                                className="w-full px-6 py-3 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition-colors font-medium"
+                            >
+                                Close
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}

@@ -757,4 +757,173 @@ async function generatePDFReport(data, pharmacist, title, dateFrom, dateTo) {
   });
 }
 
+/**
+ * 📊 GET INVENTORY PREDICTIONS (ML-powered)
+ * Uses ML microservice to predict stock levels
+ */
+router.get("/ml-health", async (req, res) => {
+  try {
+    const { token } = req.query;
+    verifyToken(token);
+
+    const ML_SERVICE_URL = process.env.ML_SERVICE_URL || 'http://localhost:8000';
+    const healthResponse = await fetch(`${ML_SERVICE_URL}/api/v1/inventory/health`, {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' }
+    });
+
+    if (!healthResponse.ok) {
+      return res.status(503).json({
+        success: false,
+        status: 'unhealthy',
+        message: 'ML service not responding'
+      });
+    }
+
+    const healthData = await healthResponse.json();
+    return res.json({
+      success: true,
+      status: healthData.status || 'healthy',
+      service: healthData.service || 'inventory-prediction'
+    });
+  } catch (err) {
+    return res.status(503).json({
+      success: false,
+      status: 'unreachable',
+      message: err.message || 'ML service unreachable'
+    });
+  }
+});
+
+router.get("/inventory-prediction", async (req, res) => {
+  try {
+    const { token } = req.query;
+    const decoded = verifyToken(token);
+
+    // Get all medicines for this pharmacist
+    const medicines = await Medicine.find({ pharmacist_id: decoded.id });
+
+    // Get transactions for the last 60 days
+    const sixtyDaysAgo = new Date();
+    sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60);
+
+    const transactions = await Transaction.find({
+      pharmacist_id: decoded.id,
+      createdAt: { $gte: sixtyDaysAgo }
+    }).sort({ createdAt: 1 });
+
+    // Group transactions by medicine
+    const transactionsByMedicine = {};
+    transactions.forEach(tx => {
+      const medicineName = tx.medicineName;
+      if (!transactionsByMedicine[medicineName]) {
+        transactionsByMedicine[medicineName] = [];
+      }
+      transactionsByMedicine[medicineName].push({
+        date: tx.createdAt.toISOString(),
+        type: tx.type,
+        quantity: tx.quantity,
+        medicineName: tx.medicineName
+      });
+    });
+
+    // Prepare data for ML microservice
+    const medicinesData = medicines.map(med => ({
+      name: med.name,
+      currentStock: med.quantity,
+      transactions: transactionsByMedicine[med.name] || []
+    }));
+
+    // Call ML microservice
+    const ML_SERVICE_URL = process.env.ML_SERVICE_URL || 'http://localhost:8000';
+    
+    try {
+      const mlResponse = await fetch(`${ML_SERVICE_URL}/api/v1/inventory/predict-bulk`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          medicines: medicinesData,
+          daysToPredict: 7
+        })
+      });
+
+      if (mlResponse.ok) {
+        const mlData = await mlResponse.json();
+        return res.json({
+          success: true,
+          ...mlData,
+          dataSource: 'ml-prediction'
+        });
+      } else {
+        throw new Error('ML service returned error');
+      }
+    } catch (mlError) {
+      console.error('ML service error, using fallback:', mlError.message);
+      
+      // Fallback: Simple average-based prediction
+      const fallbackPredictions = medicines.map(med => {
+        const medTxns = transactionsByMedicine[med.name] || [];
+        const issueTxns = medTxns.filter(t => t.type === 'issue');
+        const totalIssued = issueTxns.reduce((sum, t) => sum + t.quantity, 0);
+        const avgDailyDemand = issueTxns.length > 0 ? totalIssued / 60 : 0;
+        
+        const predictions = [];
+        let stock = med.quantity;
+        
+        for (let day = 1; day <= 7; day++) {
+          const futureDate = new Date();
+          futureDate.setDate(futureDate.getDate() + day);
+          const demand = Math.round(avgDailyDemand);
+          stock = Math.max(0, stock - demand);
+          predictions.push({
+            date: futureDate.toISOString().split('T')[0],
+            predictedStock: stock,
+            predictedDemand: demand,
+            confidence: 0.5
+          });
+        }
+
+        const daysUntilStockout = avgDailyDemand > 0 
+          ? Math.ceil(med.quantity / avgDailyDemand) 
+          : 999;
+
+        return {
+          medicineName: med.name,
+          currentStock: med.quantity,
+          daysUntilStockout: Math.min(daysUntilStockout, 30),
+          averageDailyDemand: Math.round(avgDailyDemand * 100) / 100,
+          restockRecommendation: daysUntilStockout <= 3 
+            ? 'URGENT: Restock immediately!' 
+            : daysUntilStockout <= 7 
+              ? 'WARNING: Consider restocking soon.'
+              : 'Stock levels adequate.',
+          predictions,
+          trendAnalysis: 'Based on simple average (ML service unavailable)'
+        };
+      });
+
+      const urgentCount = fallbackPredictions.filter(p => p.daysUntilStockout <= 3).length;
+      const atRiskCount = fallbackPredictions.filter(p => p.daysUntilStockout > 3 && p.daysUntilStockout <= 7).length;
+
+      return res.json({
+        success: true,
+        predictions: fallbackPredictions,
+        summary: {
+          totalMedicines: medicines.length,
+          urgentRestock: urgentCount,
+          atRisk: atRiskCount,
+          stable: medicines.length - urgentCount - atRiskCount
+        },
+        dataSource: 'fallback-calculation'
+      });
+    }
+  } catch (err) {
+    console.error("Inventory prediction error:", err);
+    res.status(500).json({ 
+      success: false, 
+      message: err.message || "Failed to get inventory predictions" 
+    });
+  }
+});
+
 export default router;

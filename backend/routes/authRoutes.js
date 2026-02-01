@@ -26,12 +26,12 @@ router.post("/sign-up", async (req, res) => {
     const user = await Admin.create({ fullname, email, password: hashed, role });
 
     const token = jwt.sign(
-      { id: user._id, email: user.email, role: user.role },
+      { id: user._id, userId: user.userId, email: user.email, role: user.role },
       process.env.JWT_SECRET,
       { expiresIn: "1d" }
     );
 
-    res.json({ token, user: { id: user._id, email: user.email, role: user.role } });
+    res.json({ token, user: { id: user._id, oderId: user.userId, email: user.email, role: user.role } });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -60,7 +60,7 @@ router.post("/sign-in", async (req, res) => {
     const valid = await bcrypt.compare(password, user.password);
     if (!valid) return res.status(401).json({ message: "Invalid password" });
 
-    const payload = { id: user._id, email: user.email, role };
+    const payload = { id: user._id, oderId: user.userId, email: user.email, role };
     if (role === "doctor" && user.admin_id) payload.admin_id = user.admin_id;
     if (role === "patient") {
       if (user.admin_id) payload.admin_id = user.admin_id;
@@ -70,7 +70,20 @@ router.post("/sign-in", async (req, res) => {
 
     const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: "1d" });
 
-    res.json({ token, user: { id: user._id, email: user.email, role } });
+    // Get name based on role
+    const userName = role === 'admin' ? user.fullname : user.name;
+
+    res.json({ 
+      token, 
+      user: { 
+        id: user._id, 
+        oderId: user.userId, 
+        email: user.email, 
+        role,
+        name: userName,
+        specialization: user.specialization || null
+      } 
+    });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }

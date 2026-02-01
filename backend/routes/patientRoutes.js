@@ -15,11 +15,17 @@ const ML_SERVICE_URL = process.env.ML_SERVICE_URL || "http://localhost:8000";
 router.get("/doctors", async (req, res) => {
   try {
     const doctors = await Doctor.find()
-      .select('name email specialization')
+      .select('name email specialization userId')
       .lean();
     
+    // Format doctors with userId
+    const formattedDoctors = doctors.map(doc => ({
+      ...doc,
+      oderId: doc.userId || doc._id.toString().slice(-6)
+    }));
+    
     // Group doctors by specialization
-    const grouped = doctors.reduce((acc, doctor) => {
+    const grouped = formattedDoctors.reduce((acc, doctor) => {
       const specialty = doctor.specialization || 'General';
       if (!acc[specialty]) {
         acc[specialty] = [];
@@ -30,7 +36,7 @@ router.get("/doctors", async (req, res) => {
     
     res.json({
       success: true,
-      doctors,
+      doctors: formattedDoctors,
       groupedBySpecialty: grouped,
       specialties: Object.keys(grouped).sort()
     });

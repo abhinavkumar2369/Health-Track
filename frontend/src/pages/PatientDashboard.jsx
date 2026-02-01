@@ -395,10 +395,42 @@ const PatientDashboard = () => {
         setSelectedDoctor(doctor);
         setAvailableSlots([]);
         setAppointmentMessage({ type: '', text: '' });
+        setAiSuggestedSlots([]);
+        
+        // Fetch AI-suggested slots for this doctor
+        fetchAISuggestedSlots(doctor._id);
         
         // If date is already selected, fetch slots
         if (selectedDate) {
             await fetchAvailableSlots(doctor._id, selectedDate);
+        }
+    };
+
+    const fetchAISuggestedSlots = async (doctorId) => {
+        try {
+            setLoadingSlots(true);
+            // Generate next 7 days as preferred dates
+            const preferredDates = [];
+            for (let i = 1; i <= 7; i++) {
+                const date = new Date();
+                date.setDate(date.getDate() + i);
+                preferredDates.push(date.toISOString().split('T')[0]);
+            }
+            
+            const response = await patientAPI.getAISuggestedSlots(
+                doctorId,
+                preferredDates,
+                ['09:00', '10:00', '11:00', '14:00', '15:00', '16:00'] // Preferred times
+            );
+            
+            if (response.success && response.recommendedSlots) {
+                setAiSuggestedSlots(response.recommendedSlots);
+            }
+        } catch (error) {
+            console.error('Error fetching AI suggestions:', error);
+            // Silent fail - AI suggestions are optional
+        } finally {
+            setLoadingSlots(false);
         }
     };
 
@@ -467,6 +499,43 @@ const PatientDashboard = () => {
             }
         } catch (error) {
             console.error('Error booking appointment:', error);
+            setAppointmentMessage({ 
+                type: 'error', 
+                text: error.message || 'Failed to book appointment' 
+            });
+        } finally {
+            setBookingAppointment(false);
+        }
+    };
+
+    const handleBookAISlot = async (slot) => {
+        if (!selectedDoctor) return;
+        
+        setBookingAppointment(true);
+        setAppointmentMessage({ type: '', text: '' });
+        
+        try {
+            const response = await patientAPI.requestAppointment(
+                selectedDoctor._id,
+                slot.date,
+                slot.time,
+                `AI-recommended slot (${Math.round(slot.score * 10)}% match) - ${slot.reason}`
+            );
+            
+            if (response.success) {
+                setAppointmentMessage({ 
+                    type: 'success', 
+                    text: '🎉 Appointment booked successfully with AI-recommended slot!' 
+                });
+                fetchAppointments();
+                setTimeout(() => {
+                    setShowAppointmentModal(false);
+                    setAppointmentMessage({ type: '', text: '' });
+                    setAiSuggestedSlots([]);
+                }, 2000);
+            }
+        } catch (error) {
+            console.error('Error booking AI slot:', error);
             setAppointmentMessage({ 
                 type: 'error', 
                 text: error.message || 'Failed to book appointment' 
@@ -1613,8 +1682,12 @@ const PatientDashboard = () => {
                                     <h2 className="text-2xl font-bold text-gray-900">My Profile</h2>
                                     <p className="text-gray-600 mt-1">Manage your account settings and preferences</p>
                                 </div>
-                                <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-2xl font-bold text-white">
-                                    {user?.fullName?.[0]?.toUpperCase() || user?.email?.[0]?.toUpperCase() || 'P'}
+                                <div className="text-right">
+                                    <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-2xl font-bold text-white mx-auto">
+                                        {user?.fullName?.[0]?.toUpperCase() || user?.email?.[0]?.toUpperCase() || 'P'}
+                                    </div>
+                                    <p className="text-sm text-gray-500 mt-2">Patient ID</p>
+                                    <p className="text-lg font-mono font-bold text-blue-600">#{user?.userId || user?.id?.slice(-6) || 'N/A'}</p>
                                 </div>
                             </div>
 
@@ -2075,7 +2148,12 @@ const PatientDashboard = () => {
                                                     : 'border-gray-200 hover:border-blue-300 bg-white'
                                             }`}
                                         >
-                                            <p className="font-semibold text-gray-900">{doctor.name}</p>
+                                            <div className="flex items-center justify-between">
+                                                <p className="font-semibold text-gray-900">{doctor.name}</p>
+                                                <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full font-mono">
+                                                    #{doctor.userId || doctor._id?.slice(-6)}
+                                                </span>
+                                            </div>
                                             <p className="text-sm text-gray-600 mt-1">
                                                 {doctor.specialization || 'General'}
                                             </p>
@@ -2087,6 +2165,51 @@ const PatientDashboard = () => {
                                     <p className="text-gray-500 text-center py-4">No doctors available for this specialty</p>
                                 )}
                             </div>
+
+                            {/* AI-Suggested Slots Section */}
+                            {selectedDoctor && aiSuggestedSlots.length > 0 && (
+                                <div className="bg-gradient-to-r from-purple-50 to-blue-50 rounded-xl p-4 border border-purple-200">
+                                    <div className="flex items-center gap-2 mb-3">
+                                        <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
+                                            <Brain className="w-5 h-5 text-purple-600" />
+                                        </div>
+                                        <div>
+                                            <h3 className="font-semibold text-gray-900">AI-Recommended Slots</h3>
+                                            <p className="text-xs text-gray-600">Based on your history and doctor's availability</p>
+                                        </div>
+                                    </div>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                                        {aiSuggestedSlots.slice(0, 6).map((slot, index) => (
+                                            <button
+                                                key={index}
+                                                onClick={() => handleBookAISlot(slot)}
+                                                disabled={bookingAppointment}
+                                                className="p-3 bg-white rounded-lg border border-purple-200 hover:border-purple-400 hover:shadow-md transition-all text-left disabled:opacity-50"
+                                            >
+                                                <div className="flex items-center justify-between mb-1">
+                                                    <span className="font-medium text-gray-900">
+                                                        {new Date(slot.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+                                                    </span>
+                                                    <span className="text-xs px-2 py-0.5 bg-purple-100 text-purple-700 rounded-full">
+                                                        {Math.round(slot.score * 10)}% match
+                                                    </span>
+                                                </div>
+                                                <p className="text-blue-600 font-semibold">{slot.time}</p>
+                                                <p className="text-xs text-gray-500 mt-1 line-clamp-1">{slot.reason}</p>
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Divider */}
+                            {selectedDoctor && aiSuggestedSlots.length > 0 && (
+                                <div className="flex items-center gap-4">
+                                    <div className="flex-1 h-px bg-gray-200"></div>
+                                    <span className="text-sm text-gray-500">Or select manually</span>
+                                    <div className="flex-1 h-px bg-gray-200"></div>
+                                </div>
+                            )}
 
                             {/* Step 3: Select Date */}
                             {selectedDoctor && (

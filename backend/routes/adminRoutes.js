@@ -10,6 +10,7 @@ import { Admin } from "../models/Admin.js";
 import { Medicine } from "../models/Medicine.js";
 import { Transaction } from "../models/Transaction.js";
 import { Document } from "../models/Document.js";
+import { HealthReport } from "../models/HealthReport.js";
 
 dotenv.config();
 
@@ -50,6 +51,7 @@ const formatStaffUser = (entity, roleOverride = "") => {
   const { firstName, lastName } = splitName(entity.name || "");
   return {
     id: entity._id?.toString(),
+    oderId: entity.userId || entity._id?.toString().slice(-6),
     uniqueId: entity._id?.toString(),
     name: entity.name,
     firstName,
@@ -157,6 +159,7 @@ router.get("/patients", async (req, res) => {
       const { firstName, lastName } = splitName(patient.name || "");
       return {
         id: patient._id?.toString(),
+        oderId: patient.userId || patient._id?.toString().slice(-6),
         uniqueId: patient._id?.toString(),
         name: patient.name,
         firstName,
@@ -512,6 +515,94 @@ router.get("/critical-diseases", async (req, res) => {
   }
 });
 
+// Get weekly activity statistics
+router.get("/weekly-activity", async (req, res) => {
+  try {
+    const { token } = req.query;
+    const decoded = authenticateAdmin(token, res);
+    if (!decoded) return;
+
+    // Get data for the last 7 days
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    sevenDaysAgo.setHours(0, 0, 0, 0);
+
+    const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    // Initialize daily data for last 7 days
+    const dailyActivity = [];
+    for (let i = 6; i >= 0; i--) {
+      const date = new Date(today);
+      date.setDate(date.getDate() - i);
+      const dayName = days[date.getDay()];
+      dailyActivity.push({
+        day: dayName,
+        date: new Date(date),
+        documents: 0,
+        patients: 0,
+        total: 0
+      });
+    }
+
+    // Get documents uploaded in last 7 days
+    const documents = await Document.find({
+      createdAt: { $gte: sevenDaysAgo }
+    });
+
+    // Get patients registered in last 7 days
+    const patients = await Patient.find({
+      createdAt: { $gte: sevenDaysAgo }
+    });
+
+    // Count documents per day
+    documents.forEach(doc => {
+      const docDate = new Date(doc.createdAt);
+      docDate.setHours(0, 0, 0, 0);
+      const dayIndex = dailyActivity.findIndex(d => d.date.getTime() === docDate.getTime());
+      if (dayIndex !== -1) {
+        dailyActivity[dayIndex].documents++;
+        dailyActivity[dayIndex].total++;
+      }
+    });
+
+    // Count patients per day
+    patients.forEach(patient => {
+      const patientDate = new Date(patient.createdAt);
+      patientDate.setHours(0, 0, 0, 0);
+      const dayIndex = dailyActivity.findIndex(d => d.date.getTime() === patientDate.getTime());
+      if (dayIndex !== -1) {
+        dailyActivity[dayIndex].patients++;
+        dailyActivity[dayIndex].total++;
+      }
+    });
+
+    // Calculate totals and average
+    const totalActivity = dailyActivity.reduce((sum, day) => sum + day.total, 0);
+    const avgPerDay = Math.round(totalActivity / 7);
+
+    // Format chart data
+    const chartData = dailyActivity.map(day => ({
+      day: day.day,
+      value: day.total
+    }));
+
+    res.json({
+      success: true,
+      chartData,
+      stats: {
+        totalActivity,
+        avgPerDay,
+        totalDocuments: documents.length,
+        totalPatients: patients.length
+      }
+    });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
 // Generate API token for interoperability
 router.post("/generate-api-token", async (req, res) => {
   try {
@@ -634,6 +725,70 @@ router.get("/validate-token/:apiToken", async (req, res) => {
     });
   } catch (err) {
     res.status(500).json({ message: err.message });
+  }
+});
+
+// Emergency Access - Get complete patient data
+router.get("/emergency/patient/:patientId", async (req, res) => {
+  try {
+    const { token } = req.query;
+    const decoded = authenticateAdmin(token, res);
+    if (!decoded) return;
+
+    const { patientId } = req.params;
+
+    // Find patient with populated doctor information
+    const patient = await Patient.findById(patientId)
+      .populate('doctor_id', 'name email specialization')
+      .lean();
+
+    if (!patient) {
+      return res.status(404).json({
+        success: false,
+        message: "Patient not found"
+      });
+    }
+
+    // Fetch associated medical documents
+    const documents = await Document.find({ patient_id: patientId })
+      .select('title description category fileType fileSize s3Url createdAt')
+      .sort({ createdAt: -1 })
+      .lean();
+
+    // Fetch health reports
+    const healthReports = await HealthReport.find({ patient_id: patientId })
+      .select('reportType diagnosis symptoms notes createdAt')
+      .sort({ createdAt: -1 })
+      .lean();
+
+    // Fetch prescribed medicines
+    const medicines = await Medicine.find({ patient_id: patientId })
+      .select('name description category quantity expiryDate price')
+      .sort({ createdAt: -1 })
+      .lean();
+
+    // Combine all data
+    const emergencyData = {
+      ...patient,
+      documents,
+      healthReports,
+      medicines
+    };
+
+    // Log emergency access for audit trail
+    console.log(`[EMERGENCY ACCESS] Admin ${decoded.id} accessed patient ${patientId} data at ${new Date().toISOString()}`);
+
+    res.json({
+      success: true,
+      patient: emergencyData,
+      accessTimestamp: new Date().toISOString()
+    });
+  } catch (err) {
+    console.error('Emergency access error:', err);
+    res.status(500).json({ 
+      success: false,
+      message: err.message || 'Failed to retrieve patient data'
+    });
   }
 });
 

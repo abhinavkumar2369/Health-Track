@@ -10,6 +10,7 @@ from app.api.v1.endpoints import (
     report_analysis,
     recommendations,
     document_summarization,
+    inventory_prediction,
     appointment_scheduling
 )
 
@@ -53,8 +54,14 @@ api_router.include_router(
 )
 
 api_router.include_router(
+    inventory_prediction.router,
+    prefix="/inventory",
+    tags=["Inventory Prediction"]
+)
+
+api_router.include_router(
     appointment_scheduling.router,
     prefix="/appointments",
-    tags=["AI Appointment Scheduling"]
+    tags=["Appointment Scheduling"]
 )
 
