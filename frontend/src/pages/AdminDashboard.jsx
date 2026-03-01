@@ -680,20 +680,77 @@ const AdminDashboard = () => {
                 {/* Content Area */}
                 <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
                     {activeSection === 'dashboard' && (
-                        <div className="space-y-4 sm:space-y-6">
-                            {/* Staff Distribution & Quick Actions */}
+                        <div className="space-y-6">
+                            {/* Section Header */}
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center">
+                                    <LayoutDashboard className="w-5 h-5 text-blue-600" />
+                                </div>
+                                <div>
+                                    <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Dashboard</h2>
+                                    <p className="text-sm text-gray-500">Overview of your health system</p>
+                                </div>
+                            </div>
+
+                            {/* Stat Summary Cards */}
+                            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                                <div className="bg-white rounded-2xl border border-gray-200 p-5">
+                                    <div className="w-10 h-10 bg-blue-50 border border-blue-200 rounded-xl flex items-center justify-center mb-4">
+                                        <Stethoscope className="w-5 h-5 text-blue-600" />
+                                    </div>
+                                    <p className="text-2xl font-bold text-gray-900">{stats.totalDoctors}</p>
+                                    <p className="text-sm text-gray-500 mt-1">Doctors</p>
+                                </div>
+                                <div className="bg-white rounded-2xl border border-gray-200 p-5">
+                                    <div className="w-10 h-10 bg-green-50 border border-green-200 rounded-xl flex items-center justify-center mb-4">
+                                        <Users className="w-5 h-5 text-green-600" />
+                                    </div>
+                                    <p className="text-2xl font-bold text-gray-900">{stats.totalPatients}</p>
+                                    <p className="text-sm text-gray-500 mt-1">Patients</p>
+                                </div>
+                                <div className="bg-white rounded-2xl border border-gray-200 p-5">
+                                    <div className="w-10 h-10 bg-purple-50 border border-purple-200 rounded-xl flex items-center justify-center mb-4">
+                                        <Pill className="w-5 h-5 text-purple-600" />
+                                    </div>
+                                    <p className="text-2xl font-bold text-gray-900">{stats.totalPharmacists}</p>
+                                    <p className="text-sm text-gray-500 mt-1">Pharmacists</p>
+                                </div>
+                                <div className="bg-white rounded-2xl border border-gray-200 p-5">
+                                    <div className="w-10 h-10 bg-amber-50 border border-amber-200 rounded-xl flex items-center justify-center mb-4">
+                                        <BarChart3 className="w-5 h-5 text-amber-600" />
+                                    </div>
+                                    <p className="text-2xl font-bold text-gray-900">₹{(stats.totalRevenue || 0).toLocaleString()}</p>
+                                    <p className="text-sm text-gray-500 mt-1">Total Revenue</p>
+                                </div>
+                            </div>
+
+                            {/* User Statistics & Pharmacy Inventory */}
                             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                                {/* User Statistics - Pie Chart */}
-                                <div className="bg-white rounded-xl border border-gray-200 p-5">
-                                    <h3 className="text-lg font-semibold text-gray-900 mb-4">User Statistics</h3>
-                                    
-                                    {/* Pie Chart */}
+                                {/* User Statistics - Donut Chart */}
+                                <div className="bg-white rounded-2xl border border-gray-200">
+                                    <div className="px-6 py-5 border-b border-gray-100">
+                                        <h3 className="text-base font-semibold text-gray-900">User Statistics</h3>
+                                        <p className="text-sm text-gray-500 mt-0.5">Distribution across roles</p>
+                                    </div>
+                                    <div className="px-6 py-6">
+                                    {/* Donut Chart */}
                                     <div className="flex items-center justify-center">
-                                        <div className="relative w-48 h-48">
+                                        <div className="relative w-44 h-44">
                                             <svg viewBox="0 0 200 200" className="transform -rotate-90">
                                                 {(() => {
                                                     const total = stats.totalDoctors + stats.totalPharmacists + stats.totalPatients;
-                                                    if (total === 0) return null;
+                                                    
+                                                    if (total === 0) {
+                                                        const radius = 80;
+                                                        const circumference = 2 * Math.PI * radius;
+                                                        return (
+                                                            <>
+                                                                <circle cx="100" cy="100" r={radius} fill="none" stroke="#e5e7eb" strokeWidth="36" strokeDasharray={`${circumference / 3} ${circumference}`} strokeDashoffset={0} className="transition-all duration-500" />
+                                                                <circle cx="100" cy="100" r={radius} fill="none" stroke="#f3e8ff" strokeWidth="36" strokeDasharray={`${circumference / 3} ${circumference}`} strokeDashoffset={`-${circumference / 3}`} className="transition-all duration-500" />
+                                                                <circle cx="100" cy="100" r={radius} fill="none" stroke="#dcfce7" strokeWidth="36" strokeDasharray={`${circumference / 3} ${circumference}`} strokeDashoffset={`-${(circumference / 3) * 2}`} className="transition-all duration-500" />
+                                                            </>
+                                                        );
+                                                    }
                                                     
                                                     const doctorsPercent = (stats.totalDoctors / total) * 100;
                                                     const pharmacistsPercent = (stats.totalPharmacists / total) * 100;
@@ -706,51 +763,15 @@ const AdminDashboard = () => {
                                                     
                                                     return (
                                                         <>
-                                                            {/* Doctors Slice */}
-                                                            <circle
-                                                                cx="100"
-                                                                cy="100"
-                                                                r={radius}
-                                                                fill="none"
-                                                                stroke="#3b82f6"
-                                                                strokeWidth="40"
-                                                                strokeDasharray={`${(doctorsPercent / 100) * circumference} ${circumference}`}
-                                                                strokeDashoffset={-currentOffset}
-                                                                className="transition-all duration-500"
-                                                            />
+                                                            <circle cx="100" cy="100" r={radius} fill="none" stroke="#3b82f6" strokeWidth="36" strokeDasharray={`${(doctorsPercent / 100) * circumference} ${circumference}`} strokeDashoffset={-currentOffset} className="transition-all duration-500" />
                                                             {(() => { currentOffset += (doctorsPercent / 100) * circumference; return null; })()}
-                                                            
-                                                            {/* Pharmacists Slice */}
-                                                            <circle
-                                                                cx="100"
-                                                                cy="100"
-                                                                r={radius}
-                                                                fill="none"
-                                                                stroke="#a855f7"
-                                                                strokeWidth="40"
-                                                                strokeDasharray={`${(pharmacistsPercent / 100) * circumference} ${circumference}`}
-                                                                strokeDashoffset={-currentOffset}
-                                                                className="transition-all duration-500"
-                                                            />
+                                                            <circle cx="100" cy="100" r={radius} fill="none" stroke="#a855f7" strokeWidth="36" strokeDasharray={`${(pharmacistsPercent / 100) * circumference} ${circumference}`} strokeDashoffset={-currentOffset} className="transition-all duration-500" />
                                                             {(() => { currentOffset += (pharmacistsPercent / 100) * circumference; return null; })()}
-                                                            
-                                                            {/* Patients Slice */}
-                                                            <circle
-                                                                cx="100"
-                                                                cy="100"
-                                                                r={radius}
-                                                                fill="none"
-                                                                stroke="#22c55e"
-                                                                strokeWidth="40"
-                                                                strokeDasharray={`${(patientsPercent / 100) * circumference} ${circumference}`}
-                                                                strokeDashoffset={-currentOffset}
-                                                                className="transition-all duration-500"
-                                                            />
+                                                            <circle cx="100" cy="100" r={radius} fill="none" stroke="#22c55e" strokeWidth="36" strokeDasharray={`${(patientsPercent / 100) * circumference} ${circumference}`} strokeDashoffset={-currentOffset} className="transition-all duration-500" />
                                                         </>
                                                     );
                                                 })()}
                                             </svg>
-                                            {/* Center Text */}
                                             <div className="absolute inset-0 flex items-center justify-center">
                                                 <div className="text-center">
                                                     <p className="text-2xl font-bold text-gray-900">
@@ -763,41 +784,46 @@ const AdminDashboard = () => {
                                     </div>
                                     
                                     {/* Legend */}
-                                    <div className="mt-6 space-y-2">
+                                    <div className="mt-5 space-y-2.5">
                                         <div className="flex items-center justify-between">
-                                            <div className="flex items-center space-x-2">
-                                                <div className="w-3 h-3 rounded-full bg-blue-500"></div>
-                                                <span className="text-sm text-gray-700">Doctors</span>
+                                            <div className="flex items-center gap-2">
+                                                <div className="w-2.5 h-2.5 rounded-full bg-blue-500"></div>
+                                                <span className="text-sm text-gray-600">Doctors</span>
                                             </div>
                                             <span className="text-sm font-semibold text-gray-900">{stats.totalDoctors}</span>
                                         </div>
                                         <div className="flex items-center justify-between">
-                                            <div className="flex items-center space-x-2">
-                                                <div className="w-3 h-3 rounded-full bg-purple-500"></div>
-                                                <span className="text-sm text-gray-700">Pharmacists</span>
+                                            <div className="flex items-center gap-2">
+                                                <div className="w-2.5 h-2.5 rounded-full bg-purple-500"></div>
+                                                <span className="text-sm text-gray-600">Pharmacists</span>
                                             </div>
                                             <span className="text-sm font-semibold text-gray-900">{stats.totalPharmacists}</span>
                                         </div>
                                         <div className="flex items-center justify-between">
-                                            <div className="flex items-center space-x-2">
-                                                <div className="w-3 h-3 rounded-full bg-green-500"></div>
-                                                <span className="text-sm text-gray-700">Patients</span>
+                                            <div className="flex items-center gap-2">
+                                                <div className="w-2.5 h-2.5 rounded-full bg-green-500"></div>
+                                                <span className="text-sm text-gray-600">Patients</span>
                                             </div>
                                             <span className="text-sm font-semibold text-gray-900">{stats.totalPatients}</span>
                                         </div>
                                     </div>
+                                    </div>
                                 </div>
 
                                 {/* Pharmacy Inventory Line Chart */}
-                                <div className="bg-white rounded-xl border border-gray-200 p-5">
-                                    <div className="flex items-center justify-between mb-4">
-                                        <h3 className="text-lg font-semibold text-gray-900">Pharmacy Inventory</h3>
-                                        <select className="text-xs border border-gray-200 rounded-lg px-2 py-1 text-gray-600 focus:outline-none focus:ring-2 focus:ring-purple-500">
+                                <div className="bg-white rounded-2xl border border-gray-200">
+                                    <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100">
+                                        <div>
+                                            <h3 className="text-base font-semibold text-gray-900">Pharmacy Inventory</h3>
+                                            <p className="text-sm text-gray-500 mt-0.5">Stock levels over time</p>
+                                        </div>
+                                        <select className="text-xs border border-gray-200 rounded-lg px-2 py-1.5 text-gray-600 focus:outline-none focus:ring-2 focus:ring-purple-500 bg-gray-50">
                                             <option>Last 7 Days</option>
                                             <option>Last 30 Days</option>
                                             <option>Last 3 Months</option>
                                         </select>
                                     </div>
+                                    <div className="px-6 py-6">
                                     
                                     {/* Line Chart using SVG */}
                                     <div className="relative h-48">
@@ -821,13 +847,11 @@ const AdminDashboard = () => {
                                         {/* Chart area */}
                                         <div className="ml-10 h-full">
                                             <svg className="w-full h-[calc(100%-24px)]" viewBox="0 0 350 120" preserveAspectRatio="none">
-                                                {/* Grid lines */}
                                                 <line x1="0" y1="0" x2="350" y2="0" stroke="#f3f4f6" strokeWidth="1" />
                                                 <line x1="0" y1="30" x2="350" y2="30" stroke="#f3f4f6" strokeWidth="1" />
                                                 <line x1="0" y1="60" x2="350" y2="60" stroke="#f3f4f6" strokeWidth="1" />
                                                 <line x1="0" y1="90" x2="350" y2="90" stroke="#f3f4f6" strokeWidth="1" />
                                                 <line x1="0" y1="120" x2="350" y2="120" stroke="#f3f4f6" strokeWidth="1" />
-                                                
                                                 {(() => {
                                                     const maxValue = Math.max(...inventoryData.chartData.map(d => d.value), 1);
                                                     const points = inventoryData.chartData.map((data, index) => {
@@ -835,49 +859,18 @@ const AdminDashboard = () => {
                                                         const y = 120 - ((data.value / maxValue) * 100);
                                                         return { x, y, value: data.value };
                                                     });
-                                                    
-                                                    const pathD = points.map((p, i) => 
-                                                        `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`
-                                                    ).join(' ');
-                                                    
+                                                    const pathD = points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ');
                                                     const areaD = `${pathD} L 350 120 L 0 120 Z`;
-                                                    
                                                     return (
                                                         <>
-                                                            {/* Area fill */}
-                                                            <path
-                                                                d={areaD}
-                                                                fill="url(#purpleGradient)"
-                                                                opacity="0.2"
-                                                            />
-                                                            
-                                                            {/* Line */}
-                                                            <path
-                                                                d={pathD}
-                                                                fill="none"
-                                                                stroke="#9333ea"
-                                                                strokeWidth="3"
-                                                                strokeLinecap="round"
-                                                                strokeLinejoin="round"
-                                                            />
-                                                            
-                                                            {/* Data points */}
+                                                            <path d={areaD} fill="url(#purpleGradient)" opacity="0.2" />
+                                                            <path d={pathD} fill="none" stroke="#9333ea" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
                                                             {points.map((point, index) => (
-                                                                <circle 
-                                                                    key={index}
-                                                                    cx={point.x} 
-                                                                    cy={point.y} 
-                                                                    r="4" 
-                                                                    fill="#9333ea" 
-                                                                    stroke="white" 
-                                                                    strokeWidth="2" 
-                                                                />
+                                                                <circle key={index} cx={point.x} cy={point.y} r="4" fill="#9333ea" stroke="white" strokeWidth="2" />
                                                             ))}
                                                         </>
                                                     );
                                                 })()}
-                                                
-                                                {/* Gradient definition */}
                                                 <defs>
                                                     <linearGradient id="purpleGradient" x1="0%" y1="0%" x2="0%" y2="100%">
                                                         <stop offset="0%" stopColor="#9333ea" />
@@ -885,8 +878,6 @@ const AdminDashboard = () => {
                                                     </linearGradient>
                                                 </defs>
                                             </svg>
-                                            
-                                            {/* X-axis labels */}
                                             <div className="flex justify-between text-xs text-gray-400 mt-1">
                                                 {inventoryData.chartData.map((data, index) => (
                                                     <span key={index}>{data.day}</span>
@@ -898,31 +889,36 @@ const AdminDashboard = () => {
                                     </div>
                                     
                                     {/* Stats summary */}
-                                    <div className="grid grid-cols-3 gap-4 mt-4 pt-4 border-t border-gray-100">
+                                    <div className="grid grid-cols-3 gap-4 mt-5 pt-5 border-t border-gray-100">
                                         <div>
-                                            <p className="text-xs text-gray-500">Total Items</p>
-                                            <p className="text-lg font-semibold text-gray-900">{inventoryData.stats.totalItems}</p>
+                                            <p className="text-xs text-gray-500 uppercase tracking-wide font-medium">Total Items</p>
+                                            <p className="text-xl font-bold text-gray-900 mt-1">{inventoryData.stats.totalItems}</p>
                                         </div>
                                         <div>
-                                            <p className="text-xs text-gray-500">Low Stock</p>
-                                            <p className="text-lg font-semibold text-orange-600">{inventoryData.stats.lowStock}</p>
+                                            <p className="text-xs text-gray-500 uppercase tracking-wide font-medium">Low Stock</p>
+                                            <p className="text-xl font-bold text-orange-600 mt-1">{inventoryData.stats.lowStock}</p>
                                         </div>
-                                        <div className="flex flex-col items-end">
-                                            <p className="text-xs text-gray-500">Out of Stock</p>
-                                            <p className="text-lg font-semibold text-red-600">{inventoryData.stats.outOfStock}</p>
+                                        <div>
+                                            <p className="text-xs text-gray-500 uppercase tracking-wide font-medium">Out of Stock</p>
+                                            <p className="text-xl font-bold text-red-600 mt-1">{inventoryData.stats.outOfStock}</p>
                                         </div>
+                                    </div>
                                     </div>
                                 </div>
                             </div>
 
-                            {/* Two Charts Side by Side */}
-                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+                            {/* Weekly Activity & Critical Diseases */}
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                                 {/* Activity Line Chart */}
-                                <div className="bg-white rounded-xl border border-gray-200 p-5">
-                                    <div className="flex items-center justify-between mb-4">
-                                        <h3 className="text-lg font-semibold text-gray-900">Weekly Activity</h3>
-                                        <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">Last 7 Days</span>
+                                <div className="bg-white rounded-2xl border border-gray-200">
+                                    <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100">
+                                        <div>
+                                            <h3 className="text-base font-semibold text-gray-900">Weekly Activity</h3>
+                                            <p className="text-sm text-gray-500 mt-0.5">Last 7 days</p>
+                                        </div>
+                                        <span className="text-xs font-medium text-blue-600 bg-blue-50 border border-blue-200 px-2.5 py-1 rounded-lg">Live</span>
                                     </div>
+                                    <div className="px-6 py-6">
                                     
                                     {/* Line Chart using SVG */}
                                     <div className="relative h-40">
@@ -946,11 +942,9 @@ const AdminDashboard = () => {
                                         {/* Chart area */}
                                         <div className="ml-8 h-full">
                                             <svg className="w-full h-[calc(100%-24px)]" viewBox="0 0 300 100" preserveAspectRatio="none">
-                                                {/* Grid lines */}
                                                 <line x1="0" y1="0" x2="300" y2="0" stroke="#f3f4f6" strokeWidth="1" />
                                                 <line x1="0" y1="50" x2="300" y2="50" stroke="#f3f4f6" strokeWidth="1" />
                                                 <line x1="0" y1="100" x2="300" y2="100" stroke="#f3f4f6" strokeWidth="1" />
-                                                
                                                 {(() => {
                                                     const maxValue = Math.max(...activityData.chartData.map(d => d.value), 1);
                                                     const points = activityData.chartData.map((data, index) => {
@@ -958,47 +952,18 @@ const AdminDashboard = () => {
                                                         const y = 100 - ((data.value / maxValue) * 90);
                                                         return { x, y, value: data.value };
                                                     });
-                                                    
-                                                    const pathD = points.map((p, i) => 
-                                                        `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`
-                                                    ).join(' ');
-                                                    
+                                                    const pathD = points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ');
                                                     const areaD = `${pathD} L 300 100 L 0 100 Z`;
-                                                    
                                                     return (
                                                         <>
-                                                            {/* Area fill */}
-                                                            <path
-                                                                d={areaD}
-                                                                fill="url(#blueGradient)"
-                                                                opacity="0.3"
-                                                            />
-                                                            
-                                                            {/* Line */}
-                                                            <path
-                                                                d={pathD}
-                                                                fill="none"
-                                                                stroke="#3b82f6"
-                                                                strokeWidth="2.5"
-                                                                strokeLinecap="round"
-                                                                strokeLinejoin="round"
-                                                            />
-                                                            
-                                                            {/* Data points */}
+                                                            <path d={areaD} fill="url(#blueGradient)" opacity="0.3" />
+                                                            <path d={pathD} fill="none" stroke="#3b82f6" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
                                                             {points.map((point, index) => (
-                                                                <circle 
-                                                                    key={index}
-                                                                    cx={point.x} 
-                                                                    cy={point.y} 
-                                                                    r="4" 
-                                                                    fill="#3b82f6" 
-                                                                />
+                                                                <circle key={index} cx={point.x} cy={point.y} r="4" fill="#3b82f6" stroke="white" strokeWidth="2" />
                                                             ))}
                                                         </>
                                                     );
                                                 })()}
-                                                
-                                                {/* Gradient definition */}
                                                 <defs>
                                                     <linearGradient id="blueGradient" x1="0%" y1="0%" x2="0%" y2="100%">
                                                         <stop offset="0%" stopColor="#3b82f6" />
@@ -1006,8 +971,6 @@ const AdminDashboard = () => {
                                                     </linearGradient>
                                                 </defs>
                                             </svg>
-                                            
-                                            {/* X-axis labels */}
                                             <div className="flex justify-between text-xs text-gray-400 mt-1">
                                                 {activityData.chartData.map((data, index) => (
                                                     <span key={index}>{data.day}</span>
@@ -1019,49 +982,48 @@ const AdminDashboard = () => {
                                     </div>
                                     
                                     {/* Stats summary */}
-                                    <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-100">
+                                    <div className="grid grid-cols-3 gap-4 mt-5 pt-5 border-t border-gray-100">
                                         <div>
-                                            <p className="text-xs text-gray-500">Total Activity</p>
-                                            <p className="text-lg font-semibold text-gray-900">{activityData.stats.totalActivity}</p>
+                                            <p className="text-xs text-gray-500 uppercase tracking-wide font-medium">Total</p>
+                                            <p className="text-xl font-bold text-gray-900 mt-1">{activityData.stats.totalActivity}</p>
                                         </div>
                                         <div>
-                                            <p className="text-xs text-gray-500">Avg/Day</p>
-                                            <p className="text-lg font-semibold text-gray-900">{activityData.stats.avgPerDay}</p>
+                                            <p className="text-xs text-gray-500 uppercase tracking-wide font-medium">Avg/Day</p>
+                                            <p className="text-xl font-bold text-gray-900 mt-1">{activityData.stats.avgPerDay}</p>
                                         </div>
-                                        <div className="flex flex-col items-end">
-                                            <p className="text-xs text-gray-500">Documents</p>
-                                            <p className="text-sm font-semibold text-blue-600">{activityData.stats.totalDocuments}</p>
+                                        <div>
+                                            <p className="text-xs text-gray-500 uppercase tracking-wide font-medium">Docs</p>
+                                            <p className="text-xl font-bold text-blue-600 mt-1">{activityData.stats.totalDocuments}</p>
                                         </div>
+                                    </div>
                                     </div>
                                 </div>
 
                                 {/* Critical Diseases Chart */}
-                                <div className="bg-white rounded-xl border border-gray-200 p-5">
-                                    <div className="flex items-center justify-between mb-4">
-                                        <h3 className="text-lg font-semibold text-gray-900">Critical Diseases</h3>
-                                        <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">This Month</span>
+                                <div className="bg-white rounded-2xl border border-gray-200">
+                                    <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100">
+                                        <div>
+                                            <h3 className="text-base font-semibold text-gray-900">Critical Diseases</h3>
+                                            <p className="text-sm text-gray-500 mt-0.5">Top cases this month</p>
+                                        </div>
+                                        <span className="text-xs text-gray-500 bg-gray-100 border border-gray-200 px-2.5 py-1 rounded-lg font-medium">This Month</span>
                                     </div>
+                                    <div className="px-6 py-6">
                                     
-                                    {/* Horizontal Bar Chart for Diseases */}
                                     {diseaseData.diseases.length > 0 ? (
-                                        <div className="space-y-3">
+                                        <div className="space-y-4">
                                             {diseaseData.diseases.map((disease, index) => {
-                                                const colors = [
-                                                    'bg-red-500',
-                                                    'bg-orange-500', 
-                                                    'bg-pink-500',
-                                                    'bg-yellow-500',
-                                                    'bg-purple-500'
-                                                ];
+                                                const colors = ['bg-red-500', 'bg-orange-500', 'bg-pink-500', 'bg-yellow-500', 'bg-purple-500'];
+                                                const trackColors = ['bg-red-100', 'bg-orange-100', 'bg-pink-100', 'bg-yellow-100', 'bg-purple-100'];
                                                 return (
-                                                    <div key={index} className="group">
-                                                        <div className="flex items-center justify-between mb-1">
+                                                    <div key={index}>
+                                                        <div className="flex items-center justify-between mb-1.5">
                                                             <span className="text-sm font-medium text-gray-700">{disease.name}</span>
-                                                            <span className="text-sm font-semibold text-gray-900">{disease.cases} cases</span>
+                                                            <span className="text-xs font-semibold text-gray-500">{disease.cases} cases</span>
                                                         </div>
-                                                        <div className="w-full bg-gray-100 rounded-full h-2.5 overflow-hidden">
-                                                            <div 
-                                                                className={`${colors[index % colors.length]} h-2.5 rounded-full transition-all duration-500 group-hover:opacity-80`}
+                                                        <div className={`w-full ${trackColors[index % trackColors.length]} rounded-full h-2 overflow-hidden`}>
+                                                            <div
+                                                                className={`${colors[index % colors.length]} h-2 rounded-full transition-all duration-700`}
                                                                 style={{ width: `${disease.percentage}%` }}
                                                             ></div>
                                                         </div>
@@ -1071,22 +1033,23 @@ const AdminDashboard = () => {
                                         </div>
                                     ) : (
                                         <div className="flex items-center justify-center h-40 text-gray-400">
-                                            <p>No disease data available</p>
+                                            <p className="text-sm">No disease data available</p>
                                         </div>
                                     )}
                                     
                                     {/* Summary */}
-                                    <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-100">
+                                    <div className="grid grid-cols-2 gap-4 mt-5 pt-5 border-t border-gray-100">
                                         <div>
-                                            <p className="text-xs text-gray-500">Total Cases</p>
-                                            <p className="text-lg font-semibold text-gray-900">{diseaseData.totalCases}</p>
+                                            <p className="text-xs text-gray-500 uppercase tracking-wide font-medium">Total Cases</p>
+                                            <p className="text-xl font-bold text-gray-900 mt-1">{diseaseData.totalCases}</p>
                                         </div>
-                                        <div className="flex items-center space-x-1">
-                                            <span className={`${diseaseData.trend >= 0 ? 'text-red-500' : 'text-green-500'} text-sm`}>
-                                                {diseaseData.trend >= 0 ? '↑' : '↓'} {Math.abs(diseaseData.trend)}%
-                                            </span>
-                                            <span className="text-xs text-gray-500">vs last month</span>
+                                        <div>
+                                            <p className="text-xs text-gray-500 uppercase tracking-wide font-medium">vs Last Month</p>
+                                            <p className={`text-xl font-bold mt-1 ${diseaseData.trend >= 0 ? 'text-red-500' : 'text-green-500'}`}>
+                                                {diseaseData.trend >= 0 ? '+' : ''}{diseaseData.trend}%
+                                            </p>
                                         </div>
+                                    </div>
                                     </div>
                                 </div>
                             </div>
@@ -1301,153 +1264,158 @@ const AdminDashboard = () => {
 
                     {/* Settings Section */}
                     {activeSection === 'settings' && (
-                        <div className="space-y-4 sm:space-y-6">
-                            <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Settings</h2>
+                        <div className="space-y-6">
+                            {/* Header */}
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center">
+                                    <Settings className="w-5 h-5 text-blue-600" />
+                                </div>
+                                <div>
+                                    <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Settings</h2>
+                                    <p className="text-sm text-gray-500">Manage your account and security</p>
+                                </div>
+                            </div>
 
+                            {/* Alerts */}
                             {error && (
-                                <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                                <div className="flex items-center gap-2.5 bg-red-50 border border-red-200 rounded-xl px-4 py-3">
+                                    <div className="w-2 h-2 rounded-full bg-red-500 flex-shrink-0" />
                                     <p className="text-red-700 text-sm">{error}</p>
                                 </div>
                             )}
                             {successMessage && (
-                                <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                                <div className="flex items-center gap-2.5 bg-green-50 border border-green-200 rounded-xl px-4 py-3">
+                                    <div className="w-2 h-2 rounded-full bg-green-500 flex-shrink-0" />
                                     <p className="text-green-700 text-sm">{successMessage}</p>
                                 </div>
                             )}
 
-                            {/* Profile Settings */}
-                            <div className="bg-white rounded-xl border border-gray-200 p-5">
-                                <div className="flex items-center justify-between gap-4 mb-6 pb-4 border-b border-gray-100">
-                                    <div className="flex items-center gap-4">
-                                        <div className="w-14 h-14 bg-blue-100 rounded-full flex items-center justify-center text-xl font-bold text-blue-600">
-                                            {user?.fullName?.charAt(0)?.toUpperCase() || user?.email?.charAt(0)?.toUpperCase() || 'A'}
-                                        </div>
-                                        <div>
-                                            <h3 className="font-semibold text-gray-900">{user?.fullName || profileForm.fullname || 'Administrator'}</h3>
-                                            <p className="text-sm text-gray-500">{user?.email || 'No email'}</p>
-                                        </div>
-                                    </div>
-                                    <div className="text-right">
-                                        <p className="text-xs text-gray-500">Admin ID</p>
-                                        <p className="text-lg font-mono font-bold text-blue-600">#{user?.userId || user?.id?.slice(-6) || 'N/A'}</p>
+                            {/* Profile card */}
+                            <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+                                <div className="px-6 py-6">
+                                    <div>
+                                        <p className="text-sm font-semibold text-gray-700 mb-4">Profile Information</p>
+                                        <form onSubmit={handleProfileUpdate} className="space-y-4">
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                                <div>
+                                                    <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Full Name</label>
+                                                    <input
+                                                        type="text"
+                                                        name="fullname"
+                                                        value={profileForm.fullname}
+                                                        onChange={handleProfileInputChange}
+                                                        className={`w-full px-4 py-2.5 border-2 rounded-xl text-sm outline-none focus:border-blue-500 transition-colors ${
+                                                            profileErrors.fullname ? 'border-red-400 bg-red-50/50' : 'border-gray-200 hover:border-gray-300'
+                                                        }`}
+                                                        placeholder="Enter your full name"
+                                                    />
+                                                    {profileErrors.fullname && <p className="text-red-500 text-xs mt-1">{profileErrors.fullname}</p>}
+                                                </div>
+                                                <div>
+                                                    <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Gender</label>
+                                                    <select
+                                                        name="gender"
+                                                        value={profileForm.gender}
+                                                        onChange={handleProfileInputChange}
+                                                        className="w-full px-4 py-2.5 border-2 border-gray-200 hover:border-gray-300 rounded-xl text-sm outline-none focus:border-blue-500 transition-colors"
+                                                    >
+                                                        <option value="">Select gender</option>
+                                                        <option value="male">Male</option>
+                                                        <option value="female">Female</option>
+                                                        <option value="other">Other</option>
+                                                    </select>
+                                                </div>
+                                                <div>
+                                                    <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Phone</label>
+                                                    <input
+                                                        type="tel"
+                                                        name="phone"
+                                                        value={profileForm.phone}
+                                                        onChange={handleProfileInputChange}
+                                                        className="w-full px-4 py-2.5 border-2 border-gray-200 hover:border-gray-300 rounded-xl text-sm outline-none focus:border-blue-500 transition-colors"
+                                                        placeholder="Enter phone number"
+                                                    />
+                                                </div>
+                                            </div>
+                                            <div className="flex justify-end pt-1">
+                                                <button
+                                                    type="submit"
+                                                    disabled={isSubmitting}
+                                                    className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-xl text-sm font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                                >
+                                                    {isSubmitting ? 'Saving…' : 'Save Changes'}
+                                                </button>
+                                            </div>
+                                        </form>
                                     </div>
                                 </div>
-                                <h3 className="text-lg font-semibold text-gray-900 mb-4">Profile Information</h3>
-                                <form onSubmit={handleProfileUpdate} className="space-y-4">
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-2">Full Name</label>
-                                            <input
-                                                type="text"
-                                                name="fullname"
-                                                value={profileForm.fullname}
-                                                onChange={handleProfileInputChange}
-                                                className={`w-full px-4 py-2 border-2 border-gray-200 rounded-lg outline-none focus:border-blue-500 focus:ring-0 transition-colors ${
-                                                    profileErrors.fullname ? 'border-red-500' : ''
-                                                }`}
-                                                placeholder="Enter your name"
-                                            />
-                                            {profileErrors.fullname && (
-                                                <p className="text-red-500 text-xs mt-1">{profileErrors.fullname}</p>
-                                            )}
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-2">Gender</label>
-                                            <select
-                                                name="gender"
-                                                value={profileForm.gender}
-                                                onChange={handleProfileInputChange}
-                                                className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg outline-none focus:border-blue-500 focus:ring-0 transition-colors"
-                                            >
-                                                <option value="">Select gender</option>
-                                                <option value="male">Male</option>
-                                                <option value="female">Female</option>
-                                                <option value="other">Other</option>
-                                            </select>
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-2">Phone</label>
-                                            <input
-                                                type="tel"
-                                                name="phone"
-                                                value={profileForm.phone}
-                                                onChange={handleProfileInputChange}
-                                                className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg outline-none focus:border-blue-500 focus:ring-0 transition-colors"
-                                                placeholder="Enter phone number"
-                                            />
-                                        </div>
-                                    </div>
-                                    <button
-                                        type="submit"
-                                        disabled={isSubmitting}
-                                        className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors disabled:bg-gray-400"
-                                    >
-                                        {isSubmitting ? 'Saving...' : 'Save Changes'}
-                                    </button>
-                                </form>
                             </div>
 
-                            {/* Password Change */}
-                            <div className="bg-white rounded-xl border border-gray-200 p-5">
-                                <h3 className="text-lg font-semibold text-gray-900 mb-4">Change Password</h3>
+                            {/* Password card */}
+                            <div className="bg-white rounded-2xl border border-gray-200 p-6">
+                                <div className="flex items-center gap-3 mb-5 pb-4 border-b border-gray-100">
+                                    <div className="w-9 h-9 bg-amber-50 border border-amber-200 rounded-xl flex items-center justify-center">
+                                        <Lock className="w-4.5 h-4.5 text-amber-600 w-[1.1rem] h-[1.1rem]" />
+                                    </div>
+                                    <div>
+                                        <p className="font-semibold text-gray-900 text-sm">Change Password</p>
+                                        <p className="text-xs text-gray-500">Keep your account secure</p>
+                                    </div>
+                                </div>
                                 <form onSubmit={handlePasswordChange} className="space-y-4">
                                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                                         <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-2">Current Password</label>
+                                            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Current Password</label>
                                             <input
                                                 type="password"
                                                 name="currentPassword"
                                                 value={passwordForm.currentPassword}
                                                 onChange={handlePasswordInputChange}
-                                                className={`w-full px-4 py-2 border-2 border-gray-200 rounded-lg outline-none focus:border-blue-500 focus:ring-0 transition-colors ${
-                                                    passwordErrors.currentPassword ? 'border-red-500' : ''
+                                                className={`w-full px-4 py-2.5 border-2 rounded-xl text-sm outline-none focus:border-blue-500 transition-colors ${
+                                                    passwordErrors.currentPassword ? 'border-red-400 bg-red-50/50' : 'border-gray-200 hover:border-gray-300'
                                                 }`}
                                                 placeholder="Current password"
                                             />
-                                            {passwordErrors.currentPassword && (
-                                                <p className="text-red-500 text-xs mt-1">{passwordErrors.currentPassword}</p>
-                                            )}
+                                            {passwordErrors.currentPassword && <p className="text-red-500 text-xs mt-1">{passwordErrors.currentPassword}</p>}
                                         </div>
                                         <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-2">New Password</label>
+                                            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">New Password</label>
                                             <input
                                                 type="password"
                                                 name="newPassword"
                                                 value={passwordForm.newPassword}
                                                 onChange={handlePasswordInputChange}
-                                                className={`w-full px-4 py-2 border-2 border-gray-200 rounded-lg outline-none focus:border-blue-500 focus:ring-0 transition-colors ${
-                                                    passwordErrors.newPassword ? 'border-red-500' : ''
+                                                className={`w-full px-4 py-2.5 border-2 rounded-xl text-sm outline-none focus:border-blue-500 transition-colors ${
+                                                    passwordErrors.newPassword ? 'border-red-400 bg-red-50/50' : 'border-gray-200 hover:border-gray-300'
                                                 }`}
                                                 placeholder="New password"
                                             />
-                                            {passwordErrors.newPassword && (
-                                                <p className="text-red-500 text-xs mt-1">{passwordErrors.newPassword}</p>
-                                            )}
+                                            {passwordErrors.newPassword && <p className="text-red-500 text-xs mt-1">{passwordErrors.newPassword}</p>}
                                         </div>
                                         <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-2">Confirm Password</label>
+                                            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Confirm Password</label>
                                             <input
                                                 type="password"
                                                 name="confirmPassword"
                                                 value={passwordForm.confirmPassword}
                                                 onChange={handlePasswordInputChange}
-                                                className={`w-full px-4 py-2 border-2 border-gray-200 rounded-lg outline-none focus:border-blue-500 focus:ring-0 transition-colors ${
-                                                    passwordErrors.confirmPassword ? 'border-red-500' : ''
+                                                className={`w-full px-4 py-2.5 border-2 rounded-xl text-sm outline-none focus:border-blue-500 transition-colors ${
+                                                    passwordErrors.confirmPassword ? 'border-red-400 bg-red-50/50' : 'border-gray-200 hover:border-gray-300'
                                                 }`}
-                                                placeholder="Confirm password"
+                                                placeholder="Confirm new password"
                                             />
-                                            {passwordErrors.confirmPassword && (
-                                                <p className="text-red-500 text-xs mt-1">{passwordErrors.confirmPassword}</p>
-                                            )}
+                                            {passwordErrors.confirmPassword && <p className="text-red-500 text-xs mt-1">{passwordErrors.confirmPassword}</p>}
                                         </div>
                                     </div>
-                                    <button
-                                        type="submit"
-                                        disabled={isSubmitting}
-                                        className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors disabled:bg-gray-400"
-                                    >
-                                        {isSubmitting ? 'Updating...' : 'Update Password'}
-                                    </button>
+                                    <div className="flex justify-end pt-1">
+                                        <button
+                                            type="submit"
+                                            disabled={isSubmitting}
+                                            className="inline-flex items-center gap-2 bg-gray-900 hover:bg-gray-800 text-white px-6 py-2.5 rounded-xl text-sm font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                        >
+                                            {isSubmitting ? 'Updating…' : 'Update Password'}
+                                        </button>
+                                    </div>
                                 </form>
                             </div>
                         </div>
@@ -1456,24 +1424,26 @@ const AdminDashboard = () => {
                     {/* Emergency Access Section */}
                     {activeSection === 'emergency' && (
                         <div className="space-y-4 sm:space-y-6">
-                            <div className="flex items-center space-x-3">
-                                <div className="bg-blue-100 p-3 rounded-lg">
-                                    <AlertCircle className="w-6 h-6 text-blue-600" />
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 bg-rose-100 rounded-xl flex items-center justify-center">
+                                    <AlertCircle className="w-5 h-5 text-rose-600" />
                                 </div>
                                 <div>
                                     <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Emergency Access</h2>
-                                    <p className="text-sm text-gray-600">Quick access to patient data in emergency situations</p>
+                                    <p className="text-sm text-gray-500">Quick access to patient data in emergency situations</p>
                                 </div>
                             </div>
 
                             {/* Search Card */}
-                            <div className="bg-white rounded-xl border border-gray-200 p-6">
-                                <h3 className="text-lg font-semibold text-gray-900 mb-4">Search Patient</h3>
-                                
+                            <div className="bg-white rounded-2xl border border-gray-200">
+                                <div className="px-6 py-5 border-b border-gray-100">
+                                    <h3 className="text-base font-semibold text-gray-900">Search Patient</h3>
+                                </div>
+                                <div className="px-6 py-6">
                                 <form onSubmit={handleEmergencySearch} className="space-y-4">
                                     <div className="flex flex-col sm:flex-row gap-3">
                                         <div className="flex-1">
-                                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
                                                 Patient ID
                                             </label>
                                             <input
@@ -1481,13 +1451,14 @@ const AdminDashboard = () => {
                                                 value={emergencySearch}
                                                 onChange={(e) => setEmergencySearch(e.target.value)}
                                                 placeholder="Enter Patient ID or MongoDB ID"
-                                                className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg outline-none focus:border-blue-500 focus:ring-0 transition-colors"
+                                                className="w-full px-4 py-2.5 border-2 border-gray-200 rounded-xl outline-none focus:border-blue-500 transition-colors text-sm"
                                             />
                                         </div>
                                     </div>
 
                                     {emergencyError && (
-                                        <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                                        <div className="flex items-center gap-2.5 bg-red-50 border border-red-200 rounded-xl px-4 py-3">
+                                            <div className="w-2 h-2 rounded-full bg-red-500 flex-shrink-0"></div>
                                             <p className="text-red-700 text-sm">{emergencyError}</p>
                                         </div>
                                     )}
@@ -1496,7 +1467,7 @@ const AdminDashboard = () => {
                                         <button
                                             type="submit"
                                             disabled={emergencyLoading}
-                                            className="flex items-center justify-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                            className="flex items-center justify-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-xl text-sm font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                         >
                                             <Search className="w-4 h-4" />
                                             <span>{emergencyLoading ? 'Searching...' : 'Search Patient'}</span>
@@ -1505,7 +1476,7 @@ const AdminDashboard = () => {
                                             <button
                                                 type="button"
                                                 onClick={clearEmergencyData}
-                                                className="flex items-center justify-center space-x-2 bg-gray-200 hover:bg-gray-300 text-gray-700 px-5 py-2.5 rounded-lg font-medium transition-colors"
+                                                className="flex items-center justify-center space-x-2 bg-gray-100 hover:bg-gray-200 text-gray-700 px-6 py-2.5 rounded-xl text-sm font-semibold transition-colors"
                                             >
                                                 <X className="w-4 h-4" />
                                                 <span>Clear</span>
@@ -1513,71 +1484,73 @@ const AdminDashboard = () => {
                                         )}
                                     </div>
                                 </form>
+                                </div>
                             </div>
 
                             {/* Patient Data Display */}
                             {emergencyPatient && (
                                 <div className="space-y-4">
                                     {/* Patient Basic Info */}
-                                    <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-6">
-                                        <div className="flex items-center justify-between mb-4">
-                                            <h3 className="text-lg font-semibold text-blue-900">Patient Information</h3>
-                                            <span className="bg-blue-600 text-white text-xs px-3 py-1 rounded-full font-medium">
+                                    <div className="bg-white rounded-2xl border border-gray-200">
+                                        <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100">
+                                            <h3 className="text-base font-semibold text-gray-900">Patient Information</h3>
+                                            <span className="bg-rose-600 text-white text-xs px-3 py-1 rounded-full font-semibold">
                                                 EMERGENCY ACCESS
                                             </span>
                                         </div>
-                                        
+                                        <div className="px-6 py-6">
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                             <div>
-                                                <label className="text-xs font-medium text-blue-700 uppercase">Patient Name</label>
-                                                <p className="text-lg font-semibold text-gray-900 mt-1">{emergencyPatient.name}</p>
+                                                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Patient Name</label>
+                                                <p className="text-base font-semibold text-gray-900 mt-1">{emergencyPatient.name}</p>
                                             </div>
                                             <div>
-                                                <label className="text-xs font-medium text-blue-700 uppercase">Patient ID</label>
-                                                <p className="text-lg font-semibold text-gray-900 mt-1">{emergencyPatient._id}</p>
+                                                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Patient ID</label>
+                                                <p className="text-base font-semibold text-gray-900 mt-1">{emergencyPatient._id}</p>
                                             </div>
                                             <div>
-                                                <label className="text-xs font-medium text-blue-700 uppercase">Email</label>
+                                                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Email</label>
                                                 <div className="flex items-center space-x-2 mt-1">
-                                                    <Mail className="w-4 h-4 text-gray-500" />
-                                                    <p className="text-gray-900">{emergencyPatient.email}</p>
+                                                    <Mail className="w-4 h-4 text-gray-400" />
+                                                    <p className="text-gray-900 text-sm">{emergencyPatient.email}</p>
                                                 </div>
                                             </div>
                                             <div>
-                                                <label className="text-xs font-medium text-blue-700 uppercase">Phone</label>
+                                                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Phone</label>
                                                 <div className="flex items-center space-x-2 mt-1">
-                                                    <Phone className="w-4 h-4 text-gray-500" />
-                                                    <p className="text-gray-900">{emergencyPatient.phone || 'N/A'}</p>
+                                                    <Phone className="w-4 h-4 text-gray-400" />
+                                                    <p className="text-gray-900 text-sm">{emergencyPatient.phone || 'N/A'}</p>
                                                 </div>
                                             </div>
                                             <div>
-                                                <label className="text-xs font-medium text-blue-700 uppercase">Assigned Doctor</label>
-                                                <p className="text-gray-900 mt-1">
+                                                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Assigned Doctor</label>
+                                                <p className="text-gray-900 text-sm mt-1">
                                                     {emergencyPatient.doctor_id?.name || 'Not Assigned'}
                                                 </p>
                                             </div>
                                             <div>
-                                                <label className="text-xs font-medium text-blue-700 uppercase">Registration Date</label>
+                                                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Registration Date</label>
                                                 <div className="flex items-center space-x-2 mt-1">
-                                                    <Calendar className="w-4 h-4 text-gray-500" />
-                                                    <p className="text-gray-900">
+                                                    <Calendar className="w-4 h-4 text-gray-400" />
+                                                    <p className="text-gray-900 text-sm">
                                                         {formatDisplayDate(emergencyPatient.createdAt)}
                                                     </p>
                                                 </div>
                                             </div>
                                         </div>
+                                        </div>
                                     </div>
 
                                     {/* Medical Documents */}
                                     {emergencyPatient.documents && emergencyPatient.documents.length > 0 && (
-                                        <div className="bg-white rounded-xl border border-gray-200 p-6">
-                                            <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center space-x-2">
-                                                <FileText className="w-5 h-5" />
-                                                <span>Medical Documents ({emergencyPatient.documents.length})</span>
-                                            </h3>
-                                            <div className="space-y-3">
+                                        <div className="bg-white rounded-2xl border border-gray-200">
+                                            <div className="flex items-center gap-2.5 px-6 py-5 border-b border-gray-100">
+                                                <FileText className="w-5 h-5 text-gray-500" />
+                                                <h3 className="text-base font-semibold text-gray-900">Medical Documents ({emergencyPatient.documents.length})</h3>
+                                            </div>
+                                            <div className="px-6 py-6 space-y-3">
                                                 {emergencyPatient.documents.map((doc) => (
-                                                    <div key={doc._id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                                                    <div key={doc._id} className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
                                                         <div className="flex-1">
                                                             <p className="font-medium text-gray-900">{doc.title}</p>
                                                             <p className="text-sm text-gray-600">{doc.description || 'No description'}</p>
@@ -1599,14 +1572,14 @@ const AdminDashboard = () => {
 
                                     {/* Health Reports */}
                                     {emergencyPatient.healthReports && emergencyPatient.healthReports.length > 0 && (
-                                        <div className="bg-white rounded-xl border border-gray-200 p-6">
-                                            <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center space-x-2">
-                                                <Activity className="w-5 h-5" />
-                                                <span>Health Reports ({emergencyPatient.healthReports.length})</span>
-                                            </h3>
-                                            <div className="space-y-3">
+                                        <div className="bg-white rounded-2xl border border-gray-200">
+                                            <div className="flex items-center gap-2.5 px-6 py-5 border-b border-gray-100">
+                                                <Activity className="w-5 h-5 text-gray-500" />
+                                                <h3 className="text-base font-semibold text-gray-900">Health Reports ({emergencyPatient.healthReports.length})</h3>
+                                            </div>
+                                            <div className="px-6 py-6 space-y-3">
                                                 {emergencyPatient.healthReports.map((report) => (
-                                                    <div key={report._id} className="p-4 bg-gray-50 rounded-lg">
+                                                    <div key={report._id} className="p-4 bg-gray-50 rounded-xl">
                                                         <div className="flex items-start justify-between">
                                                             <div className="flex-1">
                                                                 <p className="font-medium text-gray-900">{report.reportType || 'General Health Report'}</p>
@@ -1634,14 +1607,14 @@ const AdminDashboard = () => {
 
                                     {/* Prescriptions / Medicines */}
                                     {emergencyPatient.medicines && emergencyPatient.medicines.length > 0 && (
-                                        <div className="bg-white rounded-xl border border-gray-200 p-6">
-                                            <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center space-x-2">
-                                                <Pill className="w-5 h-5" />
-                                                <span>Prescribed Medicines ({emergencyPatient.medicines.length})</span>
-                                            </h3>
-                                            <div className="space-y-3">
+                                        <div className="bg-white rounded-2xl border border-gray-200">
+                                            <div className="flex items-center gap-2.5 px-6 py-5 border-b border-gray-100">
+                                                <Pill className="w-5 h-5 text-gray-500" />
+                                                <h3 className="text-base font-semibold text-gray-900">Prescribed Medicines ({emergencyPatient.medicines.length})</h3>
+                                            </div>
+                                            <div className="px-6 py-6 space-y-3">
                                                 {emergencyPatient.medicines.map((medicine) => (
-                                                    <div key={medicine._id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                                                    <div key={medicine._id} className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
                                                         <div>
                                                             <p className="font-medium text-gray-900">{medicine.name}</p>
                                                             <p className="text-sm text-gray-600">{medicine.description || 'No description'}</p>
@@ -1671,20 +1644,22 @@ const AdminDashboard = () => {
                                     {(!emergencyPatient.documents || emergencyPatient.documents.length === 0) &&
                                      (!emergencyPatient.healthReports || emergencyPatient.healthReports.length === 0) &&
                                      (!emergencyPatient.medicines || emergencyPatient.medicines.length === 0) && (
-                                        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6 text-center">
-                                            <p className="text-yellow-800">No medical history available for this patient.</p>
+                                        <div className="bg-yellow-50 border border-yellow-200 rounded-2xl p-6 text-center">
+                                            <p className="text-yellow-800 text-sm font-medium">No medical history available for this patient.</p>
                                         </div>
                                     )}
                                 </div>
                             )}
 
                             {/* Warning Notice */}
-                            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
-                                <div className="flex items-start space-x-3">
-                                    <AlertCircle className="w-5 h-5 text-amber-600 mt-0.5" />
+                            <div className="bg-amber-50 border border-amber-200 rounded-2xl p-5">
+                                <div className="flex items-start gap-3">
+                                    <div className="w-8 h-8 bg-amber-100 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5">
+                                        <AlertCircle className="w-4 h-4 text-amber-600" />
+                                    </div>
                                     <div>
-                                        <p className="font-medium text-amber-900">Emergency Access Notice</p>
-                                        <p className="text-sm text-amber-800 mt-1">
+                                        <p className="text-sm font-semibold text-amber-900">Emergency Access Notice</p>
+                                        <p className="text-sm text-amber-700 mt-1">
                                             This feature is intended for emergency situations only. All accesses are logged and audited. 
                                             Misuse of this feature may result in disciplinary action.
                                         </p>
@@ -1697,36 +1672,46 @@ const AdminDashboard = () => {
                     {/* Interoperability Section */}
                     {activeSection === 'interoperability' && (
                         <div className="space-y-4 sm:space-y-6">
-                            <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Interoperability</h2>
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 bg-purple-100 rounded-xl flex items-center justify-center">
+                                    <Network className="w-5 h-5 text-purple-600" />
+                                </div>
+                                <div>
+                                    <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Interoperability</h2>
+                                    <p className="text-sm text-gray-500">Configure external API access and integration settings</p>
+                                </div>
+                            </div>
                             
                             {interopSuccess && (
-                                <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                                <div className="flex items-center gap-2.5 bg-green-50 border border-green-200 rounded-xl px-4 py-3">
+                                    <div className="w-2 h-2 rounded-full bg-green-500 flex-shrink-0"></div>
                                     <p className="text-green-700 text-sm">{interopSuccess}</p>
                                 </div>
                             )}
 
                             {interopErrors.general && (
-                                <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                                <div className="flex items-center gap-2.5 bg-red-50 border border-red-200 rounded-xl px-4 py-3">
+                                    <div className="w-2 h-2 rounded-full bg-red-500 flex-shrink-0"></div>
                                     <p className="text-red-700 text-sm">{interopErrors.general}</p>
                                 </div>
                             )}
 
                             {/* API Token Generation */}
-                            <div className="bg-white rounded-xl border border-gray-200 p-6">
-                                <div className="flex items-center justify-between mb-6">
-                                    <div className="flex items-center space-x-3">
-                                        <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
-                                            <Lock className="w-5 h-5 text-purple-600" />
+                            <div className="bg-white rounded-2xl border border-gray-200">
+                                <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-9 h-9 bg-purple-50 border border-purple-200 rounded-xl flex items-center justify-center">
+                                            <Lock className="w-4 h-4 text-purple-600" />
                                         </div>
                                         <div>
-                                            <h3 className="text-lg font-semibold text-gray-900">API Access Token</h3>
+                                            <h3 className="text-base font-semibold text-gray-900">API Access Token</h3>
                                             <p className="text-sm text-gray-500">Generate token for external system access</p>
                                         </div>
                                     </div>
                                     {interopConfig.token && (
                                         <button
                                             onClick={handleRevokeApiToken}
-                                            className="px-4 py-2 text-sm font-medium text-red-600 border border-red-300 rounded-lg hover:bg-red-50 transition-colors"
+                                            className="px-4 py-2 text-sm font-semibold text-red-600 border border-red-300 rounded-xl hover:bg-red-50 transition-colors"
                                         >
                                             Revoke Token
                                         </button>
@@ -1734,9 +1719,9 @@ const AdminDashboard = () => {
                                 </div>
 
                                 {interopConfig.token ? (
-                                    <div className="space-y-4">
+                                    <div className="px-6 py-6 space-y-4">
                                         <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
                                                 Your API Token
                                             </label>
                                             <div className="flex space-x-2">
@@ -1744,7 +1729,7 @@ const AdminDashboard = () => {
                                                     type="text"
                                                     value={interopConfig.token}
                                                     readOnly
-                                                    className="flex-1 px-4 py-2.5 border-2 border-gray-200 rounded-lg bg-gray-50 font-mono text-sm"
+                                                    className="flex-1 px-4 py-2.5 border-2 border-gray-200 rounded-xl bg-gray-50 font-mono text-sm"
                                                 />
                                                 <button
                                                     onClick={() => {
@@ -1752,7 +1737,7 @@ const AdminDashboard = () => {
                                                         setInteropSuccess('Token copied to clipboard!');
                                                         setTimeout(() => setInteropSuccess(''), 2000);
                                                     }}
-                                                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+                                                    className="px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors text-sm font-semibold"
                                                 >
                                                     Copy
                                                 </button>
@@ -1760,9 +1745,9 @@ const AdminDashboard = () => {
                                         </div>
 
                                         {interopConfig.expiryDate && (
-                                            <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                                                <span className="text-sm text-gray-600">Expires on:</span>
-                                                <span className={`text-sm font-medium ${interopConfig.isExpired ? 'text-red-600' : 'text-gray-900'}`}>
+                                            <div className="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
+                                                <span className="text-sm text-gray-500">Expires on:</span>
+                                                <span className={`text-sm font-semibold ${interopConfig.isExpired ? 'text-red-600' : 'text-gray-900'}`}>
                                                     {new Date(interopConfig.expiryDate).toLocaleDateString('en-US', { 
                                                         year: 'numeric', 
                                                         month: 'long', 
@@ -1774,13 +1759,13 @@ const AdminDashboard = () => {
                                         )}
                                     </div>
                                 ) : (
-                                    <div className="text-center py-8">
-                                        <Lock className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-                                        <p className="text-gray-600 mb-4">No API token generated yet</p>
+                                    <div className="px-6 py-8 text-center">
+                                        <Lock className="w-10 h-10 text-gray-300 mx-auto mb-3" />
+                                        <p className="text-gray-500 text-sm mb-4">No API token generated yet</p>
                                         <button
                                             onClick={handleGenerateApiToken}
                                             disabled={isGeneratingToken}
-                                            className="px-6 py-2.5 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors disabled:bg-gray-400 text-sm font-medium"
+                                            className="px-6 py-2.5 bg-purple-600 text-white rounded-xl hover:bg-purple-700 transition-colors disabled:bg-gray-400 text-sm font-semibold"
                                         >
                                             {isGeneratingToken ? 'Generating...' : 'Generate API Token'}
                                         </button>
@@ -1789,56 +1774,59 @@ const AdminDashboard = () => {
                             </div>
 
                             {/* API Routes Documentation */}
-                            <div className="bg-white rounded-xl border border-gray-200 p-6">
-                                <div className="flex items-center space-x-3 mb-4">
-                                    <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                                        <FileText className="w-5 h-5 text-blue-600" />
+                            <div className="bg-white rounded-2xl border border-gray-200">
+                                <div className="flex items-center gap-3 px-6 py-5 border-b border-gray-100">
+                                    <div className="w-9 h-9 bg-blue-50 border border-blue-200 rounded-xl flex items-center justify-center">
+                                        <FileText className="w-4 h-4 text-blue-600" />
                                     </div>
                                     <div>
-                                        <h3 className="text-lg font-semibold text-gray-900">API Routes</h3>
+                                        <h3 className="text-base font-semibold text-gray-900">API Routes</h3>
                                         <p className="text-sm text-gray-500">Available endpoints for external access</p>
                                     </div>
                                 </div>
+                                <div className="px-6 py-6">
 
                                 <div className="space-y-3">
-                                    <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+                                    <div className="p-4 bg-gray-50 rounded-xl border border-gray-200">
                                         <div className="flex items-center justify-between mb-2">
                                             <div className="flex items-center space-x-2">
-                                                <span className="px-2 py-0.5 text-xs font-semibold bg-green-100 text-green-700 rounded">GET</span>
+                                                <span className="px-2 py-0.5 text-xs font-semibold bg-green-100 text-green-700 rounded-md">GET</span>
                                                 <span className="font-mono text-sm text-gray-900">/admin/validate-token/:apiToken</span>
                                             </div>
                                         </div>
                                         <p className="text-xs text-gray-600 mb-2">Validate the API token and get admin information</p>
-                                        <div className="bg-white p-2 rounded border border-gray-200 font-mono text-xs text-gray-700 overflow-x-auto">
+                                        <div className="bg-white p-2 rounded-lg border border-gray-200 font-mono text-xs text-gray-700 overflow-x-auto">
                                             <div className="text-green-600">// Example:</div>
                                             <div>GET {window.location.origin}/admin/validate-token/YOUR_TOKEN_HERE</div>
                                         </div>
                                     </div>
 
-                                    <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                                    <div className="flex items-start gap-2.5 p-3 bg-blue-50 border border-blue-200 rounded-xl">
+                                        <div className="w-2 h-2 rounded-full bg-blue-500 flex-shrink-0 mt-1"></div>
                                         <p className="text-xs text-blue-800">
                                             <strong>Note:</strong> Use the generated API token in the route to authenticate external requests.
                                             The server address you configure will be where external systems can access this API.
                                         </p>
                                     </div>
                                 </div>
+                                </div>
                             </div>
 
                             {/* Configuration Setup */}
-                            <div className="bg-white rounded-xl border border-gray-200 p-6">
-                                <div className="flex items-center space-x-3 mb-6">
-                                    <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center">
-                                        <Settings className="w-5 h-5 text-orange-600" />
+                            <div className="bg-white rounded-2xl border border-gray-200">
+                                <div className="flex items-center gap-3 px-6 py-5 border-b border-gray-100">
+                                    <div className="w-9 h-9 bg-orange-50 border border-orange-200 rounded-xl flex items-center justify-center">
+                                        <Settings className="w-4 h-4 text-orange-600" />
                                     </div>
                                     <div>
-                                        <h3 className="text-lg font-semibold text-gray-900">Server Configuration</h3>
+                                        <h3 className="text-base font-semibold text-gray-900">Server Configuration</h3>
                                         <p className="text-sm text-gray-500">Set your server address for external access</p>
                                     </div>
                                 </div>
 
-                                <div className="space-y-4">
+                                <div className="px-6 py-6 space-y-4">
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                        <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
                                             Server Address / Base URL
                                         </label>
                                         <input
@@ -1847,39 +1835,41 @@ const AdminDashboard = () => {
                                             onChange={(e) => {
                                                 setInteropConfig({ ...interopConfig, address: e.target.value });
                                             }}
-                                            className="w-full px-4 py-2.5 border-2 border-gray-200 rounded-lg outline-none focus:border-orange-500 focus:ring-0 transition-colors"
+                                            className="w-full px-4 py-2.5 border-2 border-gray-200 rounded-xl outline-none focus:border-orange-500 transition-colors text-sm"
                                             placeholder="https://your-server.com"
                                         />
-                                        <p className="text-xs text-gray-500 mt-1">The base URL where your Health Track server is accessible</p>
+                                        <p className="text-xs text-gray-500 mt-1.5">The base URL where your Health Track server is accessible</p>
                                     </div>
 
-                                    <button
-                                        onClick={() => {
-                                            localStorage.setItem('interopServerAddress', interopConfig.address);
-                                            setInteropSuccess('Server address saved!');
-                                            setTimeout(() => setInteropSuccess(''), 2000);
-                                        }}
-                                        className="px-6 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors text-sm font-medium"
-                                    >
-                                        Save Server Address
-                                    </button>
+                                    <div className="flex justify-end">
+                                        <button
+                                            onClick={() => {
+                                                localStorage.setItem('interopServerAddress', interopConfig.address);
+                                                setInteropSuccess('Server address saved!');
+                                                setTimeout(() => setInteropSuccess(''), 2000);
+                                            }}
+                                            className="px-6 py-2.5 bg-orange-600 text-white rounded-xl hover:bg-orange-700 transition-colors text-sm font-semibold"
+                                        >
+                                            Save Server Address
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
 
                             {/* Connection Status */}
-                            <div className="bg-white rounded-xl border border-gray-200 p-6">
-                                <div className="flex items-center space-x-3 mb-4">
-                                    <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
-                                        <Network className="w-5 h-5 text-green-600" />
+                            <div className="bg-white rounded-2xl border border-gray-200">
+                                <div className="flex items-center gap-3 px-6 py-5 border-b border-gray-100">
+                                    <div className="w-9 h-9 bg-green-50 border border-green-200 rounded-xl flex items-center justify-center">
+                                        <Network className="w-4 h-4 text-green-600" />
                                     </div>
                                     <div>
-                                        <h3 className="text-lg font-semibold text-gray-900">Integration Status</h3>
+                                        <h3 className="text-base font-semibold text-gray-900">Integration Status</h3>
                                         <p className="text-sm text-gray-500">Current configuration status</p>
                                     </div>
                                 </div>
                                 
-                                <div className="space-y-3">
-                                    <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                                <div className="px-6 py-6 space-y-3">
+                                    <div className="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
                                         <span className="text-sm font-medium text-gray-700">API Token</span>
                                         <span className={`text-xs font-semibold px-2 py-1 rounded-full ${
                                             interopConfig.token && !interopConfig.isExpired
@@ -1891,7 +1881,7 @@ const AdminDashboard = () => {
                                             {interopConfig.token ? (interopConfig.isExpired ? 'Expired' : 'Active') : 'Not Generated'}
                                         </span>
                                     </div>
-                                    <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                                    <div className="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
                                         <span className="text-sm font-medium text-gray-700">Server Address</span>
                                         <span className={`text-xs font-semibold px-2 py-1 rounded-full ${
                                             interopConfig.address 
