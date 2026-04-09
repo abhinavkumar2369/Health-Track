@@ -14,10 +14,6 @@ import {
     X
 } from 'lucide-react';
 
-/* ========================================
-   ICON COMPONENTS
-   ======================================== */
-
 const HospitalIcon = () => (
     <Building2 className="w-8 h-8 text-white" strokeWidth={2.5} />
 );
@@ -53,10 +49,6 @@ const LabIcon = () => (
 const AIIcon = () => (
     <Brain className="w-full h-full" strokeWidth={2} />
 );
-
-/* ========================================
-   MAIN HOMEPAGE COMPONENT
-   ======================================== */
 
 function Homepage() {
     const navigate = useNavigate();
@@ -246,23 +238,23 @@ function Homepage() {
                     <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 pt-12 sm:py-28 lg:py-22 grid lg:grid-cols-2 gap-8 lg:gap-12 items-center">
                         <div className="space-y-4 sm:space-y-6">
                             <div className="inline-flex items-center gap-2 px-3 py-1.5 sm:px-4 sm:py-2 rounded-full border border-white/20 text-xs uppercase tracking-[0.15em] sm:tracking-[0.2em] text-slate-200">
-                                Next-gen Healthcare OS
+                                Healthcare Management Platform
                             </div>
                             <h1 className="text-2xl sm:text-3xl md:text-3xl lg:text-4xl font-semibold leading-tight">
-                                Design, deliver, and scale care from a single intelligent screen.
+                                Coordinate and scale care delivery through a unified clinical platform.
                             </h1>
                             <p className="text-base sm:text-base text-slate-200 max-w-xl">
-                                Health Track unifies clinical workflows, revenue operations, lab systems, and patient engagement with AI copilots built for regulated healthcare teams.
+                                Health Track unifies clinical workflows, revenue operations, laboratory systems, and patient engagement with AI-assisted capabilities for regulated healthcare teams.
                             </p>
                             <div className="flex flex-col sm:flex-row gap-3">
                                 <button onClick={() => navigate('/sign-in')} className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl sm:rounded-2xl bg-white text-slate-900 font-semibold text-sm shadow-lg shadow-white/20">
-                                    Launch Platform
+                                    Access Platform
                                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 12h14M12 5l7 7-7 7" />
                                     </svg>
                                 </button>
                                 <button className="inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-2xl border border-white/40 text-sm font-semibold text-white/90 hover:bg-white/10 transition">
-                                    Explore Live Demo
+                                    View Platform Overview
                                     <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
                                         <path d="M12 7v10l6-5-6-5z" />
                                     </svg>
@@ -382,9 +374,7 @@ function Homepage() {
                             </p>
                         </div>
                         
-                        {/* Main Feature Categories */}
                         <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 sm:gap-6 lg:gap-8">
-                            {/* For Hospitals */}
                             <div className="bg-white rounded-2xl sm:rounded-3xl p-5 sm:p-7 lg:p-6 border-2 border-blue-200 shadow-lg shadow-blue-100/50">
                                 <div className="w-14 h-14 sm:w-16 sm:h-16 lg:w-14 lg:h-14 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center mb-4 sm:mb-5 lg:mb-4 shadow-md">
                                     <HospitalIcon />
@@ -407,7 +397,6 @@ function Homepage() {
                                 </ul>
                             </div>
                             
-                            {/* For Doctors */}
                             <div className="bg-white rounded-2xl sm:rounded-3xl p-5 sm:p-7 lg:p-6 border-2 border-green-200 shadow-lg shadow-green-100/50">
                                 <div className="w-14 h-14 sm:w-16 sm:h-16 lg:w-14 lg:h-14 bg-gradient-to-br from-green-500 to-green-600 rounded-2xl flex items-center justify-center mb-4 sm:mb-5 lg:mb-4 shadow-md">
                                     <DoctorIcon />
@@ -430,7 +419,6 @@ function Homepage() {
                                 </ul>
                             </div>
                             
-                            {/* For Patients */}
                             <div className="bg-white rounded-2xl sm:rounded-3xl p-5 sm:p-7 lg:p-6 border-2 border-rose-200 shadow-lg shadow-rose-100/50">
                                 <div className="w-14 h-14 sm:w-16 sm:h-16 lg:w-14 lg:h-14 bg-gradient-to-br from-rose-400 to-rose-500 rounded-2xl flex items-center justify-center mb-4 sm:mb-5 lg:mb-4 shadow-md">
                                     <PatientIcon />
@@ -460,7 +448,7 @@ function Homepage() {
                     <div className="max-w-6xl mx-auto">
                         <div className="flex flex-col gap-2.5 sm:gap-4 mb-8 sm:mb-16 text-center pb-6 sm:pb-8">
                             <p className="text-xs sm:text-sm font-semibold tracking-[0.3em] text-emerald-300">INTELLIGENCE LAYER</p>
-                            <h2 className="text-2xl sm:text-4xl font-bold">AI copilots custom-built for healthcare regulation.</h2>
+                            <h2 className="text-2xl sm:text-4xl font-bold">AI-enabled capabilities designed for healthcare compliance.</h2>
                             <p className="text-sm sm:text-lg text-white/70 max-w-3xl mx-auto">Compliance-locked automations analyze billions of data points daily to surface the next best action for every role.</p>
                         </div>
                         <div className="grid md:grid-cols-3 gap-3 sm:gap-6 lg:gap-8">
