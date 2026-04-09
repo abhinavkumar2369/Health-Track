@@ -13,10 +13,83 @@ const initialFormState = {
     specialization: '',
 };
 
+// Temporary screenshot mode for dashboard cards/charts.
+// Set to false when you want to switch back to live dashboard analytics.
+const USE_DASHBOARD_DUMMY_DATA = false;
+
+const DASHBOARD_DUMMY_DATA = {
+    stats: {
+        totalDoctors: 14,
+        totalPharmacists: 9,
+        totalPatients: 86,
+        totalRevenue: 45287
+    },
+    inventoryData: {
+        stats: {
+            totalItems: 162,
+            totalQuantity: 1284,
+            lowStock: 14,
+            outOfStock: 3
+        },
+        chartData: [
+            { day: 'Mon', value: 126 },
+            { day: 'Tue', value: 132 },
+            { day: 'Wed', value: 144 },
+            { day: 'Thu', value: 138 },
+            { day: 'Fri', value: 151 },
+            { day: 'Sat', value: 147 },
+            { day: 'Sun', value: 159 }
+        ]
+    },
+    diseaseData: {
+        diseases: [
+            { name: 'Dengue', cases: 18, percentage: 34 },
+            { name: 'Typhoid', cases: 14, percentage: 26 },
+            { name: 'Viral Fever', cases: 11, percentage: 21 },
+            { name: 'Malaria', cases: 7, percentage: 13 },
+            { name: 'Allergy', cases: 3, percentage: 6 }
+        ],
+        totalCases: 53,
+        trend: 7
+    },
+    activityData: {
+        chartData: [
+            { day: 'Mon', value: 14 },
+            { day: 'Tue', value: 19 },
+            { day: 'Wed', value: 16 },
+            { day: 'Thu', value: 23 },
+            { day: 'Fri', value: 21 },
+            { day: 'Sat', value: 18 },
+            { day: 'Sun', value: 24 }
+        ],
+        stats: {
+            totalActivity: 135,
+            avgPerDay: 19,
+            totalDocuments: 47,
+            totalPatients: 86
+        }
+    }
+};
+
 const formatDisplayDate = (isoString) => {
     if (!isoString) return '—';
     const parsed = new Date(isoString);
     return Number.isNaN(parsed.getTime()) ? '—' : parsed.toLocaleDateString();
+};
+
+const formatRoleLabel = (role = '') => {
+    if (!role) return 'User';
+    return role.charAt(0).toUpperCase() + role.slice(1);
+};
+
+const splitFullName = (name = '') => {
+    const trimmed = String(name).trim();
+    if (!trimmed) return { firstName: '', lastName: '' };
+    const parts = trimmed.split(/\s+/);
+    return {
+        firstName: parts[0] || '',
+        lastName: parts.slice(1).join(' '),
+    };
 };
 
 const AdminDashboard = () => {
@@ -31,6 +104,8 @@ const AdminDashboard = () => {
     const [successMessage, setSuccessMessage] = useState('');
     const [showModal, setShowModal] = useState(false);
     const [modalType, setModalType] = useState('');
+    const [modalMode, setModalMode] = useState('add');
+    const [editingUserId, setEditingUserId] = useState('');
     const [formData, setFormData] = useState(initialFormState);
     const [formErrors, setFormErrors] = useState({});
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -101,7 +176,7 @@ const AdminDashboard = () => {
 
     // Emergency Access state
     const [emergencySearch, setEmergencySearch] = useState('');
-    const [emergencyPatient, setEmergencyPatient] = useState(null);
+    const [emergencyUser, setEmergencyUser] = useState(null);
     const [emergencyLoading, setEmergencyLoading] = useState(false);
     const [emergencyError, setEmergencyError] = useState('');
 
@@ -121,6 +196,22 @@ const AdminDashboard = () => {
     const loadData = async () => {
         setLoading(true);
         try {
+            if (USE_DASHBOARD_DUMMY_DATA) {
+                const [doctorsRes, pharmacistsRes] = await Promise.all([
+                    adminAPI.getUsers('doctor'),
+                    adminAPI.getUsers('pharmacist')
+                ]);
+
+                if (doctorsRes.success) setDoctors(doctorsRes.data || []);
+                if (pharmacistsRes.success) setPharmacists(pharmacistsRes.data || []);
+
+                setStats(DASHBOARD_DUMMY_DATA.stats);
+                setInventoryData(DASHBOARD_DUMMY_DATA.inventoryData);
+                setDiseaseData(DASHBOARD_DUMMY_DATA.diseaseData);
+                setActivityData(DASHBOARD_DUMMY_DATA.activityData);
+                return;
+            }
+
             const [doctorsRes, pharmacistsRes, patientsRes, inventoryRes, diseasesRes, activityRes] = await Promise.all([
                 adminAPI.getUsers('doctor'),
                 adminAPI.getUsers('pharmacist'),
@@ -173,6 +264,15 @@ const AdminDashboard = () => {
             }
         } catch (error) {
             console.error('Error loading data:', error);
+
+            if (USE_DASHBOARD_DUMMY_DATA) {
+                setStats(DASHBOARD_DUMMY_DATA.stats);
+                setInventoryData(DASHBOARD_DUMMY_DATA.inventoryData);
+                setDiseaseData(DASHBOARD_DUMMY_DATA.diseaseData);
+                setActivityData(DASHBOARD_DUMMY_DATA.activityData);
+                return;
+            }
+
             setError(error.message || 'Failed to load data');
         } finally {
             setLoading(false);
@@ -263,23 +363,23 @@ const AdminDashboard = () => {
     const handleEmergencySearch = async (e) => {
         e.preventDefault();
         if (!emergencySearch.trim()) {
-            setEmergencyError('Please enter a Patient ID');
+            setEmergencyError('Please enter a unique ID');
             return;
         }
 
         setEmergencyLoading(true);
         setEmergencyError('');
-        setEmergencyPatient(null);
+        setEmergencyUser(null);
 
         try {
-            const response = await adminAPI.getPatientEmergencyData(emergencySearch.trim());
-            if (response.success && response.patient) {
-                setEmergencyPatient(response.patient);
+            const response = await adminAPI.getEmergencyUserData(emergencySearch.trim());
+            if (response.success && response.user) {
+                setEmergencyUser(response.user);
             } else {
-                setEmergencyError(response.message || 'Patient not found');
+                setEmergencyError(response.message || 'User not found');
             }
         } catch (error) {
-            setEmergencyError(error.message || 'Failed to fetch patient data');
+            setEmergencyError(error.message || 'Failed to fetch user data');
         } finally {
             setEmergencyLoading(false);
         }
@@ -287,7 +387,7 @@ const AdminDashboard = () => {
 
     const clearEmergencyData = () => {
         setEmergencySearch('');
-        setEmergencyPatient(null);
+        setEmergencyUser(null);
         setEmergencyError('');
     };
 
@@ -376,8 +476,29 @@ const AdminDashboard = () => {
     };
 
     const openAddUserModal = (type) => {
+        setModalMode('add');
         setModalType(type);
+        setEditingUserId('');
         setFormData(initialFormState);
+        setFormErrors({});
+        setError('');
+        setSuccessMessage('');
+        setShowModal(true);
+    };
+
+    const openEditUserModal = (selectedUser, role) => {
+        const { firstName, lastName } = splitFullName(selectedUser?.name || '');
+
+        setModalMode('edit');
+        setModalType(role);
+        setEditingUserId(selectedUser?.id || '');
+        setFormData({
+            ...initialFormState,
+            firstName,
+            lastName,
+            email: selectedUser?.email || '',
+            specialization: selectedUser?.specialization || '',
+        });
         setFormErrors({});
         setError('');
         setSuccessMessage('');
@@ -386,7 +507,9 @@ const AdminDashboard = () => {
 
     const closeModal = () => {
         setShowModal(false);
+        setModalMode('add');
         setModalType('');
+        setEditingUserId('');
         setFormData(initialFormState);
         setFormErrors({});
         setError('');
@@ -414,9 +537,11 @@ const AdminDashboard = () => {
         } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email.trim())) {
             errors.email = 'Enter a valid email address';
         }
-        if (!formData.password.trim() || formData.password.trim().length < 6) {
+
+        if (modalMode === 'add' && (!formData.password.trim() || formData.password.trim().length < 6)) {
             errors.password = 'Temporary password must be at least 6 characters';
         }
+
         if (modalType === 'doctor' && !formData.specialization.trim()) {
             errors.specialization = 'Specialization is required for doctors';
         }
@@ -439,17 +564,30 @@ const AdminDashboard = () => {
         const payload = {
             fullname: `${formData.firstName.trim()} ${formData.lastName.trim()}`.replace(/\s+/g, ' ').trim(),
             email: formData.email.trim(),
-            password: formData.password.trim(),
             specialization: formData.specialization.trim(),
         };
 
         try {
-            if (modalType === 'doctor') {
-                await adminAPI.addDoctor(payload);
-                setSuccessMessage('Doctor added successfully!');
-            } else if (modalType === 'pharmacist') {
-                await adminAPI.addPharmacist(payload);
-                setSuccessMessage('Pharmacist added successfully!');
+            if (modalMode === 'edit') {
+                if (!editingUserId) {
+                    throw new Error('No user selected for editing');
+                }
+
+                await adminAPI.updateUser(editingUserId, modalType, payload);
+                setSuccessMessage(`${formatRoleLabel(modalType)} updated successfully!`);
+            } else {
+                const addPayload = {
+                    ...payload,
+                    password: formData.password.trim(),
+                };
+
+                if (modalType === 'doctor') {
+                    await adminAPI.addDoctor(addPayload);
+                    setSuccessMessage('Doctor added successfully!');
+                } else if (modalType === 'pharmacist') {
+                    await adminAPI.addPharmacist(addPayload);
+                    setSuccessMessage('Pharmacist added successfully!');
+                }
             }
 
             setFormData(initialFormState);
@@ -459,8 +597,8 @@ const AdminDashboard = () => {
                 closeModal();
             }, 1500);
         } catch (submissionError) {
-            console.error('Error adding user:', submissionError);
-            setError(submissionError.message || 'Failed to add user. Please try again.');
+            console.error('Error saving user:', submissionError);
+            setError(submissionError.message || 'Failed to save user. Please try again.');
         } finally {
             setIsSubmitting(false);
         }
@@ -486,6 +624,36 @@ const AdminDashboard = () => {
             setTimeout(() => setError(''), 3000);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleResetUserPassword = async (userId, role, displayName = '') => {
+        const roleLabel = formatRoleLabel(role);
+        const targetName = displayName ? ` for ${displayName}` : '';
+        const enteredPassword = window.prompt(`Enter new password${targetName} (${roleLabel}). Minimum 6 characters:`);
+
+        if (enteredPassword === null) {
+            return;
+        }
+
+        const newPassword = enteredPassword.trim();
+        if (newPassword.length < 6) {
+            setError('Password must be at least 6 characters');
+            setTimeout(() => setError(''), 3000);
+            return;
+        }
+
+        setError('');
+        setSuccessMessage('');
+
+        try {
+            await adminAPI.resetUserPassword(userId, role, newPassword);
+            setSuccessMessage(`${roleLabel} password reset successfully!`);
+            setTimeout(() => setSuccessMessage(''), 3000);
+        } catch (resetError) {
+            console.error('Error resetting user password:', resetError);
+            setError(resetError.message || 'Failed to reset password');
+            setTimeout(() => setError(''), 3000);
         }
     };
 
@@ -587,7 +755,7 @@ const AdminDashboard = () => {
         { id: 'pharmacists', icon: Pill, label: 'Pharmacists' },
         { id: 'reports', icon: BarChart3, label: 'Reports' },
         { id: 'emergency', icon: AlertCircle, label: 'Emergency' },
-        { id: 'interoperability', icon: Network, label: 'Interoperability' },
+        { id: 'interoperability', icon: Network, label: 'API Access' },
         { id: 'settings', icon: Settings, label: 'Settings' }
     ];
 
@@ -678,63 +846,20 @@ const AdminDashboard = () => {
                 </header>
 
                 {/* Content Area */}
-                <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
+                <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-5">
                     {activeSection === 'dashboard' && (
-                        <div className="space-y-6">
-                            {/* Section Header */}
-                            <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center">
-                                    <LayoutDashboard className="w-5 h-5 text-blue-600" />
-                                </div>
-                                <div>
-                                    <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Dashboard</h2>
-                                    <p className="text-sm text-gray-500">Overview of your health system</p>
-                                </div>
-                            </div>
-
-                            {/* Stat Summary Cards */}
-                            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                                <div className="bg-white rounded-2xl border border-gray-200 p-5">
-                                    <div className="w-10 h-10 bg-blue-50 border border-blue-200 rounded-xl flex items-center justify-center mb-4">
-                                        <Stethoscope className="w-5 h-5 text-blue-600" />
-                                    </div>
-                                    <p className="text-2xl font-bold text-gray-900">{stats.totalDoctors}</p>
-                                    <p className="text-sm text-gray-500 mt-1">Doctors</p>
-                                </div>
-                                <div className="bg-white rounded-2xl border border-gray-200 p-5">
-                                    <div className="w-10 h-10 bg-green-50 border border-green-200 rounded-xl flex items-center justify-center mb-4">
-                                        <Users className="w-5 h-5 text-green-600" />
-                                    </div>
-                                    <p className="text-2xl font-bold text-gray-900">{stats.totalPatients}</p>
-                                    <p className="text-sm text-gray-500 mt-1">Patients</p>
-                                </div>
-                                <div className="bg-white rounded-2xl border border-gray-200 p-5">
-                                    <div className="w-10 h-10 bg-purple-50 border border-purple-200 rounded-xl flex items-center justify-center mb-4">
-                                        <Pill className="w-5 h-5 text-purple-600" />
-                                    </div>
-                                    <p className="text-2xl font-bold text-gray-900">{stats.totalPharmacists}</p>
-                                    <p className="text-sm text-gray-500 mt-1">Pharmacists</p>
-                                </div>
-                                <div className="bg-white rounded-2xl border border-gray-200 p-5">
-                                    <div className="w-10 h-10 bg-amber-50 border border-amber-200 rounded-xl flex items-center justify-center mb-4">
-                                        <BarChart3 className="w-5 h-5 text-amber-600" />
-                                    </div>
-                                    <p className="text-2xl font-bold text-gray-900">₹{(stats.totalRevenue || 0).toLocaleString()}</p>
-                                    <p className="text-sm text-gray-500 mt-1">Total Revenue</p>
-                                </div>
-                            </div>
-
+                        <div className="space-y-4">
                             {/* User Statistics & Pharmacy Inventory */}
-                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                                 {/* User Statistics - Donut Chart */}
                                 <div className="bg-white rounded-2xl border border-gray-200">
-                                    <div className="px-6 py-5 border-b border-gray-100">
+                                    <div className="px-4 py-4 border-b border-gray-100">
                                         <h3 className="text-base font-semibold text-gray-900">User Statistics</h3>
-                                        <p className="text-sm text-gray-500 mt-0.5">Distribution across roles</p>
                                     </div>
-                                    <div className="px-6 py-6">
+                                    <div className="px-4 py-4">
+                                    <div className="flex flex-col gap-3 lg:flex-row-reverse lg:items-center lg:justify-around lg:gap-0">
                                     {/* Donut Chart */}
-                                    <div className="flex items-center justify-center">
+                                    <div className="flex items-center justify-center lg:flex-shrink-0 lg:w-48 lg:justify-end">
                                         <div className="relative w-44 h-44">
                                             <svg viewBox="0 0 200 200" className="transform -rotate-90">
                                                 {(() => {
@@ -745,9 +870,9 @@ const AdminDashboard = () => {
                                                         const circumference = 2 * Math.PI * radius;
                                                         return (
                                                             <>
-                                                                <circle cx="100" cy="100" r={radius} fill="none" stroke="#e5e7eb" strokeWidth="36" strokeDasharray={`${circumference / 3} ${circumference}`} strokeDashoffset={0} className="transition-all duration-500" />
-                                                                <circle cx="100" cy="100" r={radius} fill="none" stroke="#f3e8ff" strokeWidth="36" strokeDasharray={`${circumference / 3} ${circumference}`} strokeDashoffset={`-${circumference / 3}`} className="transition-all duration-500" />
-                                                                <circle cx="100" cy="100" r={radius} fill="none" stroke="#dcfce7" strokeWidth="36" strokeDasharray={`${circumference / 3} ${circumference}`} strokeDashoffset={`-${(circumference / 3) * 2}`} className="transition-all duration-500" />
+                                                                <circle cx="100" cy="100" r={radius} fill="none" stroke="#fee2e2" strokeWidth="36" strokeDasharray={`${circumference / 3} ${circumference}`} strokeDashoffset={0} className="transition-all duration-500" />
+                                                                <circle cx="100" cy="100" r={radius} fill="none" stroke="#dcfce7" strokeWidth="36" strokeDasharray={`${circumference / 3} ${circumference}`} strokeDashoffset={`-${circumference / 3}`} className="transition-all duration-500" />
+                                                                <circle cx="100" cy="100" r={radius} fill="none" stroke="#dbeafe" strokeWidth="36" strokeDasharray={`${circumference / 3} ${circumference}`} strokeDashoffset={`-${(circumference / 3) * 2}`} className="transition-all duration-500" />
                                                             </>
                                                         );
                                                     }
@@ -763,59 +888,50 @@ const AdminDashboard = () => {
                                                     
                                                     return (
                                                         <>
-                                                            <circle cx="100" cy="100" r={radius} fill="none" stroke="#3b82f6" strokeWidth="36" strokeDasharray={`${(doctorsPercent / 100) * circumference} ${circumference}`} strokeDashoffset={-currentOffset} className="transition-all duration-500" />
+                                                            <circle cx="100" cy="100" r={radius} fill="none" stroke="#ef4444" strokeWidth="36" strokeDasharray={`${(doctorsPercent / 100) * circumference} ${circumference}`} strokeDashoffset={-currentOffset} className="transition-all duration-500" />
                                                             {(() => { currentOffset += (doctorsPercent / 100) * circumference; return null; })()}
-                                                            <circle cx="100" cy="100" r={radius} fill="none" stroke="#a855f7" strokeWidth="36" strokeDasharray={`${(pharmacistsPercent / 100) * circumference} ${circumference}`} strokeDashoffset={-currentOffset} className="transition-all duration-500" />
+                                                            <circle cx="100" cy="100" r={radius} fill="none" stroke="#22c55e" strokeWidth="36" strokeDasharray={`${(pharmacistsPercent / 100) * circumference} ${circumference}`} strokeDashoffset={-currentOffset} className="transition-all duration-500" />
                                                             {(() => { currentOffset += (pharmacistsPercent / 100) * circumference; return null; })()}
-                                                            <circle cx="100" cy="100" r={radius} fill="none" stroke="#22c55e" strokeWidth="36" strokeDasharray={`${(patientsPercent / 100) * circumference} ${circumference}`} strokeDashoffset={-currentOffset} className="transition-all duration-500" />
+                                                            <circle cx="100" cy="100" r={radius} fill="none" stroke="#3b82f6" strokeWidth="36" strokeDasharray={`${(patientsPercent / 100) * circumference} ${circumference}`} strokeDashoffset={-currentOffset} className="transition-all duration-500" />
                                                         </>
                                                     );
                                                 })()}
                                             </svg>
                                             <div className="absolute inset-0 flex items-center justify-center">
                                                 <div className="text-center">
-                                                    <p className="text-2xl font-bold text-gray-900">
+                                                    <p className="text-xl font-bold text-gray-900">
                                                         {stats.totalDoctors + stats.totalPharmacists + stats.totalPatients}
                                                     </p>
-                                                    <p className="text-xs text-gray-500">Total Users</p>
+                                                    <p className="text-[11px] text-gray-500">Total Users</p>
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
-                                    
-                                    {/* Legend */}
-                                    <div className="mt-5 space-y-2.5">
-                                        <div className="flex items-center justify-between">
-                                            <div className="flex items-center gap-2">
-                                                <div className="w-2.5 h-2.5 rounded-full bg-blue-500"></div>
-                                                <span className="text-sm text-gray-600">Doctors</span>
-                                            </div>
-                                            <span className="text-sm font-semibold text-gray-900">{stats.totalDoctors}</span>
+
+                                    {/* Role Boxes */}
+                                    <div className="flex flex-col items-start gap-2 lg:flex">
+                                        <div className="rounded-xl border border-red-200 bg-red-50 px-3 py-2.5">
+                                            <p className="text-[11px] font-semibold uppercase tracking-wide text-red-700">Doctors</p>
+                                            <p className="text-lg font-bold text-red-600 leading-tight">{stats.totalDoctors}</p>
                                         </div>
-                                        <div className="flex items-center justify-between">
-                                            <div className="flex items-center gap-2">
-                                                <div className="w-2.5 h-2.5 rounded-full bg-purple-500"></div>
-                                                <span className="text-sm text-gray-600">Pharmacists</span>
-                                            </div>
-                                            <span className="text-sm font-semibold text-gray-900">{stats.totalPharmacists}</span>
+                                        <div className="rounded-xl border border-green-200 bg-green-50 px-3 py-2.5">
+                                            <p className="text-[11px] font-semibold uppercase tracking-wide text-green-700">Pharmacists</p>
+                                            <p className="text-lg font-bold text-green-600 leading-tight">{stats.totalPharmacists}</p>
                                         </div>
-                                        <div className="flex items-center justify-between">
-                                            <div className="flex items-center gap-2">
-                                                <div className="w-2.5 h-2.5 rounded-full bg-green-500"></div>
-                                                <span className="text-sm text-gray-600">Patients</span>
-                                            </div>
-                                            <span className="text-sm font-semibold text-gray-900">{stats.totalPatients}</span>
+                                        <div className="rounded-xl border border-blue-200 bg-blue-50 px-3 py-2.5">
+                                            <p className="text-[11px] font-semibold uppercase tracking-wide text-blue-700">Patients</p>
+                                            <p className="text-lg font-bold text-blue-600 leading-tight">{stats.totalPatients}</p>
                                         </div>
+                                    </div>
                                     </div>
                                     </div>
                                 </div>
 
                                 {/* Pharmacy Inventory Line Chart */}
                                 <div className="bg-white rounded-2xl border border-gray-200">
-                                    <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100">
+                                    <div className="flex items-center justify-between px-4 py-4 border-b border-gray-100">
                                         <div>
                                             <h3 className="text-base font-semibold text-gray-900">Pharmacy Inventory</h3>
-                                            <p className="text-sm text-gray-500 mt-0.5">Stock levels over time</p>
                                         </div>
                                         <select className="text-xs border border-gray-200 rounded-lg px-2 py-1.5 text-gray-600 focus:outline-none focus:ring-2 focus:ring-purple-500 bg-gray-50">
                                             <option>Last 7 Days</option>
@@ -823,10 +939,10 @@ const AdminDashboard = () => {
                                             <option>Last 3 Months</option>
                                         </select>
                                     </div>
-                                    <div className="px-6 py-6">
+                                    <div className="px-4 py-4">
                                     
                                     {/* Line Chart using SVG */}
-                                    <div className="relative h-48">
+                                    <div className="relative h-36">
                                         {inventoryData.chartData.length === 0 ? (
                                             <div className="flex items-center justify-center h-full">
                                                 <p className="text-gray-400 text-sm">No inventory data available</p>
@@ -889,18 +1005,18 @@ const AdminDashboard = () => {
                                     </div>
                                     
                                     {/* Stats summary */}
-                                    <div className="grid grid-cols-3 gap-4 mt-5 pt-5 border-t border-gray-100">
+                                    <div className="grid grid-cols-3 gap-3 mt-3 pt-3 border-t border-gray-100">
                                         <div>
                                             <p className="text-xs text-gray-500 uppercase tracking-wide font-medium">Total Items</p>
-                                            <p className="text-xl font-bold text-gray-900 mt-1">{inventoryData.stats.totalItems}</p>
+                                            <p className="text-lg font-bold text-gray-900 mt-1">{inventoryData.stats.totalItems}</p>
                                         </div>
                                         <div>
                                             <p className="text-xs text-gray-500 uppercase tracking-wide font-medium">Low Stock</p>
-                                            <p className="text-xl font-bold text-orange-600 mt-1">{inventoryData.stats.lowStock}</p>
+                                            <p className="text-lg font-bold text-orange-600 mt-1">{inventoryData.stats.lowStock}</p>
                                         </div>
                                         <div>
                                             <p className="text-xs text-gray-500 uppercase tracking-wide font-medium">Out of Stock</p>
-                                            <p className="text-xl font-bold text-red-600 mt-1">{inventoryData.stats.outOfStock}</p>
+                                            <p className="text-lg font-bold text-red-600 mt-1">{inventoryData.stats.outOfStock}</p>
                                         </div>
                                     </div>
                                     </div>
@@ -908,20 +1024,19 @@ const AdminDashboard = () => {
                             </div>
 
                             {/* Weekly Activity & Critical Diseases */}
-                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-stretch">
                                 {/* Activity Line Chart */}
-                                <div className="bg-white rounded-2xl border border-gray-200">
-                                    <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100">
+                                <div className="bg-white rounded-2xl border border-gray-200 flex flex-col h-full">
+                                    <div className="flex items-center justify-between px-4 py-4 border-b border-gray-100">
                                         <div>
                                             <h3 className="text-base font-semibold text-gray-900">Weekly Activity</h3>
-                                            <p className="text-sm text-gray-500 mt-0.5">Last 7 days</p>
                                         </div>
-                                        <span className="text-xs font-medium text-blue-600 bg-blue-50 border border-blue-200 px-2.5 py-1 rounded-lg">Live</span>
+                                        <span className="text-xs font-medium text-blue-600 bg-blue-50 border border-blue-200 px-2 py-0.5 rounded-lg">Live</span>
                                     </div>
-                                    <div className="px-6 py-6">
+                                    <div className="px-4 py-4 flex flex-col flex-1">
                                     
                                     {/* Line Chart using SVG */}
-                                    <div className="relative h-40">
+                                    <div className="relative flex-1 min-h-[220px]">
                                         {activityData.chartData.length === 0 ? (
                                             <div className="flex items-center justify-center h-full">
                                                 <p className="text-gray-400 text-sm">No activity data available</p>
@@ -982,18 +1097,18 @@ const AdminDashboard = () => {
                                     </div>
                                     
                                     {/* Stats summary */}
-                                    <div className="grid grid-cols-3 gap-4 mt-5 pt-5 border-t border-gray-100">
+                                    <div className="grid grid-cols-3 gap-3 mt-4 pt-3 border-t border-gray-100">
                                         <div>
                                             <p className="text-xs text-gray-500 uppercase tracking-wide font-medium">Total</p>
-                                            <p className="text-xl font-bold text-gray-900 mt-1">{activityData.stats.totalActivity}</p>
+                                            <p className="text-lg font-bold text-gray-900 mt-1">{activityData.stats.totalActivity}</p>
                                         </div>
                                         <div>
                                             <p className="text-xs text-gray-500 uppercase tracking-wide font-medium">Avg/Day</p>
-                                            <p className="text-xl font-bold text-gray-900 mt-1">{activityData.stats.avgPerDay}</p>
+                                            <p className="text-lg font-bold text-gray-900 mt-1">{activityData.stats.avgPerDay}</p>
                                         </div>
                                         <div>
                                             <p className="text-xs text-gray-500 uppercase tracking-wide font-medium">Docs</p>
-                                            <p className="text-xl font-bold text-blue-600 mt-1">{activityData.stats.totalDocuments}</p>
+                                            <p className="text-lg font-bold text-blue-600 mt-1">{activityData.stats.totalDocuments}</p>
                                         </div>
                                     </div>
                                     </div>
@@ -1001,17 +1116,16 @@ const AdminDashboard = () => {
 
                                 {/* Critical Diseases Chart */}
                                 <div className="bg-white rounded-2xl border border-gray-200">
-                                    <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100">
+                                    <div className="flex items-center justify-between px-4 py-4 border-b border-gray-100">
                                         <div>
                                             <h3 className="text-base font-semibold text-gray-900">Critical Diseases</h3>
-                                            <p className="text-sm text-gray-500 mt-0.5">Top cases this month</p>
                                         </div>
-                                        <span className="text-xs text-gray-500 bg-gray-100 border border-gray-200 px-2.5 py-1 rounded-lg font-medium">This Month</span>
+                                        <span className="text-xs text-gray-500 bg-gray-100 border border-gray-200 px-2 py-0.5 rounded-lg font-medium">This Month</span>
                                     </div>
-                                    <div className="px-6 py-6">
+                                    <div className="px-4 py-4">
                                     
                                     {diseaseData.diseases.length > 0 ? (
-                                        <div className="space-y-4">
+                                        <div className="space-y-3">
                                             {diseaseData.diseases.map((disease, index) => {
                                                 const colors = ['bg-red-500', 'bg-orange-500', 'bg-pink-500', 'bg-yellow-500', 'bg-purple-500'];
                                                 const trackColors = ['bg-red-100', 'bg-orange-100', 'bg-pink-100', 'bg-yellow-100', 'bg-purple-100'];
@@ -1032,20 +1146,20 @@ const AdminDashboard = () => {
                                             })}
                                         </div>
                                     ) : (
-                                        <div className="flex items-center justify-center h-40 text-gray-400">
+                                        <div className="flex items-center justify-center h-32 text-gray-400">
                                             <p className="text-sm">No disease data available</p>
                                         </div>
                                     )}
                                     
                                     {/* Summary */}
-                                    <div className="grid grid-cols-2 gap-4 mt-5 pt-5 border-t border-gray-100">
+                                    <div className="grid grid-cols-2 gap-3 mt-3 pt-3 border-t border-gray-100">
                                         <div>
                                             <p className="text-xs text-gray-500 uppercase tracking-wide font-medium">Total Cases</p>
-                                            <p className="text-xl font-bold text-gray-900 mt-1">{diseaseData.totalCases}</p>
+                                            <p className="text-lg font-bold text-gray-900 mt-1">{diseaseData.totalCases}</p>
                                         </div>
                                         <div>
                                             <p className="text-xs text-gray-500 uppercase tracking-wide font-medium">vs Last Month</p>
-                                            <p className={`text-xl font-bold mt-1 ${diseaseData.trend >= 0 ? 'text-red-500' : 'text-green-500'}`}>
+                                            <p className={`text-lg font-bold mt-1 ${diseaseData.trend >= 0 ? 'text-red-500' : 'text-green-500'}`}>
                                                 {diseaseData.trend >= 0 ? '+' : ''}{diseaseData.trend}%
                                             </p>
                                         </div>
@@ -1099,59 +1213,104 @@ const AdminDashboard = () => {
                                                             <p className="font-medium text-gray-900 text-sm truncate">{doctor.name || '—'}</p>
                                                             <p className="text-xs text-gray-500 truncate">{doctor.email || '—'}</p>
                                                         </div>
-                                                        <span className="inline-flex px-2 py-1 text-xs font-medium bg-blue-50 text-blue-700 rounded-full ml-2">
+                                                        <span className="text-xs text-blue-700 font-medium ml-2">
                                                             {doctor.specialization || 'General'}
                                                         </span>
                                                     </div>
                                                     <div className="flex justify-between items-center">
                                                         <span className="text-xs text-gray-400">ID: {doctor.userId || doctor.uniqueId || doctor.id?.slice(-6)}</span>
-                                                        <button
-                                                            onClick={() => handleRemoveUser(doctor.id, 'doctor')}
-                                                            className="text-xs text-red-600 hover:text-red-700 font-medium"
-                                                        >
-                                                            Remove
-                                                        </button>
+                                                        <div className="flex items-center gap-3">
+                                                            <button
+                                                                onClick={() => openEditUserModal(doctor, 'doctor')}
+                                                                className="text-xs text-blue-600 hover:text-blue-700 font-medium"
+                                                            >
+                                                                Edit
+                                                            </button>
+                                                            <button
+                                                                onClick={() => handleResetUserPassword(doctor.id, 'doctor', doctor.name)}
+                                                                className="text-xs text-amber-600 hover:text-amber-700 font-medium"
+                                                            >
+                                                                Reset Password
+                                                            </button>
+                                                            <button
+                                                                onClick={() => handleRemoveUser(doctor.id, 'doctor')}
+                                                                className="text-xs text-red-600 hover:text-red-700 font-medium"
+                                                            >
+                                                                Remove
+                                                            </button>
+                                                        </div>
                                                     </div>
                                                 </div>
                                             ))}
                                         </div>
                                         {/* Desktop Table View */}
                                         <div className="hidden sm:block overflow-x-auto">
-                                            <table className="w-full">
-                                                <thead>
-                                                    <tr className="border-b border-gray-200">
-                                                        <th className="px-4 lg:px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">ID</th>
-                                                        <th className="px-4 lg:px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Name</th>
-                                                        <th className="px-4 lg:px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider hidden lg:table-cell">Email</th>
-                                                        <th className="px-4 lg:px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Specialization</th>
-                                                        <th className="px-4 lg:px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider hidden lg:table-cell">Created</th>
-                                                        <th className="px-4 lg:px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Actions</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody className="divide-y divide-gray-100">
-                                                    {doctors.map((doctor) => (
-                                                        <tr key={doctor.id} className="hover:bg-gray-50 transition-colors">
-                                                            <td className="px-4 lg:px-6 py-4 text-sm font-mono text-gray-600">{doctor.userId || doctor.uniqueId || doctor.id?.slice(-6)}</td>
-                                                            <td className="px-4 lg:px-6 py-4 text-sm font-medium text-gray-900">{doctor.name || '—'}</td>
-                                                            <td className="px-4 lg:px-6 py-4 text-sm text-gray-600 hidden lg:table-cell">{doctor.email || '—'}</td>
-                                                            <td className="px-4 lg:px-6 py-4">
-                                                                <span className="inline-flex px-2.5 py-1 text-xs font-medium bg-blue-50 text-blue-700 rounded-full">
-                                                                    {doctor.specialization || 'General'}
-                                                                </span>
-                                                            </td>
-                                                            <td className="px-4 lg:px-6 py-4 text-sm text-gray-500 hidden lg:table-cell">{formatDisplayDate(doctor.createdAt)}</td>
-                                                            <td className="px-4 lg:px-6 py-4">
-                                                                <button
-                                                                    onClick={() => handleRemoveUser(doctor.id, 'doctor')}
-                                                                    className="text-sm text-red-600 hover:text-red-700 font-medium hover:underline"
-                                                                >
-                                                                    Remove
-                                                                </button>
-                                                            </td>
+                                                <table className="w-full min-w-[900px]">
+                                                    <thead className="bg-gray-50/80">
+                                                        <tr className="border-b border-gray-200">
+                                                            <th className="px-4 lg:px-6 py-3 text-left text-[11px] font-semibold text-gray-600 uppercase tracking-wider">ID</th>
+                                                            <th className="px-4 lg:px-6 py-3 text-left text-[11px] font-semibold text-gray-600 uppercase tracking-wider">Name</th>
+                                                            <th className="px-4 lg:px-6 py-3 text-left text-[11px] font-semibold text-gray-600 uppercase tracking-wider hidden lg:table-cell">Email</th>
+                                                            <th className="px-4 lg:px-6 py-3 text-left text-[11px] font-semibold text-gray-600 uppercase tracking-wider">Specialization</th>
+                                                            <th className="px-4 lg:px-6 py-3 text-left text-[11px] font-semibold text-gray-600 uppercase tracking-wider hidden lg:table-cell">Created</th>
+                                                            <th className="px-4 lg:px-6 py-3 text-left text-[11px] font-semibold text-gray-600 uppercase tracking-wider">Actions</th>
                                                         </tr>
-                                                    ))}
-                                                </tbody>
-                                            </table>
+                                                    </thead>
+                                                    <tbody className="divide-y divide-gray-100">
+                                                        {doctors.map((doctor) => (
+                                                            <tr key={doctor.id} className="group hover:bg-blue-50/30 transition-colors">
+                                                                <td className="px-4 lg:px-6 py-3 text-sm font-mono text-gray-700">
+                                                                    {doctor.userId || doctor.uniqueId || doctor.id?.slice(-6)}
+                                                                </td>
+                                                                <td className="px-4 lg:px-6 py-3">
+                                                                    <div className="flex items-center gap-2.5">
+                                                                        <div className="h-8 w-8 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center text-xs font-semibold">
+                                                                            {(doctor.name || 'D').charAt(0).toUpperCase()}
+                                                                        </div>
+                                                                        <span className="text-sm font-semibold text-gray-900">{doctor.name || '—'}</span>
+                                                                    </div>
+                                                                </td>
+                                                                <td className="px-4 lg:px-6 py-3 hidden lg:table-cell">
+                                                                    <div className="flex items-center gap-2 text-sm text-gray-600">
+                                                                        <Mail className="w-3.5 h-3.5 text-gray-400" />
+                                                                        <span className="truncate max-w-[220px]">{doctor.email || '—'}</span>
+                                                                    </div>
+                                                                </td>
+                                                                <td className="px-4 lg:px-6 py-3 text-sm text-gray-700">
+                                                                    {doctor.specialization || 'General'}
+                                                                </td>
+                                                                <td className="px-4 lg:px-6 py-3 hidden lg:table-cell">
+                                                                    <div className="flex items-center gap-1.5 text-sm text-gray-500">
+                                                                        <Calendar className="w-3.5 h-3.5 text-gray-400" />
+                                                                        <span>{formatDisplayDate(doctor.createdAt)}</span>
+                                                                    </div>
+                                                                </td>
+                                                                <td className="px-4 lg:px-6 py-3">
+                                                                    <div className="flex items-center gap-2">
+                                                                        <button
+                                                                            onClick={() => openEditUserModal(doctor, 'doctor')}
+                                                                            className="inline-flex items-center rounded-lg border border-blue-200 bg-blue-50 px-2.5 py-1.5 text-xs font-semibold text-blue-700 hover:bg-blue-100 transition-colors"
+                                                                        >
+                                                                            Edit
+                                                                        </button>
+                                                                        <button
+                                                                            onClick={() => handleResetUserPassword(doctor.id, 'doctor', doctor.name)}
+                                                                            className="inline-flex items-center rounded-lg border border-amber-200 bg-amber-50 px-2.5 py-1.5 text-xs font-semibold text-amber-700 hover:bg-amber-100 transition-colors"
+                                                                        >
+                                                                            Reset Password
+                                                                        </button>
+                                                                        <button
+                                                                            onClick={() => handleRemoveUser(doctor.id, 'doctor')}
+                                                                            className="inline-flex items-center rounded-lg border border-red-200 bg-red-50 px-2.5 py-1.5 text-xs font-semibold text-red-700 hover:bg-red-100 transition-colors"
+                                                                        >
+                                                                            Remove
+                                                                        </button>
+                                                                    </div>
+                                                                </td>
+                                                            </tr>
+                                                        ))}
+                                                    </tbody>
+                                                </table>
                                         </div>
                                     </>
                                 )}
@@ -1202,59 +1361,104 @@ const AdminDashboard = () => {
                                                             <p className="font-medium text-gray-900 text-sm truncate">{pharmacist.name || '—'}</p>
                                                             <p className="text-xs text-gray-500 truncate">{pharmacist.email || '—'}</p>
                                                         </div>
-                                                        <span className="inline-flex px-2 py-1 text-xs font-medium bg-purple-50 text-purple-700 rounded-full ml-2">
+                                                        <span className="text-xs text-emerald-700 font-medium ml-2">
                                                             Active
                                                         </span>
                                                     </div>
                                                     <div className="flex justify-between items-center">
                                                         <span className="text-xs text-gray-400">ID: {pharmacist.userId || pharmacist.uniqueId || pharmacist.id?.slice(-6)}</span>
-                                                        <button
-                                                            onClick={() => handleRemoveUser(pharmacist.id, 'pharmacist')}
-                                                            className="text-xs text-red-600 hover:text-red-700 font-medium"
-                                                        >
-                                                            Remove
-                                                        </button>
+                                                        <div className="flex items-center gap-3">
+                                                            <button
+                                                                onClick={() => openEditUserModal(pharmacist, 'pharmacist')}
+                                                                className="text-xs text-blue-600 hover:text-blue-700 font-medium"
+                                                            >
+                                                                Edit
+                                                            </button>
+                                                            <button
+                                                                onClick={() => handleResetUserPassword(pharmacist.id, 'pharmacist', pharmacist.name)}
+                                                                className="text-xs text-amber-600 hover:text-amber-700 font-medium"
+                                                            >
+                                                                Reset Password
+                                                            </button>
+                                                            <button
+                                                                onClick={() => handleRemoveUser(pharmacist.id, 'pharmacist')}
+                                                                className="text-xs text-red-600 hover:text-red-700 font-medium"
+                                                            >
+                                                                Remove
+                                                            </button>
+                                                        </div>
                                                     </div>
                                                 </div>
                                             ))}
                                         </div>
                                         {/* Desktop Table View */}
                                         <div className="hidden sm:block overflow-x-auto">
-                                            <table className="w-full">
-                                                <thead>
-                                                    <tr className="border-b border-gray-200">
-                                                        <th className="px-4 lg:px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">ID</th>
-                                                        <th className="px-4 lg:px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Name</th>
-                                                        <th className="px-4 lg:px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider hidden lg:table-cell">Email</th>
-                                                        <th className="px-4 lg:px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Status</th>
-                                                        <th className="px-4 lg:px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider hidden lg:table-cell">Created</th>
-                                                        <th className="px-4 lg:px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Actions</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody className="divide-y divide-gray-100">
-                                                    {pharmacists.map((pharmacist) => (
-                                                        <tr key={pharmacist.id} className="hover:bg-gray-50 transition-colors">
-                                                            <td className="px-4 lg:px-6 py-4 text-sm font-mono text-gray-600">{pharmacist.userId || pharmacist.uniqueId || pharmacist.id?.slice(-6)}</td>
-                                                            <td className="px-4 lg:px-6 py-4 text-sm font-medium text-gray-900">{pharmacist.name || '—'}</td>
-                                                            <td className="px-4 lg:px-6 py-4 text-sm text-gray-600 hidden lg:table-cell">{pharmacist.email || '—'}</td>
-                                                            <td className="px-4 lg:px-6 py-4">
-                                                                <span className="inline-flex px-2.5 py-1 text-xs font-medium bg-purple-50 text-purple-700 rounded-full">
-                                                                    Active
-                                                                </span>
-                                                            </td>
-                                                            <td className="px-4 lg:px-6 py-4 text-sm text-gray-500 hidden lg:table-cell">{formatDisplayDate(pharmacist.createdAt)}</td>
-                                                            <td className="px-4 lg:px-6 py-4">
-                                                                <button
-                                                                    onClick={() => handleRemoveUser(pharmacist.id, 'pharmacist')}
-                                                                    className="text-sm text-red-600 hover:text-red-700 font-medium hover:underline"
-                                                                >
-                                                                    Remove
-                                                                </button>
-                                                            </td>
+                                                <table className="w-full min-w-[860px]">
+                                                    <thead className="bg-gray-50/80">
+                                                        <tr className="border-b border-gray-200">
+                                                            <th className="px-4 lg:px-6 py-3 text-left text-[11px] font-semibold text-gray-600 uppercase tracking-wider">ID</th>
+                                                            <th className="px-4 lg:px-6 py-3 text-left text-[11px] font-semibold text-gray-600 uppercase tracking-wider">Name</th>
+                                                            <th className="px-4 lg:px-6 py-3 text-left text-[11px] font-semibold text-gray-600 uppercase tracking-wider hidden lg:table-cell">Email</th>
+                                                            <th className="px-4 lg:px-6 py-3 text-left text-[11px] font-semibold text-gray-600 uppercase tracking-wider">Status</th>
+                                                            <th className="px-4 lg:px-6 py-3 text-left text-[11px] font-semibold text-gray-600 uppercase tracking-wider hidden lg:table-cell">Created</th>
+                                                            <th className="px-4 lg:px-6 py-3 text-left text-[11px] font-semibold text-gray-600 uppercase tracking-wider">Actions</th>
                                                         </tr>
-                                                    ))}
-                                                </tbody>
-                                            </table>
+                                                    </thead>
+                                                    <tbody className="divide-y divide-gray-100">
+                                                        {pharmacists.map((pharmacist) => (
+                                                            <tr key={pharmacist.id} className="group hover:bg-emerald-50/30 transition-colors">
+                                                                <td className="px-4 lg:px-6 py-3 text-sm font-mono text-gray-700">
+                                                                    {pharmacist.userId || pharmacist.uniqueId || pharmacist.id?.slice(-6)}
+                                                                </td>
+                                                                <td className="px-4 lg:px-6 py-3">
+                                                                    <div className="flex items-center gap-2.5">
+                                                                        <div className="h-8 w-8 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center text-xs font-semibold">
+                                                                            {(pharmacist.name || 'P').charAt(0).toUpperCase()}
+                                                                        </div>
+                                                                        <span className="text-sm font-semibold text-gray-900">{pharmacist.name || '—'}</span>
+                                                                    </div>
+                                                                </td>
+                                                                <td className="px-4 lg:px-6 py-3 hidden lg:table-cell">
+                                                                    <div className="flex items-center gap-2 text-sm text-gray-600">
+                                                                        <Mail className="w-3.5 h-3.5 text-gray-400" />
+                                                                        <span className="truncate max-w-[220px]">{pharmacist.email || '—'}</span>
+                                                                    </div>
+                                                                </td>
+                                                                <td className="px-4 lg:px-6 py-3 text-sm font-medium text-emerald-700">
+                                                                    Active
+                                                                </td>
+                                                                <td className="px-4 lg:px-6 py-3 hidden lg:table-cell">
+                                                                    <div className="flex items-center gap-1.5 text-sm text-gray-500">
+                                                                        <Calendar className="w-3.5 h-3.5 text-gray-400" />
+                                                                        <span>{formatDisplayDate(pharmacist.createdAt)}</span>
+                                                                    </div>
+                                                                </td>
+                                                                <td className="px-4 lg:px-6 py-3">
+                                                                    <div className="flex items-center gap-2">
+                                                                        <button
+                                                                            onClick={() => openEditUserModal(pharmacist, 'pharmacist')}
+                                                                            className="inline-flex items-center rounded-lg border border-blue-200 bg-blue-50 px-2.5 py-1.5 text-xs font-semibold text-blue-700 hover:bg-blue-100 transition-colors"
+                                                                        >
+                                                                            Edit
+                                                                        </button>
+                                                                        <button
+                                                                            onClick={() => handleResetUserPassword(pharmacist.id, 'pharmacist', pharmacist.name)}
+                                                                            className="inline-flex items-center rounded-lg border border-amber-200 bg-amber-50 px-2.5 py-1.5 text-xs font-semibold text-amber-700 hover:bg-amber-100 transition-colors"
+                                                                        >
+                                                                            Reset Password
+                                                                        </button>
+                                                                        <button
+                                                                            onClick={() => handleRemoveUser(pharmacist.id, 'pharmacist')}
+                                                                            className="inline-flex items-center rounded-lg border border-red-200 bg-red-50 px-2.5 py-1.5 text-xs font-semibold text-red-700 hover:bg-red-100 transition-colors"
+                                                                        >
+                                                                            Remove
+                                                                        </button>
+                                                                    </div>
+                                                                </td>
+                                                            </tr>
+                                                        ))}
+                                                    </tbody>
+                                                </table>
                                         </div>
                                     </>
                                 )}
@@ -1355,7 +1559,7 @@ const AdminDashboard = () => {
                             <div className="bg-white rounded-2xl border border-gray-200 p-6">
                                 <div className="flex items-center gap-3 mb-5 pb-4 border-b border-gray-100">
                                     <div className="w-9 h-9 bg-amber-50 border border-amber-200 rounded-xl flex items-center justify-center">
-                                        <Lock className="w-4.5 h-4.5 text-amber-600 w-[1.1rem] h-[1.1rem]" />
+                                        <Lock className="text-amber-600 w-[1.1rem] h-[1.1rem]" />
                                     </div>
                                     <div>
                                         <p className="font-semibold text-gray-900 text-sm">Change Password</p>
@@ -1424,33 +1628,20 @@ const AdminDashboard = () => {
                     {/* Emergency Access Section */}
                     {activeSection === 'emergency' && (
                         <div className="space-y-4 sm:space-y-6">
-                            <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 bg-rose-100 rounded-xl flex items-center justify-center">
-                                    <AlertCircle className="w-5 h-5 text-rose-600" />
-                                </div>
-                                <div>
-                                    <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Emergency Access</h2>
-                                    <p className="text-sm text-gray-500">Quick access to patient data in emergency situations</p>
-                                </div>
-                            </div>
-
                             {/* Search Card */}
                             <div className="bg-white rounded-2xl border border-gray-200">
-                                <div className="px-6 py-5 border-b border-gray-100">
-                                    <h3 className="text-base font-semibold text-gray-900">Search Patient</h3>
-                                </div>
                                 <div className="px-6 py-6">
                                 <form onSubmit={handleEmergencySearch} className="space-y-4">
                                     <div className="flex flex-col sm:flex-row gap-3">
                                         <div className="flex-1">
                                             <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
-                                                Patient ID
+                                                Unique ID / Number
                                             </label>
                                             <input
                                                 type="text"
                                                 value={emergencySearch}
                                                 onChange={(e) => setEmergencySearch(e.target.value)}
-                                                placeholder="Enter Patient ID or MongoDB ID"
+                                                placeholder="Enter 8-digit unique ID"
                                                 className="w-full px-4 py-2.5 border-2 border-gray-200 rounded-xl outline-none focus:border-blue-500 transition-colors text-sm"
                                             />
                                         </div>
@@ -1470,9 +1661,9 @@ const AdminDashboard = () => {
                                             className="flex items-center justify-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-xl text-sm font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                         >
                                             <Search className="w-4 h-4" />
-                                            <span>{emergencyLoading ? 'Searching...' : 'Search Patient'}</span>
+                                            <span>{emergencyLoading ? 'Searching...' : 'Search'}</span>
                                         </button>
-                                        {emergencyPatient && (
+                                        {emergencyUser && (
                                             <button
                                                 type="button"
                                                 onClick={clearEmergencyData}
@@ -1487,54 +1678,91 @@ const AdminDashboard = () => {
                                 </div>
                             </div>
 
-                            {/* Patient Data Display */}
-                            {emergencyPatient && (
+                            {/* User Data Display */}
+                            {emergencyUser && (
                                 <div className="space-y-4">
-                                    {/* Patient Basic Info */}
+                                    {/* User Basic Info */}
                                     <div className="bg-white rounded-2xl border border-gray-200">
                                         <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100">
-                                            <h3 className="text-base font-semibold text-gray-900">Patient Information</h3>
-                                            <span className="bg-rose-600 text-white text-xs px-3 py-1 rounded-full font-semibold">
-                                                EMERGENCY ACCESS
-                                            </span>
+                                            <h3 className="text-base font-semibold text-gray-900">User Information</h3>
+                                            <div className="flex items-center gap-2">
+                                                <span className={`text-white text-xs px-3 py-1 rounded-full font-semibold ${
+                                                    emergencyUser.role === 'doctor'
+                                                        ? 'bg-blue-600'
+                                                        : emergencyUser.role === 'pharmacist'
+                                                        ? 'bg-emerald-600'
+                                                        : 'bg-violet-600'
+                                                }`}>
+                                                    {formatRoleLabel(emergencyUser.role)}
+                                                </span>
+                                            </div>
                                         </div>
                                         <div className="px-6 py-6">
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                             <div>
-                                                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Patient Name</label>
-                                                <p className="text-base font-semibold text-gray-900 mt-1">{emergencyPatient.name}</p>
+                                                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">{formatRoleLabel(emergencyUser.role)} Name</label>
+                                                <p className="text-base font-semibold text-gray-900 mt-1">{emergencyUser.name || 'N/A'}</p>
                                             </div>
                                             <div>
-                                                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Patient ID</label>
-                                                <p className="text-base font-semibold text-gray-900 mt-1">{emergencyPatient._id}</p>
+                                                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Unique ID</label>
+                                                <p className="text-base font-semibold text-gray-900 mt-1">{emergencyUser.userId || emergencyUser.oderId || 'N/A'}</p>
+                                            </div>
+                                            <div>
+                                                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">MongoDB ID</label>
+                                                <p className="text-gray-900 text-sm mt-1 break-all">{emergencyUser._id}</p>
+                                            </div>
+                                            <div>
+                                                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Role</label>
+                                                <p className="text-gray-900 text-sm mt-1">{formatRoleLabel(emergencyUser.role)}</p>
                                             </div>
                                             <div>
                                                 <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Email</label>
                                                 <div className="flex items-center space-x-2 mt-1">
                                                     <Mail className="w-4 h-4 text-gray-400" />
-                                                    <p className="text-gray-900 text-sm">{emergencyPatient.email}</p>
+                                                    <p className="text-gray-900 text-sm">{emergencyUser.email || 'N/A'}</p>
                                                 </div>
                                             </div>
                                             <div>
                                                 <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Phone</label>
                                                 <div className="flex items-center space-x-2 mt-1">
                                                     <Phone className="w-4 h-4 text-gray-400" />
-                                                    <p className="text-gray-900 text-sm">{emergencyPatient.phone || 'N/A'}</p>
+                                                    <p className="text-gray-900 text-sm">{emergencyUser.phone || 'N/A'}</p>
                                                 </div>
                                             </div>
-                                            <div>
-                                                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Assigned Doctor</label>
-                                                <p className="text-gray-900 text-sm mt-1">
-                                                    {emergencyPatient.doctor_id?.name || 'Not Assigned'}
-                                                </p>
-                                            </div>
+
+                                            {emergencyUser.role === 'doctor' && (
+                                                <div>
+                                                    <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Specialization</label>
+                                                    <p className="text-gray-900 text-sm mt-1">{emergencyUser.specialization || 'General'}</p>
+                                                </div>
+                                            )}
+
+                                            {emergencyUser.role === 'patient' && (
+                                                <div>
+                                                    <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Assigned Doctor</label>
+                                                    <p className="text-gray-900 text-sm mt-1">{emergencyUser.doctor_id?.name || 'Not Assigned'}</p>
+                                                </div>
+                                            )}
+
+                                            {emergencyUser.role === 'doctor' && (
+                                                <div>
+                                                    <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Assigned Patients</label>
+                                                    <p className="text-gray-900 text-sm mt-1">{emergencyUser.assignedPatientCount ?? 0}</p>
+                                                </div>
+                                            )}
+
+                                            {emergencyUser.role === 'pharmacist' && (
+                                                <div>
+                                                    <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Inventory Items</label>
+                                                    <p className="text-gray-900 text-sm mt-1">{emergencyUser.inventoryItemCount ?? 0}</p>
+                                                </div>
+                                            )}
+
                                             <div>
                                                 <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Registration Date</label>
                                                 <div className="flex items-center space-x-2 mt-1">
                                                     <Calendar className="w-4 h-4 text-gray-400" />
-                                                    <p className="text-gray-900 text-sm">
-                                                        {formatDisplayDate(emergencyPatient.createdAt)}
-                                                    </p>
+                                                    <p className="text-gray-900 text-sm">{formatDisplayDate(emergencyUser.createdAt)}</p>
                                                 </div>
                                             </div>
                                         </div>
@@ -1542,14 +1770,14 @@ const AdminDashboard = () => {
                                     </div>
 
                                     {/* Medical Documents */}
-                                    {emergencyPatient.documents && emergencyPatient.documents.length > 0 && (
+                                    {emergencyUser.role === 'patient' && emergencyUser.documents && emergencyUser.documents.length > 0 && (
                                         <div className="bg-white rounded-2xl border border-gray-200">
                                             <div className="flex items-center gap-2.5 px-6 py-5 border-b border-gray-100">
                                                 <FileText className="w-5 h-5 text-gray-500" />
-                                                <h3 className="text-base font-semibold text-gray-900">Medical Documents ({emergencyPatient.documents.length})</h3>
+                                                <h3 className="text-base font-semibold text-gray-900">Medical Documents ({emergencyUser.documents.length})</h3>
                                             </div>
                                             <div className="px-6 py-6 space-y-3">
-                                                {emergencyPatient.documents.map((doc) => (
+                                                {emergencyUser.documents.map((doc) => (
                                                     <div key={doc._id} className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
                                                         <div className="flex-1">
                                                             <p className="font-medium text-gray-900">{doc.title}</p>
@@ -1571,18 +1799,18 @@ const AdminDashboard = () => {
                                     )}
 
                                     {/* Health Reports */}
-                                    {emergencyPatient.healthReports && emergencyPatient.healthReports.length > 0 && (
+                                    {emergencyUser.role === 'patient' && emergencyUser.healthReports && emergencyUser.healthReports.length > 0 && (
                                         <div className="bg-white rounded-2xl border border-gray-200">
                                             <div className="flex items-center gap-2.5 px-6 py-5 border-b border-gray-100">
                                                 <Activity className="w-5 h-5 text-gray-500" />
-                                                <h3 className="text-base font-semibold text-gray-900">Health Reports ({emergencyPatient.healthReports.length})</h3>
+                                                <h3 className="text-base font-semibold text-gray-900">Health Reports ({emergencyUser.healthReports.length})</h3>
                                             </div>
                                             <div className="px-6 py-6 space-y-3">
-                                                {emergencyPatient.healthReports.map((report) => (
+                                                {emergencyUser.healthReports.map((report) => (
                                                     <div key={report._id} className="p-4 bg-gray-50 rounded-xl">
                                                         <div className="flex items-start justify-between">
                                                             <div className="flex-1">
-                                                                <p className="font-medium text-gray-900">{report.reportType || 'General Health Report'}</p>
+                                                                <p className="font-medium text-gray-900">{report.reportType || report.title || 'General Health Report'}</p>
                                                                 {report.diagnosis && (
                                                                     <p className="text-sm text-gray-600 mt-1"><strong>Diagnosis:</strong> {report.diagnosis}</p>
                                                                 )}
@@ -1595,7 +1823,7 @@ const AdminDashboard = () => {
                                                                     <p className="text-sm text-gray-600 mt-1"><strong>Notes:</strong> {report.notes}</p>
                                                                 )}
                                                                 <p className="text-xs text-gray-500 mt-2">
-                                                                    {formatDisplayDate(report.createdAt)}
+                                                                    {formatDisplayDate(report.createdAt || report.generatedAt)}
                                                                 </p>
                                                             </div>
                                                         </div>
@@ -1606,14 +1834,14 @@ const AdminDashboard = () => {
                                     )}
 
                                     {/* Prescriptions / Medicines */}
-                                    {emergencyPatient.medicines && emergencyPatient.medicines.length > 0 && (
+                                    {emergencyUser.role === 'patient' && emergencyUser.medicines && emergencyUser.medicines.length > 0 && (
                                         <div className="bg-white rounded-2xl border border-gray-200">
                                             <div className="flex items-center gap-2.5 px-6 py-5 border-b border-gray-100">
                                                 <Pill className="w-5 h-5 text-gray-500" />
-                                                <h3 className="text-base font-semibold text-gray-900">Prescribed Medicines ({emergencyPatient.medicines.length})</h3>
+                                                <h3 className="text-base font-semibold text-gray-900">Prescribed Medicines ({emergencyUser.medicines.length})</h3>
                                             </div>
                                             <div className="px-6 py-6 space-y-3">
-                                                {emergencyPatient.medicines.map((medicine) => (
+                                                {emergencyUser.medicines.map((medicine) => (
                                                     <div key={medicine._id} className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
                                                         <div>
                                                             <p className="font-medium text-gray-900">{medicine.name}</p>
@@ -1640,10 +1868,11 @@ const AdminDashboard = () => {
                                         </div>
                                     )}
 
-                                    {/* No Data Message */}
-                                    {(!emergencyPatient.documents || emergencyPatient.documents.length === 0) &&
-                                     (!emergencyPatient.healthReports || emergencyPatient.healthReports.length === 0) &&
-                                     (!emergencyPatient.medicines || emergencyPatient.medicines.length === 0) && (
+                                    {/* No Patient Medical Data Message */}
+                                    {emergencyUser.role === 'patient' &&
+                                     (!emergencyUser.documents || emergencyUser.documents.length === 0) &&
+                                     (!emergencyUser.healthReports || emergencyUser.healthReports.length === 0) &&
+                                     (!emergencyUser.medicines || emergencyUser.medicines.length === 0) && (
                                         <div className="bg-yellow-50 border border-yellow-200 rounded-2xl p-6 text-center">
                                             <p className="text-yellow-800 text-sm font-medium">No medical history available for this patient.</p>
                                         </div>
@@ -1651,37 +1880,12 @@ const AdminDashboard = () => {
                                 </div>
                             )}
 
-                            {/* Warning Notice */}
-                            <div className="bg-amber-50 border border-amber-200 rounded-2xl p-5">
-                                <div className="flex items-start gap-3">
-                                    <div className="w-8 h-8 bg-amber-100 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5">
-                                        <AlertCircle className="w-4 h-4 text-amber-600" />
-                                    </div>
-                                    <div>
-                                        <p className="text-sm font-semibold text-amber-900">Emergency Access Notice</p>
-                                        <p className="text-sm text-amber-700 mt-1">
-                                            This feature is intended for emergency situations only. All accesses are logged and audited. 
-                                            Misuse of this feature may result in disciplinary action.
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
                         </div>
                     )}
 
                     {/* Interoperability Section */}
                     {activeSection === 'interoperability' && (
                         <div className="space-y-4 sm:space-y-6">
-                            <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 bg-purple-100 rounded-xl flex items-center justify-center">
-                                    <Network className="w-5 h-5 text-purple-600" />
-                                </div>
-                                <div>
-                                    <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Interoperability</h2>
-                                    <p className="text-sm text-gray-500">Configure external API access and integration settings</p>
-                                </div>
-                            </div>
-                            
                             {interopSuccess && (
                                 <div className="flex items-center gap-2.5 bg-green-50 border border-green-200 rounded-xl px-4 py-3">
                                     <div className="w-2 h-2 rounded-full bg-green-500 flex-shrink-0"></div>
@@ -1801,13 +2005,6 @@ const AdminDashboard = () => {
                                         </div>
                                     </div>
 
-                                    <div className="flex items-start gap-2.5 p-3 bg-blue-50 border border-blue-200 rounded-xl">
-                                        <div className="w-2 h-2 rounded-full bg-blue-500 flex-shrink-0 mt-1"></div>
-                                        <p className="text-xs text-blue-800">
-                                            <strong>Note:</strong> Use the generated API token in the route to authenticate external requests.
-                                            The server address you configure will be where external systems can access this API.
-                                        </p>
-                                    </div>
                                 </div>
                                 </div>
                             </div>
@@ -2082,7 +2279,7 @@ const AdminDashboard = () => {
                         <div className="p-6 border-b border-gray-200">
                             <div className="flex items-center justify-between">
                                 <h2 className="text-2xl font-bold text-gray-900 capitalize">
-                                    Add New {modalType}
+                                    {modalMode === 'add' ? `Add New ${modalType}` : `Edit ${modalType}`}
                                 </h2>
                                 <button
                                     onClick={closeModal}
@@ -2167,24 +2364,26 @@ const AdminDashboard = () => {
                                 )}
                             </div>
 
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Temporary Password *
-                                </label>
-                                <input
-                                    type="password"
-                                    name="password"
-                                    value={formData.password}
-                                    onChange={handleInputChange}
-                                    className={`w-full px-4 py-2 border-2 border-gray-200 rounded-lg outline-none focus:border-blue-500 focus:ring-0 transition-colors ${
-                                        formErrors.password ? 'border-red-500' : 'border-gray-200'
-                                    }`}
-                                    placeholder="Enter temporary password"
-                                />
-                                {formErrors.password && (
-                                    <p className="text-red-500 text-xs mt-1">{formErrors.password}</p>
-                                )}
-                            </div>
+                            {modalMode === 'add' && (
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                        Temporary Password *
+                                    </label>
+                                    <input
+                                        type="password"
+                                        name="password"
+                                        value={formData.password}
+                                        onChange={handleInputChange}
+                                        className={`w-full px-4 py-2 border-2 border-gray-200 rounded-lg outline-none focus:border-blue-500 focus:ring-0 transition-colors ${
+                                            formErrors.password ? 'border-red-500' : 'border-gray-200'
+                                        }`}
+                                        placeholder="Enter temporary password"
+                                    />
+                                    {formErrors.password && (
+                                        <p className="text-red-500 text-xs mt-1">{formErrors.password}</p>
+                                    )}
+                                </div>
+                            )}
 
                             {modalType === 'doctor' && (
                                 <div>
@@ -2223,10 +2422,10 @@ const AdminDashboard = () => {
                                     {isSubmitting ? (
                                         <>
                                             <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                                            <span>Adding...</span>
+                                            <span>{modalMode === 'add' ? 'Adding...' : 'Saving...'}</span>
                                         </>
                                     ) : (
-                                        <span>Add {modalType}</span>
+                                        <span>{modalMode === 'add' ? `Add ${modalType}` : `Save ${modalType}`}</span>
                                     )}
                                 </button>
                             </div>

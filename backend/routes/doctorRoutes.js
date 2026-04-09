@@ -40,7 +40,8 @@ router.get("/my-patients", async (req, res) => {
     // Format patients with userId
     const formattedPatients = patients.map(patient => ({
       _id: patient._id,
-      oderId: patient.userId || patient._id.toString().slice(-6),
+      userId: patient.userId || patient._id.toString().slice(-8),
+      oderId: patient.userId || patient._id.toString().slice(-8),
       name: patient.name,
       email: patient.email,
       role: patient.role,

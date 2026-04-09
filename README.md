@@ -1,34 +1,37 @@
-![Health Track Banner](docs/screenshots/health-track-banner.png)
+# Health-Track
 
-## Overview ✨
+![Health Track Banner](0_docs/screenshots/health-track-banner.png)
 
-**Health-Track** is a comprehensive modern healthcare management platform that integrates traditional healthcare workflows with cutting-edge AI/ML capabilities:
+## Overview
 
-- **Streamlined Patient Care** – Efficient management of patient records, medical workflows, and health documents
-- **AI-Powered Diagnostics** – Machine learning models for health prediction, diagnostic assistance, and report analysis
-- **Clinical Workflows** – Optimized processes for hospitals, doctors, pharmacists, and healthcare staff
-- **Smart Document Processing** – AI-powered summarization and analysis of medical documents and lab reports
-- **Data Analytics** – Comprehensive insights, real-time statistics, and intelligent reporting for healthcare operations
-- **Role-Based Access Control** – Secure multi-tier access for administrators, doctors, pharmacists, and patients
-- **Microservices Architecture** – Scalable system with dedicated Express.js backend and Python FastAPI ML service
-- **Modern Tech Stack** – Built with React.js, Node.js/Express, MongoDB, and Python FastAPI for optimal performance
-- **Cloud Integration** – AWS S3 for secure document storage with pre-signed URLs and encryption
-- **Responsive Design** – Seamless experience across all devices with Tailwind CSS
+Health-Track is a healthcare management platform that combines standard clinical workflows with AI/ML-assisted services.
+
+- **Patient Care Management**: Structured management of patient records, medical workflows, and health documents
+- **AI-Assisted Diagnostics**: Machine learning support for health prediction, diagnostic assistance, and report analysis
+- **Clinical Workflow Support**: Optimized processes for hospitals, doctors, pharmacists, and healthcare staff
+- **Document Intelligence**: AI-based summarization and analysis of medical documents and laboratory reports
+- **Operational Analytics**: Real-time statistics and reporting for healthcare operations
+- **Role-Based Access Control**: Secure multi-tier access for administrators, doctors, pharmacists, and patients
+- **Microservices Architecture**: Separate Express.js backend and Python FastAPI ML service for scalability
+- **Modern Technology Stack**: React.js, Node.js/Express, MongoDB, and Python FastAPI
+- **Cloud Storage Integration**: AWS S3 with pre-signed URLs and encryption
+- **Responsive Interface**: Consistent user experience across desktop and mobile devices
 
 
-## Features 🚀
+![Health Track Banner](0_docs/screenshots/block-diagram-1.png)
+## Features
 
 ### Core Features
 
-- **Secure Authentication**: JWT-based authentication with bcrypt password hashing and role-based access control (RBAC)
-- **Role-Based Dashboards**: Dedicated, feature-rich dashboards for Admin, Doctor, Patient, and Pharmacist roles
-- **Electronic Health Records (EHR)**: Comprehensive digital management of patient records, medical history, and health documents
-- **AI/ML Integration**: Microservices architecture with Python FastAPI for health predictions, diagnostics, and document analysis
-- **Cloud Storage**: AWS S3 integration for secure document storage with pre-signed URLs and encryption
-- **Real-Time Analytics**: Live statistics, charts, and insights across all dashboards with real database data
-- **Responsive Modern UI**: Built with React.js and Tailwind CSS for seamless mobile, tablet, and desktop experience
-- **API Documentation**: Comprehensive REST API with clear endpoints for all operations
-- **Microservices Architecture**: Separate Express.js backend and Python FastAPI ML service for scalability
+- **Secure Authentication**: JWT-based authentication with bcrypt hashing and role-based access control (RBAC)
+- **Role-Based Dashboards**: Dedicated dashboards for administrator, doctor, patient, and pharmacist roles
+- **Electronic Health Records (EHR)**: Digital management of patient records, medical history, and health documents
+- **AI/ML Integration**: Python FastAPI microservice for predictions, diagnostics, and document analysis
+- **Cloud Storage**: AWS S3 integration with pre-signed URLs and encryption
+- **Real-Time Analytics**: Dashboard statistics, charts, and operational insights
+- **Responsive User Interface**: React.js and Tailwind CSS implementation for mobile and desktop usage
+- **API Documentation**: REST API endpoints for core operations
+- **Service Separation**: Independent backend and ML services for maintainability
 
 ### Admin Features
 
@@ -36,12 +39,12 @@
 - **Organization Statistics**: Real-time dashboard with doctor count, pharmacist count, patient count, and activity metrics
 - **Critical Disease Tracking**: AI-powered analysis of medical documents to track disease prevalence and trends
 - **Weekly Activity Analytics**: Visual charts showing document uploads and patient registrations over time
-- **Emergency Access**: Quick access to any patient's complete medical data using Patient ID or QR code for critical situations
+- **Emergency Access**: Access to complete patient data using Patient ID or QR code for critical situations
 - **API Token Management**: Generate and manage secure API tokens for external system integration
 - **Interoperability Configuration**: Configure third-party integrations with token-based authentication
 - **Profile Management**: Update personal information and secure password management
 - **Pharmacy Inventory Oversight**: Monitor medicine stock levels and low-stock alerts
-- **Audit Trail**: All emergency accesses are logged with timestamps for security and compliance
+- **Audit Trail**: Emergency access events are logged with timestamps for security and compliance
 
 ### Doctor Features
 
@@ -62,14 +65,14 @@
 - **Inventory Statistics**: Real-time dashboard with total medicines, total value, low stock alerts, and out-of-stock warnings
 - **Stock Alerts**: Automatic notifications for medicines below threshold or expired items
 - **Profile Management**: Update personal information and secure password management
-- **Search & Filter**: Quick search and filtering of medicines by name, category, or status
+- **Search and Filter**: Search and filtering of medicines by name, category, or status
 
 ### Patient Features
 
 - **Document Management**: Upload, view, and delete medical documents (lab reports, prescriptions, scans, consultation notes)
 - **Secure File Storage**: Documents stored securely in AWS S3 with pre-signed URLs for time-limited access
 - **Document Categorization**: Organize documents by type (lab-report, prescription, scan, consultation, other)
-- **AI Document Summarization**: Get AI-powered summaries of medical documents for quick understanding
+- **AI Document Summarization**: AI-generated summaries of medical documents for faster review
 - **Access Control**: Only authorized users can access patient documents with role-based permissions
 - **Health Records Access**: View and manage personal electronic health records (EHR)
 - **File Download**: Secure document download with pre-signed URLs
@@ -77,7 +80,7 @@
 
 
 
-## Screenshots 🖼️
+## Screenshots
 
 ### Homepage
 
@@ -93,7 +96,7 @@
 
 ---
 
-## Technologies Used 🛠️
+## Technologies Used
 
 ### Frontend
 
@@ -150,7 +153,7 @@
 
 ---
 
-## Technology Implementation & Usage 📚
+## Technology Implementation and Usage
 
 ### Frontend Technologies
 
@@ -161,7 +164,7 @@ React.js serves as the foundation of our user interface, implementing a componen
 React Router provides seamless single-page application (SPA) navigation throughout Health-Track. We implemented protected routes to ensure role-based access control - admins can only access admin routes (`/admin-dashboard`), doctors access doctor-specific routes (`/doctor-dashboard`), and so on. The router handles authentication redirects, automatically sending unauthenticated users to the sign-in page and preventing unauthorized access to sensitive dashboards. We use `useNavigate` for programmatic navigation after successful login/logout, and route parameters for dynamic pages like viewing specific patient details or document information. The routing structure maintains clean URLs and enables browser history management for better user experience.
 
 #### Tailwind CSS 4
-Tailwind CSS revolutionized our styling approach with utility-first classes, enabling rapid UI development without writing custom CSS. In Health-Track, we created a consistent design system with custom color schemes (blue for primary actions, green for success states, red for alerts), responsive grid layouts for dashboard statistics cards, and mobile-first responsive designs that adapt seamlessly from mobile (320px) to desktop (1920px+). Complex components like the pharmacy inventory table, medicine cards, and document upload interfaces were built entirely with Tailwind utilities. We customized the configuration in `tailwind.config.js` to include our brand colors and extended spacing for healthcare-specific UI patterns. The JIT (Just-In-Time) compiler ensures minimal CSS bundle size in production.
+Tailwind CSS provides a utility-first styling approach, enabling rapid UI development without extensive custom CSS. In Health-Track, we created a consistent design system with custom color schemes (blue for primary actions, green for success states, red for alerts), responsive grid layouts for dashboard statistics cards, and mobile-first responsive designs that adapt seamlessly from mobile (320px) to desktop (1920px+). Complex components like the pharmacy inventory table, medicine cards, and document upload interfaces were built entirely with Tailwind utilities. We customized the configuration in `tailwind.config.js` to include our brand colors and extended spacing for healthcare-specific UI patterns. The JIT (Just-In-Time) compiler ensures minimal CSS bundle size in production.
 
 #### Axios
 Axios serves as our HTTP client, handling all communication between the React frontend and Express.js backend. We configured Axios with base URL settings (`VITE_API_URL`), request interceptors that automatically attach JWT tokens to authenticated requests, and response interceptors for global error handling. In Health-Track, Axios powers critical operations: user authentication (sign-in/sign-up), fetching dashboard statistics, uploading medical documents to S3, managing pharmacy inventory (CRUD operations), generating and downloading reports, and communicating with the ML microservice for AI predictions. We created a centralized API service (`services/api.js`) with methods like `getCriticalDiseases()`, `getWeeklyActivity()`, and `generateApiToken()` that encapsulate all API calls with proper error handling and loading states.
@@ -170,7 +173,7 @@ Axios serves as our HTTP client, handling all communication between the React fr
 Lucide React provides over 1000 consistent, customizable SVG icons used throughout Health-Track's interface. We implemented icons for navigation (Home, Users, FileText), actions (Upload, Download, Edit, Trash), status indicators (CheckCircle, AlertCircle, XCircle), and healthcare-specific symbols (Pill, Activity, FileHeart). Each dashboard uses icon-enhanced buttons and cards for better visual hierarchy - the pharmacy dashboard displays pill icons for medicines, the document management section uses file icons, and the admin panel shows user management icons. Icons are dynamically sized (`size={20}`) and colored to match Tailwind classes, maintaining consistent visual language. The lightweight SVG format ensures fast loading without compromising quality.
 
 #### Vite
-Vite serves as our build tool and development server, providing lightning-fast Hot Module Replacement (HMR) during development. Unlike traditional bundlers, Vite leverages native ES modules in the browser during development, resulting in instant server start regardless of application size. In Health-Track, Vite's dev server (`npm run dev`) enables real-time preview of changes without full page reloads, significantly accelerating development velocity. For production, Vite uses Rollup to create optimized bundles with code splitting, tree-shaking to remove unused code, and asset optimization. We configured Vite in `vite.config.js` to handle environment variables (`VITE_API_URL`), proxy API requests during development, and optimize build output for deployment on Vercel. Build times are under 30 seconds for the entire frontend application.
+Vite serves as our build tool and development server, providing fast Hot Module Replacement (HMR) during development. Unlike traditional bundlers, Vite leverages native ES modules in the browser during development, resulting in rapid server startup regardless of application size. In Health-Track, Vite's development server (`npm run dev`) enables real-time preview of changes without full page reloads. For production, Vite uses Rollup to create optimized bundles with code splitting, tree-shaking to remove unused code, and asset optimization. We configured Vite in `vite.config.js` to handle environment variables (`VITE_API_URL`), proxy API requests during development, and optimize build output for deployment on Vercel.
 
 ### Backend Technologies
 
@@ -242,14 +245,14 @@ HTTPX is a modern HTTP client for Python, providing both synchronous and asynchr
 ### Database & Storage
 
 #### MongoDB & Mongoose Integration
-The synergy between MongoDB and Mongoose creates a robust data layer for Health-Track. MongoDB's flexible schema accommodates evolving healthcare data requirements - adding new patient fields or document types doesn't require migrations. Mongoose schemas provide structure where needed: email validation, required fields, relationships via ObjectId references. We leverage MongoDB's aggregation pipeline for complex queries: calculating weekly activity statistics (grouping documents by date), generating pharmacy inventory summaries (sum of quantities, average prices), and analyzing disease prevalence from AI-summarized documents. Mongoose query builders (`Patient.find().populate('doctor_id').sort('-createdAt')`) retrieve patients with doctor details in a single query. Indexes on `email` (unique) and `createdAt` (for time-based queries) optimize performance. MongoDB's horizontal scaling via sharding supports future growth as the healthcare platform expands.
+The MongoDB and Mongoose integration provides a robust data layer for Health-Track. MongoDB's flexible schema accommodates evolving healthcare data requirements, and Mongoose schemas add structure through validation, required fields, and ObjectId-based relationships. We leverage MongoDB's aggregation pipeline for complex queries: calculating weekly activity statistics (grouping documents by date), generating pharmacy inventory summaries (sum of quantities, average prices), and analyzing disease prevalence from AI-summarized documents. Mongoose query builders (`Patient.find().populate('doctor_id').sort('-createdAt')`) retrieve patients with doctor details in a single query. Indexes on `email` (unique) and `createdAt` (for time-based queries) optimize performance. MongoDB sharding supports future scaling.
 
 #### AWS S3 & Document Management
 AWS S3 provides enterprise-grade cloud storage for Health-Track's documents. Medical documents and pharmacy reports are uploaded to S3 buckets with organized folder structures: `documents/patient_${id}/`, `reports/pharmacist_${id}/`. S3's versioning enables document history tracking - if a patient uploads a new lab report, previous versions remain accessible. Server-side encryption (SSE-S3) encrypts all files at rest, meeting healthcare data security requirements. Pre-signed URLs (`getSignedUrl()`) with 1-hour expiration enable secure, temporary access - patients can view/download their documents without making S3 buckets public. S3's lifecycle policies automatically delete old reports after retention periods, managing storage costs. Cross-region replication ensures disaster recovery. S3 event notifications could trigger Lambda functions for automatic document processing (OCR, metadata extraction). CloudFront CDN could cache frequently accessed documents for faster global access.
 
 ---
 
-## Project Architecture 🏗️
+## Project Architecture
 
 ```
 Health-Track/
@@ -331,7 +334,7 @@ Health-Track/
 ```
 
 
-## Data Structures 📊
+## Data Structures
 
 ### MongoDB Models
 
@@ -487,7 +490,7 @@ Health-Track/
 
 
 
-## API Documentation 📡
+## API Documentation
 
 ### Base URL
 
@@ -597,7 +600,7 @@ The application uses **Mongoose** as the ODM (Object Document Mapper) for MongoD
 5. **Indexing**: Unique indexes on email fields for fast lookups
 
 
-## Getting Started 🚀
+## Getting Started
 
 ### Prerequisites
 
@@ -686,7 +689,7 @@ The application uses **Mongoose** as the ODM (Object Document Mapper) for MongoD
 
 
 
-## Environment Variables 🔐
+## Environment Variables
 
 ### Backend (`backend/.env`)
 
@@ -702,19 +705,19 @@ MONGO_URI=mongodb://localhost:27017/health-track
 # Or use MongoDB Atlas:
 # MONGO_URI=mongodb+srv://username:password@cluster.mongodb.net/health-track
 
-# JWT Secret (Change this in production!)
+# JWT secret (set a strong value in production)
 JWT_SECRET=your_super_secret_jwt_key_change_this_in_production
 
 # ML Microservice Configuration
 ML_SERVICE_URL=http://localhost:8000
 
-# AWS S3 Configuration (Optional - for file storage)
+# AWS S3 configuration (optional)
 AWS_ACCESS_KEY_ID=your_aws_access_key
 AWS_SECRET_ACCESS_KEY=your_aws_secret_key
 AWS_REGION=your_aws_region
 AWS_BUCKET_NAME=your_bucket_name
 
-# Twilio Configuration (Optional - for SMS)
+# Twilio configuration (optional)
 TWILIO_ACCOUNT_SID=your_twilio_sid
 TWILIO_AUTH_TOKEN=your_twilio_token
 TWILIO_PHONE_NUMBER=your_twilio_phone
@@ -728,7 +731,7 @@ Create a `.env` file in the `frontend` directory:
 # Backend API URL
 VITE_API_URL=http://localhost:5000
 
-# ML Service URL (if directly accessed from frontend)
+# ML service URL (if accessed directly from the frontend)
 VITE_ML_SERVICE_URL=http://localhost:8000
 ```
 
@@ -745,7 +748,7 @@ LOG_LEVEL=INFO
 # Backend Service URL
 BACKEND_SERVICE_URL=http://localhost:5000
 
-# OpenAI API Configuration (for document summarization)
+# OpenAI API configuration (document summarization)
 OPENAI_API_KEY=your_openai_api_key_here
 OPENAI_MODEL=gpt-3.5-turbo
 
@@ -759,43 +762,43 @@ ENABLE_GPU=false
 
 
 
-## Usage 🏥
+## Usage
 
-### Getting Started as an Admin
+### Getting Started as an Administrator
 
-1. Visit the homepage at `http://localhost:5173`
-2. Click **Sign Up** to create a new admin account
-3. Fill in your details and register
-4. You'll be redirected to the Admin Dashboard
+1. Open the homepage at `http://localhost:5173`
+2. Select **Sign Up** to create an administrator account
+3. Complete the registration form
+4. After successful registration, the application redirects to the Admin Dashboard
 
 ### Admin Dashboard
 
 - Add and manage doctors, pharmacists, and patients
-- View organization statistics
-- Update your profile and change password
+- Review organization-level statistics
+- Update profile information and password
 
 ### Doctor Dashboard
 
-- Sign in with your doctor credentials
-- View and manage your assigned patients
-- Add new patients to your care
+- Sign in with doctor credentials
+- View and manage assigned patients
+- Add new patients to care
 
 ### Pharmacist Dashboard
 
-- Sign in with your pharmacist credentials
+- Sign in with pharmacist credentials
 - Manage medicine inventory (add, update, remove)
 - Issue medicines to patients
-- View transaction history
+- Review transaction history
 - Generate and download reports
 
 ### Patient Dashboard
 
-- Sign in with your patient credentials
+- Sign in with patient credentials
 - Upload and manage medical documents
-- View your health records
+- View personal health records
 
 
-## License 📄
+## License
 
 This project is licensed under the Apache License, Version 2.0. See the [LICENSE](./LICENSE) file for details.
 

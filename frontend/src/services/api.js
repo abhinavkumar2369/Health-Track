@@ -113,6 +113,20 @@ export const adminAPI = {
         });
     },
     getUsers: getAdminUsers,
+    updateUser: async (userId, role, userData) => {
+        const token = ensureToken();
+        return apiRequest(`/admin/update-user/${userId}`, {
+            method: 'PUT',
+            body: JSON.stringify({ token, role, ...userData }),
+        });
+    },
+    resetUserPassword: async (userId, role, newPassword) => {
+        const token = ensureToken();
+        return apiRequest(`/admin/reset-user-password/${userId}`, {
+            method: 'PUT',
+            body: JSON.stringify({ token, role, newPassword }),
+        });
+    },
     getPatients: async () => {
         const token = ensureToken();
         return apiRequest(`/admin/patients?token=${token}`);
@@ -173,10 +187,15 @@ export const adminAPI = {
             body: JSON.stringify({ token }),
         });
     },
-    // Emergency access - get complete patient data
+    // Emergency access - get complete user data (patient/doctor/pharmacist)
+    getEmergencyUserData: async (identifier) => {
+        const token = ensureToken();
+        return apiRequest(`/admin/emergency/user/${encodeURIComponent(identifier)}?token=${token}`);
+    },
+    // Backward-compatible alias
     getPatientEmergencyData: async (patientId) => {
         const token = ensureToken();
-        return apiRequest(`/admin/emergency/patient/${patientId}?token=${token}`);
+        return apiRequest(`/admin/emergency/user/${encodeURIComponent(patientId)}?token=${token}`);
     },
 };
 

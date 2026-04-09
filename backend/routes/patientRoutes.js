@@ -21,7 +21,7 @@ router.get("/doctors", async (req, res) => {
     // Format doctors with userId
     const formattedDoctors = doctors.map(doc => ({
       ...doc,
-      oderId: doc.userId || doc._id.toString().slice(-6)
+      oderId: doc.userId || doc._id.toString().slice(-8)
     }));
     
     // Group doctors by specialization

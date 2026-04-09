@@ -1,16 +1,13 @@
 import mongoose from "mongoose";
-
-// Generate unique 6-digit ID
-const generate6DigitId = () => {
-  return Math.floor(100000 + Math.random() * 900000).toString();
-};
+import { generateUniqueHealthcareUserId } from "../utils/healthcareUserId.js";
 
 const doctorSchema = new mongoose.Schema(
   {
     userId: { 
       type: String, 
       unique: true, 
-      default: generate6DigitId,
+      required: true,
+      immutable: true,
       index: true 
     },
     name: { type: String, required: true },
@@ -23,20 +20,16 @@ const doctorSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-// Ensure unique userId before save
-doctorSchema.pre('save', async function(next) {
-  if (this.isNew && !this.userId) {
-    let unique = false;
-    while (!unique) {
-      const newId = generate6DigitId();
-      const existing = await mongoose.models.Doctor.findOne({ userId: newId });
-      if (!existing) {
-        this.userId = newId;
-        unique = true;
-      }
+// Assign globally unique 8-digit IDs for healthcare users.
+doctorSchema.pre("validate", async function (next) {
+  try {
+    if (this.isNew && !this.userId) {
+      this.userId = await generateUniqueHealthcareUserId();
     }
+    next();
+  } catch (error) {
+    next(error);
   }
-  next();
 });
 
 export const Doctor = mongoose.model("Doctor", doctorSchema, "doctor");

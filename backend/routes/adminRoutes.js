@@ -3,6 +3,7 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import crypto from "crypto";
 import dotenv from "dotenv";
+import mongoose from "mongoose";
 import { Doctor } from "../models/Doctor.js";
 import { Pharmacist } from "../models/Pharmacist.js";
 import { Patient } from "../models/Patient.js";
@@ -17,6 +18,8 @@ dotenv.config();
 const router = express.Router();
 
 const validStaffRoles = ["doctor", "pharmacist"];
+
+const getStaffModelByRole = (role) => (role === "doctor" ? Doctor : Pharmacist);
 
 const authenticateAdmin = (token, res) => {
   if (!token) {
@@ -49,9 +52,12 @@ const splitName = (name = "") => {
 const formatStaffUser = (entity, roleOverride = "") => {
   const role = roleOverride || entity.role;
   const { firstName, lastName } = splitName(entity.name || "");
+  const healthcareUserId = entity.userId || entity._id?.toString().slice(-8);
+
   return {
     id: entity._id?.toString(),
-    oderId: entity.userId || entity._id?.toString().slice(-6),
+    userId: healthcareUserId,
+    oderId: healthcareUserId,
     uniqueId: entity._id?.toString(),
     name: entity.name,
     firstName,
@@ -60,6 +66,131 @@ const formatStaffUser = (entity, roleOverride = "") => {
     role,
     specialization: entity.specialization || "",
     createdAt: entity.createdAt,
+  };
+};
+
+const getEmergencyLookupFilters = (identifier = "") => {
+  const trimmedIdentifier = String(identifier).trim();
+  if (!trimmedIdentifier) return [];
+
+  const filters = [{ userId: trimmedIdentifier }];
+  if (mongoose.Types.ObjectId.isValid(trimmedIdentifier)) {
+    filters.push({ _id: trimmedIdentifier });
+  }
+
+  return filters;
+};
+
+const findEmergencyUserByIdentifier = async (identifier) => {
+  const filters = getEmergencyLookupFilters(identifier);
+
+  for (const filter of filters) {
+    const [patient, doctor, pharmacist] = await Promise.all([
+      Patient.findOne(filter).populate("doctor_id", "name email specialization userId").lean(),
+      Doctor.findOne(filter).lean(),
+      Pharmacist.findOne(filter).lean(),
+    ]);
+
+    const matches = [];
+    if (patient) matches.push({ role: "patient", record: patient });
+    if (doctor) matches.push({ role: "doctor", record: doctor });
+    if (pharmacist) matches.push({ role: "pharmacist", record: pharmacist });
+
+    if (matches.length > 1 && Object.prototype.hasOwnProperty.call(filter, "userId")) {
+      return {
+        ambiguous: true,
+        duplicateRoles: matches.map((item) => item.role),
+      };
+    }
+
+    if (matches.length === 1) {
+      return matches[0];
+    }
+  }
+
+  return null;
+};
+
+const formatEmergencyBaseUser = (record, role) => ({
+  _id: record._id,
+  userId: record.userId || "",
+  oderId: record.userId || "",
+  role,
+  name: record.name || "",
+  email: record.email || "",
+  phone: record.phone || "",
+  gender: record.gender || "",
+  createdAt: record.createdAt,
+});
+
+const formatEmergencyPatientData = async (patient) => {
+  const patientId = patient._id;
+
+  const [documents, healthReports, medicines] = await Promise.all([
+    Document.find({ patient_id: patientId })
+      .select("title description category fileType fileSize s3Url createdAt")
+      .sort({ createdAt: -1 })
+      .lean(),
+    HealthReport.find({ patient_id: patientId })
+      .select("reportType diagnosis symptoms notes title description status generatedAt createdAt")
+      .sort({ createdAt: -1 })
+      .lean(),
+    Medicine.find({ patient_id: patientId })
+      .select("name description category quantity expiryDate price")
+      .sort({ createdAt: -1 })
+      .lean(),
+  ]);
+
+  const doctorInfo = patient.doctor_id
+    ? {
+        _id: patient.doctor_id._id,
+        userId: patient.doctor_id.userId || "",
+        name: patient.doctor_id.name || "",
+        email: patient.doctor_id.email || "",
+        specialization: patient.doctor_id.specialization || "",
+      }
+    : null;
+
+  return {
+    ...formatEmergencyBaseUser(patient, "patient"),
+    doctor_id: doctorInfo,
+    documents,
+    healthReports,
+    medicines,
+  };
+};
+
+const formatEmergencyDoctorData = async (doctor) => {
+  const [assignedPatientCount, recentPatients] = await Promise.all([
+    Patient.countDocuments({ doctor_id: doctor._id }),
+    Patient.find({ doctor_id: doctor._id })
+      .select("name email userId createdAt")
+      .sort({ createdAt: -1 })
+      .limit(10)
+      .lean(),
+  ]);
+
+  return {
+    ...formatEmergencyBaseUser(doctor, "doctor"),
+    specialization: doctor.specialization || "",
+    assignedPatientCount,
+    recentPatients,
+  };
+};
+
+const formatEmergencyPharmacistData = async (pharmacist) => {
+  const [inventoryItemCount, inventorySummary] = await Promise.all([
+    Medicine.countDocuments({ pharmacist_id: pharmacist._id }),
+    Medicine.aggregate([
+      { $match: { pharmacist_id: pharmacist._id } },
+      { $group: { _id: null, totalQuantity: { $sum: "$quantity" } } },
+    ]),
+  ]);
+
+  return {
+    ...formatEmergencyBaseUser(pharmacist, "pharmacist"),
+    inventoryItemCount,
+    totalInventoryQuantity: inventorySummary[0]?.totalQuantity || 0,
   };
 };
 
@@ -157,9 +288,12 @@ router.get("/patients", async (req, res) => {
     
     const formattedPatients = patients.map((patient) => {
       const { firstName, lastName } = splitName(patient.name || "");
+      const healthcareUserId = patient.userId || patient._id?.toString().slice(-8);
+
       return {
         id: patient._id?.toString(),
-        oderId: patient.userId || patient._id?.toString().slice(-6),
+        userId: healthcareUserId,
+        oderId: healthcareUserId,
         uniqueId: patient._id?.toString(),
         name: patient.name,
         firstName,
@@ -202,6 +336,8 @@ router.post("/add-patient", async (req, res) => {
 
     return res.status(201).json({
       id: patient._id?.toString(),
+      userId: patient.userId || patient._id?.toString().slice(-8),
+      oderId: patient.userId || patient._id?.toString().slice(-8),
       uniqueId: patient._id?.toString(),
       name: patient.name,
       firstName,
@@ -247,6 +383,102 @@ router.delete("/remove-user/:id", async (req, res) => {
 
     await Pharmacist.findByIdAndDelete(req.params.id);
     return res.json({ message: "Pharmacist removed successfully" });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// ✏️ Update Doctor/Pharmacist details
+router.put("/update-user/:id", async (req, res) => {
+  try {
+    const { token, role, fullname, email, specialization } = req.body;
+    const decoded = authenticateAdmin(token, res);
+    if (!decoded) return;
+
+    if (!validStaffRoles.includes(role)) {
+      return res.status(400).json({ message: "Invalid role provided" });
+    }
+
+    if (!fullname || !fullname.trim()) {
+      return res.status(400).json({ message: "Full name is required" });
+    }
+
+    if (!email || !email.trim()) {
+      return res.status(400).json({ message: "Email is required" });
+    }
+
+    const normalizedEmail = email.trim().toLowerCase();
+    const Model = getStaffModelByRole(role);
+
+    const existingUser = await Model.findOne({
+      _id: req.params.id,
+      admin_id: decoded.id,
+    });
+
+    if (!existingUser) {
+      return res.status(404).json({ message: `${role} not found` });
+    }
+
+    const duplicateEmailUser = await Model.findOne({
+      email: normalizedEmail,
+      _id: { $ne: req.params.id },
+    });
+
+    if (duplicateEmailUser) {
+      return res.status(400).json({ message: "Email already in use" });
+    }
+
+    existingUser.name = fullname.trim();
+    existingUser.email = normalizedEmail;
+
+    if (role === "doctor") {
+      existingUser.specialization = (specialization || "").trim();
+    }
+
+    await existingUser.save();
+
+    return res.json({
+      success: true,
+      message: `${role.charAt(0).toUpperCase() + role.slice(1)} updated successfully`,
+      user: formatStaffUser(existingUser, role),
+    });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// 🔒 Reset Doctor/Pharmacist password (admin action)
+router.put("/reset-user-password/:id", async (req, res) => {
+  try {
+    const { token, role, newPassword } = req.body;
+    const decoded = authenticateAdmin(token, res);
+    if (!decoded) return;
+
+    if (!validStaffRoles.includes(role)) {
+      return res.status(400).json({ message: "Invalid role provided" });
+    }
+
+    if (!newPassword || newPassword.trim().length < 6) {
+      return res.status(400).json({ message: "New password must be at least 6 characters" });
+    }
+
+    const Model = getStaffModelByRole(role);
+    const existingUser = await Model.findOne({
+      _id: req.params.id,
+      admin_id: decoded.id,
+    });
+
+    if (!existingUser) {
+      return res.status(404).json({ message: `${role} not found` });
+    }
+
+    existingUser.password = await bcrypt.hash(newPassword.trim(), 10);
+    await existingUser.save();
+
+    return res.json({
+      success: true,
+      message: `${role.charAt(0).toUpperCase() + role.slice(1)} password reset successfully`,
+    });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -728,7 +960,61 @@ router.get("/validate-token/:apiToken", async (req, res) => {
   }
 });
 
-// Emergency Access - Get complete patient data
+// Emergency Access - Get complete user data by unique ID (patient, doctor, pharmacist)
+router.get("/emergency/user/:identifier", async (req, res) => {
+  try {
+    const { token } = req.query;
+    const decoded = authenticateAdmin(token, res);
+    if (!decoded) return;
+
+    const { identifier } = req.params;
+    const lookupResult = await findEmergencyUserByIdentifier(identifier);
+
+    if (!lookupResult) {
+      return res.status(404).json({
+        success: false,
+        message: "No user found for this unique ID",
+      });
+    }
+
+    if (lookupResult.ambiguous) {
+      return res.status(409).json({
+        success: false,
+        message: "Multiple users found with this ID. Please use MongoDB ID for exact match.",
+        duplicateRoles: lookupResult.duplicateRoles,
+      });
+    }
+
+    let emergencyData;
+    if (lookupResult.role === "patient") {
+      emergencyData = await formatEmergencyPatientData(lookupResult.record);
+    } else if (lookupResult.role === "doctor") {
+      emergencyData = await formatEmergencyDoctorData(lookupResult.record);
+    } else {
+      emergencyData = await formatEmergencyPharmacistData(lookupResult.record);
+    }
+
+    // Log emergency access for audit trail
+    console.log(
+      `[EMERGENCY ACCESS] Admin ${decoded.id} accessed ${lookupResult.role} ${emergencyData._id} (lookup: ${identifier}) at ${new Date().toISOString()}`
+    );
+
+    res.json({
+      success: true,
+      role: lookupResult.role,
+      user: emergencyData,
+      accessTimestamp: new Date().toISOString(),
+    });
+  } catch (err) {
+    console.error("Emergency access error:", err);
+    res.status(500).json({
+      success: false,
+      message: err.message || "Failed to retrieve user data",
+    });
+  }
+});
+
+// Backward-compatible patient-only emergency endpoint
 router.get("/emergency/patient/:patientId", async (req, res) => {
   try {
     const { token } = req.query;
@@ -736,58 +1022,33 @@ router.get("/emergency/patient/:patientId", async (req, res) => {
     if (!decoded) return;
 
     const { patientId } = req.params;
+    const lookupResult = await findEmergencyUserByIdentifier(patientId);
 
-    // Find patient with populated doctor information
-    const patient = await Patient.findById(patientId)
-      .populate('doctor_id', 'name email specialization')
-      .lean();
-
-    if (!patient) {
+    if (!lookupResult || lookupResult.ambiguous || lookupResult.role !== "patient") {
       return res.status(404).json({
         success: false,
-        message: "Patient not found"
+        message: "Patient not found",
       });
     }
 
-    // Fetch associated medical documents
-    const documents = await Document.find({ patient_id: patientId })
-      .select('title description category fileType fileSize s3Url createdAt')
-      .sort({ createdAt: -1 })
-      .lean();
-
-    // Fetch health reports
-    const healthReports = await HealthReport.find({ patient_id: patientId })
-      .select('reportType diagnosis symptoms notes createdAt')
-      .sort({ createdAt: -1 })
-      .lean();
-
-    // Fetch prescribed medicines
-    const medicines = await Medicine.find({ patient_id: patientId })
-      .select('name description category quantity expiryDate price')
-      .sort({ createdAt: -1 })
-      .lean();
-
-    // Combine all data
-    const emergencyData = {
-      ...patient,
-      documents,
-      healthReports,
-      medicines
-    };
+    const emergencyData = await formatEmergencyPatientData(lookupResult.record);
 
     // Log emergency access for audit trail
-    console.log(`[EMERGENCY ACCESS] Admin ${decoded.id} accessed patient ${patientId} data at ${new Date().toISOString()}`);
+    console.log(
+      `[EMERGENCY ACCESS] Admin ${decoded.id} accessed patient ${emergencyData._id} (lookup: ${patientId}) at ${new Date().toISOString()}`
+    );
 
     res.json({
       success: true,
       patient: emergencyData,
-      accessTimestamp: new Date().toISOString()
+      role: "patient",
+      accessTimestamp: new Date().toISOString(),
     });
   } catch (err) {
-    console.error('Emergency access error:', err);
-    res.status(500).json({ 
+    console.error("Emergency access error:", err);
+    res.status(500).json({
       success: false,
-      message: err.message || 'Failed to retrieve patient data'
+      message: err.message || "Failed to retrieve patient data",
     });
   }
 });

@@ -2,7 +2,7 @@
 import { useNavigate } from 'react-router-dom';
 import { authAPI } from '../services/api';
 import authService from '../services/authService';
-import { Crown, Stethoscope, User, Pill, Heart, Mail, Lock, Eye, EyeOff, ArrowRight, ArrowLeft, CheckCircle2 } from 'lucide-react';
+import { Crown, Stethoscope, User, Pill, Heart, Mail, Lock, Eye, EyeOff, ArrowRight, ArrowLeft } from 'lucide-react';
 
 const SignIn = () => {
     const navigate = useNavigate();
@@ -99,7 +99,6 @@ const SignIn = () => {
                                 >
                                     <Icon className="w-5 h-5 flex-shrink-0" strokeWidth={2} />
                                     {label}
-                                    {formData.role === value && <CheckCircle2 className="w-4 h-4 ml-auto text-blue-500" />}
                                 </button>
                             ))}
                         </div>
