@@ -244,7 +244,7 @@ function Homepage() {
                                 Coordinate and scale care delivery through a unified clinical platform.
                             </h1>
                             <p className="text-base sm:text-base text-slate-200 max-w-xl">
-                                Health Track unifies clinical workflows, revenue operations, laboratory systems, and patient engagement with AI-assisted capabilities for regulated healthcare teams.
+                                Health Track unifies clinical workflows, revenue operations, laboratory systems, and patient engagement with AI-powered clinical assistants for regulated healthcare teams.
                             </p>
                             <div className="flex flex-col sm:flex-row gap-3">
                                 <button onClick={() => navigate('/sign-in')} className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl sm:rounded-2xl bg-white text-slate-900 font-semibold text-sm shadow-lg shadow-white/20">
@@ -448,7 +448,7 @@ function Homepage() {
                     <div className="max-w-6xl mx-auto">
                         <div className="flex flex-col gap-2.5 sm:gap-4 mb-8 sm:mb-16 text-center pb-6 sm:pb-8">
                             <p className="text-xs sm:text-sm font-semibold tracking-[0.3em] text-emerald-300">INTELLIGENCE LAYER</p>
-                            <h2 className="text-2xl sm:text-4xl font-bold">AI-enabled capabilities designed for healthcare compliance.</h2>
+                            <h2 className="text-2xl sm:text-4xl font-bold">AI-powered clinical assistants designed for healthcare compliance.</h2>
                             <p className="text-sm sm:text-lg text-white/70 max-w-3xl mx-auto">Compliance-locked automations analyze billions of data points daily to surface the next best action for every role.</p>
                         </div>
                         <div className="grid md:grid-cols-3 gap-3 sm:gap-6 lg:gap-8">
