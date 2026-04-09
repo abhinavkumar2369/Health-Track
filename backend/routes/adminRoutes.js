@@ -229,6 +229,48 @@ router.delete("/remove-patient/:id", async (req, res) => {
   }
 });
 
+// ✏️ Update Doctor/Pharmacist details
+router.put("/update-user/:id", async (req, res) => {
+  try {
+    const { token, role, fullname, email, specialization } = req.body;
+    const decoded = authenticateAdmin(token, res);
+    if (!decoded) return;
+
+    if (!validStaffRoles.includes(role)) {
+      return res.status(400).json({ message: "Invalid role provided" });
+    }
+
+    if (!fullname || !fullname.trim()) {
+      return res.status(400).json({ message: "Full name is required" });
+    }
+    if (!email || !email.trim()) {
+      return res.status(400).json({ message: "Email is required" });
+    }
+
+    const Model = role === "doctor" ? Doctor : Pharmacist;
+
+    // Check email uniqueness (excluding current record)
+    const existing = await Model.findOne({ email: email.trim(), _id: { $ne: req.params.id } });
+    if (existing) {
+      return res.status(400).json({ message: "Email already in use by another user" });
+    }
+
+    const updateData = { name: fullname.trim(), email: email.trim() };
+    if (role === "doctor" && specialization !== undefined) {
+      updateData.specialization = specialization.trim();
+    }
+
+    const updated = await Model.findByIdAndUpdate(req.params.id, updateData, { new: true, runValidators: true });
+    if (!updated) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    return res.json({ success: true, message: "User updated successfully", data: formatStaffUser(updated, role) });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
 // ❌ Remove Doctor/Pharmacist
 router.delete("/remove-user/:id", async (req, res) => {
   try {
@@ -251,6 +293,36 @@ router.delete("/remove-user/:id", async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 });
+
+// 🔑 Reset Doctor/Pharmacist Password (Admin)
+router.put("/reset-user-password/:id", async (req, res) => {
+  try {
+    const { token, role, newPassword } = req.body;
+    const decoded = authenticateAdmin(token, res);
+    if (!decoded) return;
+
+    if (!validStaffRoles.includes(role)) {
+      return res.status(400).json({ message: "Invalid role provided" });
+    }
+    if (!newPassword || newPassword.length < 6) {
+      return res.status(400).json({ message: "Password must be at least 6 characters" });
+    }
+
+    const Model = role === "doctor" ? Doctor : Pharmacist;
+    const hashed = await bcrypt.hash(newPassword, 10);
+    const updated = await Model.findByIdAndUpdate(req.params.id, { password: hashed }, { new: true });
+
+    if (!updated) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    return res.json({ success: true, message: "Password reset successfully" });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+
 
 // 📋 Get Admin Profile
 router.get("/profile", async (req, res) => {

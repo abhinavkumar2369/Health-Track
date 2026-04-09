@@ -118,6 +118,22 @@ export const adminAPI = {
         return apiRequest(`/admin/patients?token=${token}`);
     },
     removeUser: removeAdminUser,
+    updateDoctor: async (doctorId, { fullname, email, specialization }) => {
+        const token = ensureToken();
+        return apiRequest(`/admin/update-user/${doctorId}`, {
+            method: 'PUT',
+            body: JSON.stringify({ token, role: 'doctor', fullname, email, specialization }),
+        });
+    },
+    resetDoctorPassword: async (doctorId, newPassword) => {
+        const token = ensureToken();
+        return apiRequest(`/admin/reset-user-password/${doctorId}`, {
+            method: 'PUT',
+            body: JSON.stringify({ token, role: 'doctor', newPassword }),
+        });
+    },
+
+
     removePatient: async (patientId) => {
         const token = ensureToken();
         return apiRequest(`/admin/remove-patient/${patientId}`, {

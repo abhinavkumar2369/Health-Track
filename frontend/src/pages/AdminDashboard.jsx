@@ -105,6 +105,16 @@ const AdminDashboard = () => {
     const [emergencyLoading, setEmergencyLoading] = useState(false);
     const [emergencyError, setEmergencyError] = useState('');
 
+    // Edit Doctor state
+    const [showEditDoctorModal, setShowEditDoctorModal] = useState(false);
+    const [editDoctorData, setEditDoctorData] = useState({ id: '', name: '', email: '', specialization: '' });
+    const [editDoctorErrors, setEditDoctorErrors] = useState({});
+    const [isEditingDoctor, setIsEditingDoctor] = useState(false);
+    const [editDoctorError, setEditDoctorError] = useState('');
+    const [newDoctorPassword, setNewDoctorPassword] = useState('');
+    const [showNewPassword, setShowNewPassword] = useState(false);
+    const [passwordResetSuccess, setPasswordResetSuccess] = useState('');
+
     useEffect(() => {
         const currentUser = authService.getCurrentUser();
         if (!currentUser || currentUser.role !== 'admin') {
@@ -466,6 +476,65 @@ const AdminDashboard = () => {
         }
     };
 
+    const openEditDoctorModal = (doctor) => {
+        setEditDoctorData({
+            id: doctor.id,
+            name: doctor.name || '',
+            email: doctor.email || '',
+            specialization: doctor.specialization || ''
+        });
+        setEditDoctorErrors({});
+        setEditDoctorError('');
+        setNewDoctorPassword('');
+        setShowNewPassword(false);
+        setPasswordResetSuccess('');
+        setShowEditDoctorModal(true);
+    };
+
+    const generateRandomPassword = () => {
+        const chars = 'ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789@#$!';
+        const pwd = Array.from({ length: 12 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+        setNewDoctorPassword(pwd);
+        setShowNewPassword(true);
+    };
+
+    const handleEditDoctorSubmit = async (e) => {
+        e.preventDefault();
+        const errors = {};
+        if (!editDoctorData.name.trim()) errors.name = 'Name is required';
+        if (!editDoctorData.email.trim()) errors.email = 'Email is required';
+        else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(editDoctorData.email.trim())) errors.email = 'Enter a valid email';
+        if (newDoctorPassword && newDoctorPassword.length < 6) errors.newPassword = 'Password must be at least 6 characters';
+        setEditDoctorErrors(errors);
+        if (Object.keys(errors).length > 0) return;
+
+        setIsEditingDoctor(true);
+        setEditDoctorError('');
+        setPasswordResetSuccess('');
+        try {
+            // Update doctor info
+            await adminAPI.updateDoctor(editDoctorData.id, {
+                fullname: editDoctorData.name.trim(),
+                email: editDoctorData.email.trim(),
+                specialization: editDoctorData.specialization.trim()
+            });
+
+            // Reset password if provided
+            if (newDoctorPassword.trim()) {
+                await adminAPI.resetDoctorPassword(editDoctorData.id, newDoctorPassword.trim());
+            }
+
+            setSuccessMessage(newDoctorPassword.trim() ? 'Doctor updated and password reset!' : 'Doctor updated successfully!');
+            setTimeout(() => setSuccessMessage(''), 3000);
+            setShowEditDoctorModal(false);
+            await loadData();
+        } catch (err) {
+            setEditDoctorError(err.message || 'Failed to update doctor');
+        } finally {
+            setIsEditingDoctor(false);
+        }
+    };
+
     const handleRemoveUser = async (userId, role) => {
         if (!window.confirm(`Are you sure you want to remove this ${role}?`)) {
             return;
@@ -681,16 +750,6 @@ const AdminDashboard = () => {
                 <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
                     {activeSection === 'dashboard' && (
                         <div className="space-y-6">
-                            {/* Section Header */}
-                            <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center">
-                                    <LayoutDashboard className="w-5 h-5 text-blue-600" />
-                                </div>
-                                <div>
-                                    <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Dashboard</h2>
-                                    <p className="text-sm text-gray-500">Overview of your health system</p>
-                                </div>
-                            </div>
 
                             {/* Stat Summary Cards */}
                             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -1105,12 +1164,20 @@ const AdminDashboard = () => {
                                                     </div>
                                                     <div className="flex justify-between items-center">
                                                         <span className="text-xs text-gray-400">ID: {doctor.userId || doctor.uniqueId || doctor.id?.slice(-6)}</span>
-                                                        <button
-                                                            onClick={() => handleRemoveUser(doctor.id, 'doctor')}
-                                                            className="text-xs text-red-600 hover:text-red-700 font-medium"
-                                                        >
-                                                            Remove
-                                                        </button>
+                                                        <div className="flex items-center gap-3">
+                                                            <button
+                                                                onClick={() => openEditDoctorModal(doctor)}
+                                                                className="text-xs text-blue-600 hover:text-blue-700 font-medium"
+                                                            >
+                                                                Edit
+                                                            </button>
+                                                            <button
+                                                                onClick={() => handleRemoveUser(doctor.id, 'doctor')}
+                                                                className="text-xs text-red-600 hover:text-red-700 font-medium"
+                                                            >
+                                                                Remove
+                                                            </button>
+                                                        </div>
                                                     </div>
                                                 </div>
                                             ))}
@@ -1141,12 +1208,20 @@ const AdminDashboard = () => {
                                                             </td>
                                                             <td className="px-4 lg:px-6 py-4 text-sm text-gray-500 hidden lg:table-cell">{formatDisplayDate(doctor.createdAt)}</td>
                                                             <td className="px-4 lg:px-6 py-4">
-                                                                <button
-                                                                    onClick={() => handleRemoveUser(doctor.id, 'doctor')}
-                                                                    className="text-sm text-red-600 hover:text-red-700 font-medium hover:underline"
-                                                                >
-                                                                    Remove
-                                                                </button>
+                                                                <div className="flex items-center gap-4">
+                                                                    <button
+                                                                        onClick={() => openEditDoctorModal(doctor)}
+                                                                        className="text-sm text-blue-600 hover:text-blue-700 font-medium hover:underline"
+                                                                    >
+                                                                        Edit
+                                                                    </button>
+                                                                    <button
+                                                                        onClick={() => handleRemoveUser(doctor.id, 'doctor')}
+                                                                        className="text-sm text-red-600 hover:text-red-700 font-medium hover:underline"
+                                                                    >
+                                                                        Remove
+                                                                    </button>
+                                                                </div>
                                                             </td>
                                                         </tr>
                                                     ))}
@@ -1651,21 +1726,8 @@ const AdminDashboard = () => {
                                 </div>
                             )}
 
-                            {/* Warning Notice */}
-                            <div className="bg-amber-50 border border-amber-200 rounded-2xl p-5">
-                                <div className="flex items-start gap-3">
-                                    <div className="w-8 h-8 bg-amber-100 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5">
-                                        <AlertCircle className="w-4 h-4 text-amber-600" />
-                                    </div>
-                                    <div>
-                                        <p className="text-sm font-semibold text-amber-900">Emergency Access Notice</p>
-                                        <p className="text-sm text-amber-700 mt-1">
-                                            This feature is intended for emergency situations only. All accesses are logged and audited. 
-                                            Misuse of this feature may result in disciplinary action.
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
+
+
                         </div>
                     )}
 
@@ -2074,6 +2136,124 @@ const AdminDashboard = () => {
                     )}
                 </main>
             </div>
+
+            {/* Edit Doctor Modal */}
+            {showEditDoctorModal && (
+                <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+                    <div className="bg-white rounded-xl shadow-2xl max-w-md w-full">
+                        <div className="p-6 border-b border-gray-200 flex items-center justify-between">
+                            <h2 className="text-xl font-bold text-gray-900">Edit Doctor</h2>
+                            <button onClick={() => setShowEditDoctorModal(false)} className="text-gray-400 hover:text-gray-600">
+                                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                        </div>
+                        <form onSubmit={handleEditDoctorSubmit} className="p-6 space-y-4">
+                            {editDoctorError && (
+                                <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                                    <p className="text-red-700 text-sm">{editDoctorError}</p>
+                                </div>
+                            )}
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Full Name *</label>
+                                <input
+                                    type="text"
+                                    value={editDoctorData.name}
+                                    onChange={(e) => setEditDoctorData({ ...editDoctorData, name: e.target.value })}
+                                    className={`w-full px-4 py-2 border-2 rounded-lg outline-none focus:border-blue-500 transition-colors ${
+                                        editDoctorErrors.name ? 'border-red-400' : 'border-gray-200'
+                                    }`}
+                                    placeholder="Full name"
+                                />
+                                {editDoctorErrors.name && <p className="text-red-500 text-xs mt-1">{editDoctorErrors.name}</p>}
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Email *</label>
+                                <input
+                                    type="email"
+                                    value={editDoctorData.email}
+                                    onChange={(e) => setEditDoctorData({ ...editDoctorData, email: e.target.value })}
+                                    className={`w-full px-4 py-2 border-2 rounded-lg outline-none focus:border-blue-500 transition-colors ${
+                                        editDoctorErrors.email ? 'border-red-400' : 'border-gray-200'
+                                    }`}
+                                    placeholder="Email address"
+                                />
+                                {editDoctorErrors.email && <p className="text-red-500 text-xs mt-1">{editDoctorErrors.email}</p>}
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Specialization</label>
+                                <input
+                                    type="text"
+                                    value={editDoctorData.specialization}
+                                    onChange={(e) => setEditDoctorData({ ...editDoctorData, specialization: e.target.value })}
+                                    className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg outline-none focus:border-blue-500 transition-colors"
+                                    placeholder="e.g. Cardiologist"
+                                />
+                            </div>
+
+                            {/* Password Reset Section */}
+                            <div className="border-t border-gray-100 pt-4">
+                                <div className="flex items-center justify-between mb-2">
+                                    <label className="block text-sm font-medium text-gray-700">Reset Password <span className="text-gray-400 font-normal">(optional)</span></label>
+                                    <button
+                                        type="button"
+                                        onClick={generateRandomPassword}
+                                        className="text-xs bg-purple-50 text-purple-700 border border-purple-200 hover:bg-purple-100 px-3 py-1 rounded-lg font-medium transition-colors"
+                                    >
+                                        Generate Random
+                                    </button>
+                                </div>
+                                <div className="relative">
+                                    <input
+                                        type={showNewPassword ? 'text' : 'password'}
+                                        value={newDoctorPassword}
+                                        onChange={(e) => setNewDoctorPassword(e.target.value)}
+                                        className={`w-full px-4 py-2 pr-10 border-2 rounded-lg outline-none focus:border-blue-500 transition-colors font-mono ${
+                                            editDoctorErrors.newPassword ? 'border-red-400' : 'border-gray-200'
+                                        }`}
+                                        placeholder="Leave blank to keep current password"
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowNewPassword(!showNewPassword)}
+                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                                    >
+                                        {showNewPassword ? (
+                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" /></svg>
+                                        ) : (
+                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+                                        )}
+                                    </button>
+                                </div>
+                                {editDoctorErrors.newPassword && <p className="text-red-500 text-xs mt-1">{editDoctorErrors.newPassword}</p>}
+                                {newDoctorPassword && (
+                                    <p className="text-xs text-amber-600 mt-1 flex items-center gap-1">
+                                        <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" /></svg>
+                                        Share this password with the doctor securely
+                                    </p>
+                                )}
+                            </div>
+                            <div className="flex gap-3 pt-2">
+                                <button
+                                    type="submit"
+                                    disabled={isEditingDoctor}
+                                    className="flex-1 bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:opacity-60"
+                                >
+                                    {isEditingDoctor ? 'Saving...' : 'Save Changes'}
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setShowEditDoctorModal(false)}
+                                    className="flex-1 bg-gray-100 text-gray-700 py-2 rounded-lg hover:bg-gray-200 transition-colors font-medium"
+                                >
+                                    Cancel
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
 
             {/* Add User Modal */}
             {showModal && (

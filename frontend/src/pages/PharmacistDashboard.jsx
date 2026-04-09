@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { pharmacistAPI } from '../services/api';
 import { LayoutDashboard, Package, ArrowLeftRight, BarChart3, User, LogOut, Settings, FileText, Download, Trash2, Plus, Menu, X, Send, TrendingUp, AlertTriangle, CheckCircle } from 'lucide-react';
@@ -1439,141 +1439,207 @@ const PharmacistDashboard = () => {
                 )}
 
                 {activeTab === 'personal-details' && (
-                    <div className="space-y-4 sm:space-y-6">
-                        {/* <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Settings</h2> */}
+                    <div className="space-y-5">
 
+                        {/* Alerts */}
                         {error && (
-                            <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-                                <p className="text-red-700 text-sm">{error}</p>
+                            <div className="flex items-center gap-2 bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-sm text-red-700">
+                                <svg className="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd"/></svg>
+                                {error}
                             </div>
                         )}
                         {success && (
-                            <div className="bg-green-50 border border-green-200 rounded-lg p-3">
-                                <p className="text-green-700 text-sm">{success}</p>
+                            <div className="flex items-center gap-2 bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-3 text-sm text-emerald-700">
+                                <svg className="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"/></svg>
+                                {success}
                             </div>
                         )}
 
-                        {/* Profile Settings */}
-                        <div className="bg-white rounded-xl border border-gray-200 p-5">
-                            <div className="flex items-center justify-between gap-4 mb-6 pb-4 border-b border-gray-100">
-                                <div className="flex items-center gap-4">
-                                    <div className="w-14 h-14 bg-blue-100 rounded-full flex items-center justify-center text-xl font-bold text-blue-600">
-                                        {user?.fullName?.charAt(0)?.toUpperCase() || user?.email?.charAt(0)?.toUpperCase() || 'P'}
-                                    </div>
-                                    <div>
-                                        <h3 className="font-semibold text-gray-900">{user?.fullName || profileForm.name || 'Pharmacist'}</h3>
-                                        <p className="text-sm text-gray-500">{user?.email || 'No email'}</p>
-                                    </div>
+                        {/* ── Full-width Profile Banner ── */}
+                        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+                            {/* Colored top strip */}
+                            <div className="h-2 bg-gradient-to-r from-blue-500 via-indigo-500 to-violet-500"/>
+                            <div className="flex flex-col sm:flex-row sm:items-center gap-5 p-6">
+                                {/* Avatar */}
+                                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-2xl font-bold text-white shadow-md flex-shrink-0">
+                                    {user?.fullName?.charAt(0)?.toUpperCase() || user?.email?.charAt(0)?.toUpperCase() || 'P'}
                                 </div>
-                                <div className="text-right">
-                                    <p className="text-xs text-gray-500">Pharmacist ID</p>
-                                    <p className="text-lg font-mono font-bold text-blue-600">#{user?.userId || user?.id?.slice(-6) || 'N/A'}</p>
+                                {/* Name & email */}
+                                <div className="flex-1 min-w-0">
+                                    <h2 className="text-xl font-bold text-gray-900 leading-tight truncate">{user?.fullName || profileForm.name || 'Pharmacist'}</h2>
+                                    <p className="text-sm text-gray-500 mt-0.5 truncate">{user?.email}</p>
+                                </div>
+                                {/* Badges */}
+                                <div className="flex flex-wrap gap-2">
+                                    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200">
+                                        <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd"/></svg>
+                                        Pharmacist
+                                    </span>
+                                    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-gray-100 text-gray-600 border border-gray-200">
+                                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0"/></svg>
+                                        <span className="font-mono">#{user?.userId || user?.id?.slice(-6) || 'N/A'}</span>
+                                    </span>
+                                    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                        <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"/>
+                                        Active
+                                    </span>
                                 </div>
                             </div>
-                            <h3 className="text-lg font-semibold text-gray-900 mb-4">Profile Information</h3>
-                            <form onSubmit={handleUpdateProfile} className="space-y-4">
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        </div>
+
+                        {/* ── Full-width two-column forms ── */}
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+
+                            {/* Edit Profile */}
+                            <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+                                <div className="flex items-center gap-2.5 px-6 py-4 border-b border-gray-100">
+                                    <div className="w-7 h-7 rounded-lg bg-blue-100 flex items-center justify-center">
+                                        <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+                                    </div>
+                                    <h3 className="text-sm font-semibold text-gray-800">Edit Profile</h3>
+                                </div>
+                                <form onSubmit={handleUpdateProfile} className="p-6 space-y-4">
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-2">Full Name</label>
+                                        <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Full Name</label>
                                         <input
                                             type="text"
                                             name="fullname"
                                             required
                                             value={profileForm.name}
                                             onChange={(e) => setProfileForm({...profileForm, name: e.target.value})}
-                                            className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg outline-none focus:border-blue-500 focus:ring-0 transition-colors"
-                                            placeholder="Enter your name"
+                                            className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm text-gray-900 bg-gray-50 outline-none focus:bg-white focus:border-blue-400 focus:ring-3 focus:ring-blue-100 transition-all"
+                                            placeholder="Your full name"
                                         />
                                     </div>
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-2">Gender</label>
-                                        <select
-                                            name="gender"
-                                            value={profileForm.gender}
-                                            onChange={(e) => setProfileForm({...profileForm, gender: e.target.value})}
-                                            className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg outline-none focus:border-blue-500 focus:ring-0 transition-colors"
-                                        >
-                                            <option value="">Select gender</option>
-                                            <option value="male">Male</option>
-                                            <option value="female">Female</option>
-                                            <option value="other">Other</option>
-                                        </select>
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-2">Phone</label>
+                                        <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Email Address</label>
                                         <input
-                                            type="tel"
-                                            name="phone"
-                                            value={profileForm.phone}
-                                            onChange={(e) => setProfileForm({...profileForm, phone: e.target.value})}
-                                            className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg outline-none focus:border-blue-500 focus:ring-0 transition-colors"
-                                            placeholder="Enter phone number"
+                                            type="email"
+                                            readOnly
+                                            value={user?.email || ''}
+                                            className="w-full px-3.5 py-2.5 border border-gray-100 rounded-xl text-sm text-gray-400 bg-gray-100 cursor-not-allowed outline-none"
                                         />
+                                        <p className="text-xs text-gray-400 mt-1">Email cannot be changed.</p>
                                     </div>
-                                </div>
-                                <button
-                                    type="submit"
-                                    disabled={loading}
-                                    className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors disabled:bg-gray-400"
-                                >
-                                    {loading ? 'Saving...' : 'Save Changes'}
-                                </button>
-                            </form>
-                        </div>
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <div>
+                                            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Gender</label>
+                                            <select
+                                                name="gender"
+                                                value={profileForm.gender}
+                                                onChange={(e) => setProfileForm({...profileForm, gender: e.target.value})}
+                                                className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm text-gray-900 bg-gray-50 outline-none focus:bg-white focus:border-blue-400 focus:ring-3 focus:ring-blue-100 transition-all"
+                                            >
+                                                <option value="">Select gender</option>
+                                                <option value="male">Male</option>
+                                                <option value="female">Female</option>
+                                                <option value="other">Other</option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Phone</label>
+                                            <input
+                                                type="tel"
+                                                name="phone"
+                                                value={profileForm.phone}
+                                                onChange={(e) => setProfileForm({...profileForm, phone: e.target.value})}
+                                                className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm text-gray-900 bg-gray-50 outline-none focus:bg-white focus:border-blue-400 focus:ring-3 focus:ring-blue-100 transition-all"
+                                                placeholder="+91 00000 00000"
+                                            />
+                                        </div>
+                                    </div>
+                                    <button
+                                        type="submit"
+                                        disabled={loading}
+                                        className="w-full bg-blue-600 text-white py-2.5 rounded-xl text-sm font-semibold hover:bg-blue-700 active:scale-95 transition-all disabled:opacity-50 shadow-sm"
+                                    >
+                                        {loading ? 'Saving...' : 'Save Changes'}
+                                    </button>
+                                </form>
+                            </div>
 
-                        {/* Password Change */}
-                        <div className="bg-white rounded-xl border border-gray-200 p-5">
-                            <h3 className="text-lg font-semibold text-gray-900 mb-4">Change Password</h3>
-                            <form onSubmit={handleUpdatePassword} className="space-y-4">
-                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                            {/* Change Password */}
+                            <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+                                <div className="flex items-center gap-2.5 px-6 py-4 border-b border-gray-100">
+                                    <div className="w-7 h-7 rounded-lg bg-indigo-100 flex items-center justify-center">
+                                        <svg className="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                                    </div>
+                                    <h3 className="text-sm font-semibold text-gray-800">Change Password</h3>
+                                </div>
+                                <form onSubmit={handleUpdatePassword} className="p-6 space-y-4">
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-2">Current Password</label>
+                                        <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Current Password</label>
                                         <input
                                             type="password"
                                             name="currentPassword"
                                             required
                                             value={passwordForm.currentPassword}
                                             onChange={(e) => setPasswordForm({...passwordForm, currentPassword: e.target.value})}
-                                            className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg outline-none focus:border-blue-500 focus:ring-0 transition-colors"
-                                            placeholder="Current password"
+                                            className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm text-gray-900 bg-gray-50 outline-none focus:bg-white focus:border-indigo-400 focus:ring-3 focus:ring-indigo-100 transition-all"
+                                            placeholder="Enter current password"
                                         />
                                     </div>
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-2">New Password</label>
+                                        <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">New Password</label>
                                         <input
                                             type="password"
                                             name="newPassword"
                                             required
                                             value={passwordForm.newPassword}
                                             onChange={(e) => setPasswordForm({...passwordForm, newPassword: e.target.value})}
-                                            className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg outline-none focus:border-blue-500 focus:ring-0 transition-colors"
-                                            placeholder="New password"
+                                            className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm text-gray-900 bg-gray-50 outline-none focus:bg-white focus:border-indigo-400 focus:ring-3 focus:ring-indigo-100 transition-all"
+                                            placeholder="Minimum 6 characters"
                                         />
+                                        {passwordForm.newPassword.length > 0 && (
+                                            <div className="mt-2 flex gap-1">
+                                                {[1,2,3,4].map(i => (
+                                                    <div key={i} className={`h-1.5 flex-1 rounded-full transition-all ${
+                                                        passwordForm.newPassword.length >= i * 3
+                                                            ? i <= 1 ? 'bg-red-400' : i <= 2 ? 'bg-amber-400' : i <= 3 ? 'bg-yellow-400' : 'bg-emerald-500'
+                                                            : 'bg-gray-200'
+                                                    }`}/>
+                                                ))}
+                                            </div>
+                                        )}
                                     </div>
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-2">Confirm Password</label>
+                                        <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Confirm New Password</label>
                                         <input
                                             type="password"
                                             name="confirmPassword"
                                             required
                                             value={passwordForm.confirmPassword}
                                             onChange={(e) => setPasswordForm({...passwordForm, confirmPassword: e.target.value})}
-                                            className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg outline-none focus:border-blue-500 focus:ring-0 transition-colors"
-                                            placeholder="Confirm password"
+                                            className={`w-full px-3.5 py-2.5 border rounded-xl text-sm text-gray-900 bg-gray-50 outline-none transition-all ${
+                                                passwordForm.confirmPassword.length > 0
+                                                    ? passwordForm.confirmPassword === passwordForm.newPassword
+                                                        ? 'border-emerald-400 focus:ring-3 focus:ring-emerald-100 bg-emerald-50/30'
+                                                        : 'border-red-300 focus:ring-3 focus:ring-red-100'
+                                                    : 'border-gray-200 focus:bg-white focus:border-indigo-400 focus:ring-3 focus:ring-indigo-100'
+                                            }`}
+                                            placeholder="Repeat new password"
                                         />
+                                        {passwordForm.confirmPassword.length > 0 && passwordForm.confirmPassword !== passwordForm.newPassword && (
+                                            <p className="text-xs text-red-500 mt-1">Passwords do not match.</p>
+                                        )}
+                                        {passwordForm.confirmPassword.length > 0 && passwordForm.confirmPassword === passwordForm.newPassword && (
+                                            <p className="text-xs text-emerald-600 mt-1">Passwords match ✓</p>
+                                        )}
                                     </div>
-                                </div>
-                                <button
-                                    type="submit"
-                                    disabled={loading}
-                                    className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors disabled:bg-gray-400"
-                                >
-                                    {loading ? 'Updating...' : 'Update Password'}
-                                </button>
-                            </form>
+                                    <button
+                                        type="submit"
+                                        disabled={loading}
+                                        className="w-full bg-indigo-600 text-white py-2.5 rounded-xl text-sm font-semibold hover:bg-indigo-700 active:scale-95 transition-all disabled:opacity-50 shadow-sm"
+                                    >
+                                        {loading ? 'Updating...' : 'Update Password'}
+                                    </button>
+                                </form>
+                            </div>
+
                         </div>
                     </div>
                 )}
+
             </main>
 
             {/* Add Medicine Modal */}
