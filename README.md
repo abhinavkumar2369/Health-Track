@@ -1,82 +1,19 @@
-# Health-Track
-
 ![Health Track Banner](0_docs/screenshots/health-track-banner.png)
 
 ## Overview
 
-Health-Track is a healthcare management platform that combines standard clinical workflows with AI/ML-assisted services.
-
-- **Patient Care Management**: Structured management of patient records, medical workflows, and health documents
-- **AI-Assisted Diagnostics**: Machine learning support for health prediction, diagnostic assistance, and report analysis
-- **Clinical Workflow Support**: Optimized processes for hospitals, doctors, pharmacists, and healthcare staff
-- **Document Intelligence**: AI-based summarization and analysis of medical documents and laboratory reports
-- **Operational Analytics**: Real-time statistics and reporting for healthcare operations
-- **Role-Based Access Control**: Secure multi-tier access for administrators, doctors, pharmacists, and patients
-- **Microservices Architecture**: Separate Express.js backend and Python FastAPI ML service for scalability
-- **Modern Technology Stack**: React.js, Node.js/Express, MongoDB, and Python FastAPI
-- **Cloud Storage Integration**: AWS S3 with pre-signed URLs and encryption
-- **Responsive Interface**: Consistent user experience across desktop and mobile devices
-
+- Health Data and Information Management System (HDIMS) is a digital platform that centralizes patient health records, appointments, prescriptions, and analytics.
+- It improves accessibility, enhances healthcare decision-making, ensures secure data handling, and enables efficient interaction between patients, doctors, hospitals, and laboratories.
 
 ![Health Track Banner](0_docs/screenshots/block-diagram-1.png)
+
 ## Features
 
-### Core Features
-
-- **Secure Authentication**: JWT-based authentication with bcrypt hashing and role-based access control (RBAC)
-- **Role-Based Dashboards**: Dedicated dashboards for administrator, doctor, patient, and pharmacist roles
-- **Electronic Health Records (EHR)**: Digital management of patient records, medical history, and health documents
-- **AI/ML Integration**: Python FastAPI microservice for predictions, diagnostics, and document analysis
-- **Cloud Storage**: AWS S3 integration with pre-signed URLs and encryption
-- **Real-Time Analytics**: Dashboard statistics, charts, and operational insights
-- **Responsive User Interface**: React.js and Tailwind CSS implementation for mobile and desktop usage
-- **API Documentation**: REST API endpoints for core operations
-- **Service Separation**: Independent backend and ML services for maintainability
-
-### Admin Features
-
-- **User Management**: Register and manage doctors, pharmacists, and patients with full CRUD operations
-- **Organization Statistics**: Real-time dashboard with doctor count, pharmacist count, patient count, and activity metrics
-- **Critical Disease Tracking**: AI-powered analysis of medical documents to track disease prevalence and trends
-- **Weekly Activity Analytics**: Visual charts showing document uploads and patient registrations over time
-- **Emergency Access**: Access to complete patient data using Patient ID or QR code for critical situations
-- **API Token Management**: Generate and manage secure API tokens for external system integration
-- **Interoperability Configuration**: Configure third-party integrations with token-based authentication
-- **Profile Management**: Update personal information and secure password management
-- **Pharmacy Inventory Oversight**: Monitor medicine stock levels and low-stock alerts
-- **Audit Trail**: Emergency access events are logged with timestamps for security and compliance
-
-### Doctor Features
-
-- **Patient Management**: Add and manage patients assigned to the doctor's care
-- **Patient List**: View comprehensive list of all assigned patients with contact information
-- **Patient Details**: Access detailed patient information, medical history, and health records
-- **Document Access**: View and analyze patient medical documents and lab reports
-- **Profile Management**: Update personal information, specialization, and secure password updates
-- **Patient Assignment**: Accept new patients into care with proper authorization
-
-### Pharmacist Features
-
-- **Inventory Management**: Add, update, and remove medicines with detailed tracking (name, quantity, category, expiry date, price)
-- **Medicine Dispensing**: Issue medicines to patients with automated stock deduction and validation
-- **Transaction History**: Complete audit trail of all inventory operations (add, issue, remove, update) with timestamps
-- **Report Generation**: Generate comprehensive PDF reports (inventory, transaction, summary) automatically stored in AWS S3
-- **Report Management**: View, download, and delete generated reports with secure S3 pre-signed URLs
-- **Inventory Statistics**: Real-time dashboard with total medicines, total value, low stock alerts, and out-of-stock warnings
-- **Stock Alerts**: Automatic notifications for medicines below threshold or expired items
-- **Profile Management**: Update personal information and secure password management
-- **Search and Filter**: Search and filtering of medicines by name, category, or status
-
-### Patient Features
-
-- **Document Management**: Upload, view, and delete medical documents (lab reports, prescriptions, scans, consultation notes)
-- **Secure File Storage**: Documents stored securely in AWS S3 with pre-signed URLs for time-limited access
-- **Document Categorization**: Organize documents by type (lab-report, prescription, scan, consultation, other)
-- **AI Document Summarization**: AI-generated summaries of medical documents for faster review
-- **Access Control**: Only authorized users can access patient documents with role-based permissions
-- **Health Records Access**: View and manage personal electronic health records (EHR)
-- **File Download**: Secure document download with pre-signed URLs
-- **Profile Management**: Update personal information and secure password management
+- **Core Platform**: Secure authentication, role-based dashboards, EHR management, analytics, AI/ML integration, and cloud-backed storage.
+- **Admin Module**: Complete user management, operational analytics, emergency access workflows, interoperability token management, and audit visibility.
+- **Doctor Module**: Assigned patient management, detailed record access, document review, and profile maintenance.
+- **Pharmacist Module**: Medicine inventory control, dispensing workflow, transaction auditing, PDF reporting, and stock monitoring.
+- **Patient Module**: Secure document lifecycle management, categorized health records, AI-assisted summarization, and controlled file access.
 
 
 
@@ -93,6 +30,10 @@ Health-Track is a healthcare management platform that combines standard clinical
 
 ![Sign In Page](0_docs/screenshots/sign-in.png)
 ![Sign Up Page](0_docs/screenshots/sign-up.png)
+
+## Admin Dashboard
+
+![Admin](0_docs/screenshots/admin-dashboard-1.png)
 
 ---
 
@@ -158,97 +99,212 @@ Health-Track is a healthcare management platform that combines standard clinical
 ### Frontend Technologies
 
 #### React.js 19
-React.js serves as the foundation of our user interface, implementing a component-based architecture that promotes code reusability and maintainability. In Health-Track, React powers all dashboard interfaces including the Admin Dashboard with real-time statistics charts, Doctor Dashboard for patient management, Pharmacist Dashboard with inventory controls, and Patient Dashboard for document management. We extensively utilize React hooks such as `useState` for managing component state (user data, inventory lists, document uploads), `useEffect` for API calls and data fetching, and `useContext` for global authentication state management. The virtual DOM ensures optimal performance even with large datasets like medicine inventories and patient lists. Custom components like `HealthPredictionExample.jsx` demonstrate reusability across different sections of the application.
+- React.js is the foundation of the Health-Track frontend with a component-based architecture.
+- It powers all dashboards: Admin, Doctor, Pharmacist, and Patient.
+- Hooks used extensively include `useState`, `useEffect`, and `useContext`.
+- The virtual DOM helps maintain smooth performance with larger datasets.
+- Reusable components such as `HealthPredictionExample.jsx` reduce duplication.
 
 #### React Router 7
-React Router provides seamless single-page application (SPA) navigation throughout Health-Track. We implemented protected routes to ensure role-based access control - admins can only access admin routes (`/admin-dashboard`), doctors access doctor-specific routes (`/doctor-dashboard`), and so on. The router handles authentication redirects, automatically sending unauthenticated users to the sign-in page and preventing unauthorized access to sensitive dashboards. We use `useNavigate` for programmatic navigation after successful login/logout, and route parameters for dynamic pages like viewing specific patient details or document information. The routing structure maintains clean URLs and enables browser history management for better user experience.
+- React Router enables SPA navigation across the platform.
+- Protected routes enforce role-based access (admin, doctor, pharmacist, patient).
+- Unauthenticated users are redirected to the sign-in page.
+- `useNavigate` is used for programmatic redirects after auth flows.
+- Route parameters support dynamic pages such as patient- or document-specific views.
 
 #### Tailwind CSS 4
-Tailwind CSS provides a utility-first styling approach, enabling rapid UI development without extensive custom CSS. In Health-Track, we created a consistent design system with custom color schemes (blue for primary actions, green for success states, red for alerts), responsive grid layouts for dashboard statistics cards, and mobile-first responsive designs that adapt seamlessly from mobile (320px) to desktop (1920px+). Complex components like the pharmacy inventory table, medicine cards, and document upload interfaces were built entirely with Tailwind utilities. We customized the configuration in `tailwind.config.js` to include our brand colors and extended spacing for healthcare-specific UI patterns. The JIT (Just-In-Time) compiler ensures minimal CSS bundle size in production.
+- Tailwind CSS provides a utility-first styling workflow for rapid UI development.
+- The project uses a consistent visual system for actions, states, and alerts.
+- Layouts are responsive and mobile-first, scaling from small to large screens.
+- Complex views like inventory tables and document interfaces are built with utilities.
+- Tailwind configuration is extended for project-specific spacing and color needs.
 
 #### Axios
-Axios serves as our HTTP client, handling all communication between the React frontend and Express.js backend. We configured Axios with base URL settings (`VITE_API_URL`), request interceptors that automatically attach JWT tokens to authenticated requests, and response interceptors for global error handling. In Health-Track, Axios powers critical operations: user authentication (sign-in/sign-up), fetching dashboard statistics, uploading medical documents to S3, managing pharmacy inventory (CRUD operations), generating and downloading reports, and communicating with the ML microservice for AI predictions. We created a centralized API service (`services/api.js`) with methods like `getCriticalDiseases()`, `getWeeklyActivity()`, and `generateApiToken()` that encapsulate all API calls with proper error handling and loading states.
+- Axios handles frontend-backend communication across all modules.
+- It is configured with environment-based base URLs (`VITE_API_URL`).
+- Interceptors attach JWT tokens and centralize error handling.
+- It supports auth, dashboard stats, document upload, inventory CRUD, reports, and AI calls.
+- API logic is organized in `services/api.js` with reusable methods.
 
 #### Lucide React
-Lucide React provides over 1000 consistent, customizable SVG icons used throughout Health-Track's interface. We implemented icons for navigation (Home, Users, FileText), actions (Upload, Download, Edit, Trash), status indicators (CheckCircle, AlertCircle, XCircle), and healthcare-specific symbols (Pill, Activity, FileHeart). Each dashboard uses icon-enhanced buttons and cards for better visual hierarchy - the pharmacy dashboard displays pill icons for medicines, the document management section uses file icons, and the admin panel shows user management icons. Icons are dynamically sized (`size={20}`) and colored to match Tailwind classes, maintaining consistent visual language. The lightweight SVG format ensures fast loading without compromising quality.
+- Lucide React supplies a large set of consistent SVG icons.
+- Icons are used for navigation, actions, status states, and healthcare-specific contexts.
+- Dashboards use iconography to improve clarity and visual hierarchy.
+- Icon size and color are controlled through component props and Tailwind classes.
 
 #### Vite
-Vite serves as our build tool and development server, providing fast Hot Module Replacement (HMR) during development. Unlike traditional bundlers, Vite leverages native ES modules in the browser during development, resulting in rapid server startup regardless of application size. In Health-Track, Vite's development server (`npm run dev`) enables real-time preview of changes without full page reloads. For production, Vite uses Rollup to create optimized bundles with code splitting, tree-shaking to remove unused code, and asset optimization. We configured Vite in `vite.config.js` to handle environment variables (`VITE_API_URL`), proxy API requests during development, and optimize build output for deployment on Vercel.
+- Vite is used as both the dev server and frontend build tool.
+- It provides fast HMR and quick startup using native ES modules.
+- `npm run dev` enables near-instant feedback during UI development.
+- Production builds are optimized with Rollup features like splitting and tree-shaking.
+- `vite.config.js` handles environment variables and dev proxy behavior.
 
 ### Backend Technologies
 
 #### Node.js
-Node.js provides the JavaScript runtime environment for our backend server, leveraging Chrome's V8 engine for high-performance execution. Health-Track's backend runs entirely on Node.js, handling concurrent requests from multiple users (admins, doctors, pharmacists, patients) simultaneously through its event-driven, non-blocking I/O model. This architecture is ideal for healthcare applications with high I/O operations like database queries, file uploads to S3, and API calls to the ML microservice. Node.js's package ecosystem (npm) enabled rapid integration of libraries like Express, Mongoose, JWT, and AWS SDK. The single-threaded event loop efficiently manages thousands of concurrent connections, making it perfect for real-time healthcare dashboards that require frequent data updates. We use Node.js v18 LTS for production stability and security updates.
+- Node.js is the backend runtime and uses the V8 JavaScript engine.
+- Its event-driven, non-blocking model supports many concurrent requests.
+- It is suitable for I/O-heavy operations such as DB access and file uploads.
+- npm ecosystem support enables rapid integration of required backend libraries.
+- Node.js v18 LTS is used for stability and long-term support.
 
 #### Express.js
-Express.js is the web application framework that structures our RESTful API. We organized the backend into modular routes (`authRoutes.js`, `adminRoutes.js`, `doctorRoutes.js`, `pharmacistRoutes.js`, `patientRoutes.js`, `documentRoutes.js`, `aiRoutes.js`) that handle specific domain logic. Express middleware chains process requests sequentially - CORS middleware enables cross-origin requests from the React frontend, body-parser middleware parses JSON payloads, our custom `authMiddleware.js` validates JWT tokens and enforces role-based access control, and error-handling middleware catches and formats errors. We implemented over 50 API endpoints for operations like user registration, patient management, medicine inventory CRUD, document upload/download, report generation, and AI/ML predictions. Express's routing system with parameters (`:id`, `:documentId`) enables RESTful URL patterns like `/api/documents/:documentId`.
+- Express.js structures the REST API and request lifecycle.
+- Routes are modularized by domain (`authRoutes.js`, `adminRoutes.js`, etc.).
+- Middleware layers handle CORS, JSON parsing, auth checks, and error handling.
+- The API includes endpoints for auth, user management, inventory, reports, and AI features.
+- Parameterized routes support RESTful patterns such as `/api/documents/:documentId`.
 
 #### MongoDB
-MongoDB serves as our primary NoSQL database, storing all application data in flexible JSON-like documents. Health-Track uses MongoDB for its schema flexibility - medical data often varies between patients, and MongoDB accommodates this naturally. We created 11 collections: Admin, Doctor, Patient, Pharmacist, Medicine, Document, Report, Schedule, Transaction, HealthReport, and User. MongoDB's document model aligns perfectly with JavaScript objects, eliminating impedance mismatch. We leverage MongoDB's powerful querying capabilities for complex operations like finding all patients assigned to a specific doctor, filtering medicines by expiry date, searching documents by category, and aggregating transaction statistics for pharmacy reports. MongoDB Atlas provides cloud hosting with automatic backups, while local MongoDB serves development needs. Indexing on email fields ensures fast lookups during authentication.
+- MongoDB is the primary NoSQL datastore using document-based records.
+- Its schema flexibility fits variable healthcare data structures.
+- Core collections include Admin, Doctor, Patient, Pharmacist, Medicine, Document, Report, and more.
+- Query and aggregation features support analytics and operational reports.
+- Email indexing is used to optimize authentication lookups.
 
 #### Mongoose
-Mongoose is our Object Document Mapper (ODM) that adds structure and validation to MongoDB. We defined schemas for each collection with strict type definitions, required fields, default values, and custom validators. For example, the Patient schema requires `name`, `email`, and `password`, links to `doctor_id` via ObjectId reference, and includes automatic `createdAt`/`updatedAt` timestamps. Mongoose middleware (pre-save hooks) hash passwords with bcrypt before storing them. Schema methods like `Medicine.findById()` and `Document.populate('patient_id')` simplify database operations. Virtual properties enable computed fields without database storage. Mongoose validation prevents invalid data entry - email fields use regex validation, enum fields restrict values (e.g., document category: "lab-report", "prescription", "scan"), and custom validators ensure logical consistency like expiry dates being in the future.
+- Mongoose provides ODM capabilities for schema design and validation.
+- Schemas enforce types, required fields, defaults, and custom constraints.
+- ObjectId references model relationships between entities.
+- Middleware (e.g., pre-save hooks) is used for logic like password hashing.
+- Validation rules and enums prevent inconsistent or invalid data.
 
 #### JWT (JSON Web Tokens)
-JWT implements our stateless authentication system across all user roles. When users sign in, the backend generates a JWT containing the user's ID, role (admin/doctor/pharmacist/patient), and expiry time, signed with a secret key from environment variables. This token is sent to the React frontend, stored in localStorage, and included in the Authorization header of subsequent requests. Our `authMiddleware.js` intercepts protected routes, verifies the JWT signature, extracts the user payload, and attaches it to `req.user`. This enables role-based access control - admin routes check `req.user.role === 'admin'`, preventing doctors or patients from accessing admin-only endpoints. JWTs eliminate the need for server-side session storage, enabling horizontal scaling. Token expiry (24 hours) balances security with user convenience. We also implemented a separate API token system using crypto for external system integration.
+- JWT is used for stateless authentication across all roles.
+- Tokens include user identity, role, and expiration, and are securely signed.
+- The frontend stores tokens and sends them in the Authorization header.
+- `authMiddleware.js` verifies tokens and enforces role-based route protection.
+- JWT-based auth supports scalability by avoiding server-side session state.
 
 #### bcryptjs
-bcryptjs provides cryptographic password hashing, ensuring user credentials are never stored in plain text. When users register or change passwords, bcrypt hashes the password with a salt factor of 10 rounds, producing a one-way hash that cannot be reversed. During sign-in, we hash the submitted password and compare it with the stored hash using `bcrypt.compare()`. This timing-safe comparison prevents timing attacks. Even if the database is compromised, attackers cannot retrieve original passwords. Bcrypt's adaptive function means we can increase the salt rounds in the future as computing power grows, maintaining security longevity. All four user types (Admin, Doctor, Pharmacist, Patient) use bcrypt hashing, ensuring consistent security across the platform. The Mongoose pre-save middleware automatically hashes passwords before database insertion.
+- `bcryptjs` hashes passwords so plain-text credentials are never stored.
+- Salting with multiple rounds strengthens resistance to brute-force attacks.
+- `bcrypt.compare()` is used during sign-in for secure hash verification.
+- All role types use consistent password hashing standards.
+- Hashing is integrated with model lifecycle hooks before DB writes.
 
 #### AWS SDK (Amazon S3)
-The AWS SDK integrates Amazon S3 for secure, scalable cloud storage of medical documents and pharmacy reports. Health-Track stores patient-uploaded documents (lab reports, prescriptions, medical scans) and pharmacist-generated PDF reports in S3 buckets. We configured S3 in `config/s3Config.js` with credentials from environment variables. When patients upload documents, Multer handles the multipart form data, and the AWS SDK uploads files to S3 with organized keys (`documents/${patientId}/${filename}`). For security, files are private by default - we generate pre-signed URLs with 1-hour expiration for viewing/downloading, ensuring only authorized users can access documents. S3's durability (99.999999999%) ensures medical records are never lost. Metadata like file size, type, and upload date are stored in MongoDB while actual files live in S3, separating concerns and enabling efficient database queries.
+- AWS SDK integrates S3 for cloud storage of medical files and generated reports.
+- S3 setup is centralized in `config/s3Config.js` with env-based credentials.
+- Uploads use structured key paths for organized file storage.
+- Files remain private, and access is provided through short-lived pre-signed URLs.
+- Metadata is stored in MongoDB while binary files are stored in S3.
 
 #### Multer
-Multer is Node.js middleware that handles multipart/form-data, essential for file uploads in Health-Track. We configured Multer with memory storage (`multer.memoryStorage()`) for document uploads, keeping files in memory buffer before uploading to S3, avoiding local disk I/O. Multer parses the incoming file stream, extracts metadata (filename, mimetype, size), and makes it available in `req.file`. We implemented file type validation (only allowing PDFs, images) and size limits (max 10MB) to prevent abuse. In the document upload route (`/api/documents/upload`), Multer processes the file, we validate the patient is authorized, upload to S3 via AWS SDK, save metadata to MongoDB's Document collection, and return a success response. This pipeline ensures secure, validated file handling for sensitive medical documents.
+- Multer handles `multipart/form-data` uploads in backend routes.
+- Memory storage is used before forwarding files to S3.
+- Upload metadata (name, type, size) is exposed via `req.file`.
+- Validation rules enforce allowed types and max file size limits.
+- The upload flow validates access, stores file data, and persists metadata.
 
 #### PDFKit
-PDFKit generates professional PDF reports for the pharmacy system. Pharmacists can generate three report types: inventory reports (current stock levels, expiry dates), transaction reports (all additions, issuances, removals), and summary reports (statistics and trends). We created custom PDF layouts with headers (pharmacy name, logo), tables (using precise coordinate positioning), formatted text with multiple fonts, and footers with generation timestamp. PDFKit's streaming API writes directly to S3 via AWS SDK without intermediate local files. Report generation includes data aggregation from the Transaction and Medicine collections, formatting numbers (currency, quantities), date formatting, and visual elements like borders and section dividers. Generated reports are stored in S3 with metadata in the Report collection, enabling future retrieval and deletion.
+- PDFKit is used to generate pharmacy PDF reports.
+- Report types include inventory, transaction, and summary formats.
+- Custom layouts include headers, tables, styled text, and timestamps.
+- Reports are streamed directly to S3 without local temporary files.
+- Generated file metadata is tracked for retrieval and management.
 
 #### Twilio
-Twilio integrates SMS notification capabilities for time-sensitive healthcare alerts. While configured in the environment variables, Twilio can send notifications for critical events like appointment reminders, medicine low-stock alerts for pharmacists, prescription ready notifications for patients, and emergency health alerts. The Twilio SDK connects using Account SID and Auth Token, sending SMS via REST API. We store phone numbers in user profiles (Admin, Pharmacist models have phone fields). Future enhancements include scheduled appointment reminders using Twilio's programmable messaging and two-factor authentication for enhanced security during sign-in. The asynchronous SMS sending doesn't block other operations, maintaining application responsiveness.
+- Twilio enables SMS-based alerts for time-sensitive healthcare workflows.
+- Potential use cases include reminders, stock alerts, prescription-ready notices, and emergencies.
+- Integration uses Account SID/Auth Token and REST API messaging.
+- Phone numbers are maintained in user profiles for targeted notifications.
+- Notification workflows are asynchronous to avoid blocking requests.
 
 #### Crypto (Node.js Built-in)
-Node.js's crypto module generates secure API tokens for external system integration. In the admin dashboard's interoperability section, admins can generate API tokens for third-party healthcare systems to access Health-Track APIs. We use `crypto.randomBytes(32).toString('hex')` to generate 64-character hexadecimal tokens with cryptographic randomness, ensuring unpredictability and collision resistance. These tokens are stored in the Admin model with expiry dates (365 days) and can be revoked anytime. The `/admin/validate-token/:apiToken` public endpoint allows external systems to verify token validity before making API requests. This token system enables secure interoperability with electronic health record (EHR) systems, lab systems, and other healthcare platforms while maintaining audit trails and access control.
+- Node.js `crypto` is used to generate secure external API tokens.
+- Tokens are generated with strong randomness (`randomBytes`) for high entropy.
+- Admins can create and revoke tokens from the interoperability workflow.
+- Token records include expiry metadata and validation support.
+- A public validation endpoint enables controlled third-party integrations.
 
 ### ML/AI Microservice Technologies
 
 #### Python 3.x
-Python powers our machine learning microservice due to its dominance in data science and AI. Health-Track's ML service uses Python 3.8+ with its rich ecosystem of scientific computing libraries. Python's readability enabled rapid development of complex ML algorithms for health prediction, diagnostic assistance, and report analysis. The interpreted nature allows easy debugging and testing of ML models. Python's extensive library support (scikit-learn, pandas, numpy) eliminates the need to implement ML algorithms from scratch. We use Python's async/await syntax with FastAPI for concurrent request handling. Type hints (Python 3.5+) improve code quality and work seamlessly with Pydantic for data validation. Virtual environments isolate dependencies, ensuring consistent behavior across development and production. Python's GIL (Global Interpreter Lock) isn't a bottleneck since our ML operations are CPU-bound and handled by optimized C extensions (NumPy, scikit-learn).
+- Python powers the ML/AI microservice and model execution layer.
+- The service uses Python 3.8+ and data-science libraries.
+- Readability and fast iteration support experimentation and debugging.
+- Async support is used with FastAPI for concurrent request handling.
+- Virtual environments isolate dependencies across environments.
 
 #### FastAPI
-FastAPI is the modern Python web framework chosen for its performance and developer experience. Built on Starlette and Pydantic, FastAPI provides automatic request validation, serialization, and OpenAPI documentation generation. In Health-Track, FastAPI routes handle ML predictions: `/health-prediction` analyzes patient vitals, `/diagnostic` suggests diagnoses from symptoms, `/document-summarization` uses GPT for medical document analysis, `/prescription-analysis` checks drug interactions, and `/report-analysis` identifies abnormalities. FastAPI's dependency injection system manages database connections and configuration. Type hints in route functions automatically generate OpenAPI schemas visible at `/docs`, providing interactive API documentation for testing ML endpoints. FastAPI's async capabilities handle concurrent prediction requests efficiently, essential for healthcare applications requiring real-time AI insights. Input validation via Pydantic prevents malformed requests from reaching ML models.
+- FastAPI provides high-performance API routing for ML endpoints.
+- It offers automatic validation, serialization, and OpenAPI docs generation.
+- Endpoints support prediction, diagnostics, summarization, prescription checks, and report analysis.
+- Type hints and dependencies improve maintainability and runtime safety.
+- Async request handling supports responsive real-time inference.
 
 #### Uvicorn
-Uvicorn is the ASGI (Asynchronous Server Gateway Interface) server running the FastAPI application. Unlike WSGI servers (Gunicorn, uWSGI) that handle synchronous Python code, Uvicorn leverages Python's async/await for concurrent request handling. In Health-Track, Uvicorn runs on port 8000 (`uvicorn main:app --reload`), receiving HTTP requests from the Express.js backend, routing them to FastAPI endpoints, and returning ML predictions. The `--reload` flag enables hot reloading during development - code changes automatically restart the server without manual intervention. Uvicorn's performance (benchmarked at 60,000+ requests/second) ensures ML predictions return quickly even under load. In production, Uvicorn runs with multiple worker processes, utilizing all CPU cores for parallel ML inference. The server logs all requests, aiding debugging and monitoring of ML service health.
+- Uvicorn runs the FastAPI app as an ASGI server.
+- It supports async concurrency for efficient request processing.
+- Development mode uses reload for fast iteration.
+- In production, worker scaling improves inference throughput.
+- Request logging supports observability and troubleshooting.
 
 #### Pydantic
-Pydantic provides data validation using Python type annotations, crucial for ML model inputs. We defined Pydantic schemas in `app/api/schemas.py` for each endpoint: `HealthPredictionRequest` validates patient data (age: int, symptoms: List[str], vitals: dict), `DiagnosticRequest` validates symptom inputs, and `DocumentSummarizationRequest` validates document text. Pydantic automatically converts request JSON to Python objects, validates data types, checks required fields, and returns detailed error messages for invalid data. This prevents malformed data from reaching ML models, which could cause crashes or incorrect predictions. Pydantic's `BaseModel` enables response serialization - ML predictions are converted to JSON automatically. Settings management via `pydantic-settings` loads environment variables with type validation, ensuring configuration errors are caught at startup rather than runtime.
+- Pydantic validates request and response payloads using type annotations.
+- Schema models in `app/api/schemas.py` enforce required fields and types.
+- Invalid payloads are rejected early with clear error messages.
+- `BaseModel` simplifies JSON serialization for ML outputs.
+- Typed settings improve configuration safety at startup.
 
 #### NumPy
-NumPy (Numerical Python) handles array operations and mathematical computations in our ML service. Health prediction models use NumPy arrays to represent patient feature vectors (age, blood pressure, heart rate, BMI) for efficient numerical processing. NumPy's vectorized operations (element-wise addition, matrix multiplication) execute in compiled C code, orders of magnitude faster than Python loops. We use NumPy for data preprocessing: normalizing vital signs to 0-1 range (`(x - min) / (max - min)`), calculating statistical measures (mean, standard deviation) for abnormality detection in medical reports, and reshaping data for ML model input. NumPy's n-dimensional arrays store batch predictions, enabling processing multiple patients simultaneously. Integration with scikit-learn is seamless as all ML libraries use NumPy array format, avoiding data structure conversions.
+- NumPy is used for numerical operations and feature-vector handling.
+- Vitals and clinical inputs are represented as efficient arrays.
+- Vectorized operations speed up preprocessing and inference steps.
+- It supports normalization, statistics, and reshaping for model input.
+- NumPy integrates directly with scikit-learn data pipelines.
 
 #### Pandas
-Pandas provides data manipulation and analysis for structured healthcare data. When analyzing pharmacy transactions or patient records, Pandas DataFrames organize data in tabular format with labeled rows and columns. We use Pandas to aggregate transaction data for pharmacy reports: grouping by medicine name to calculate total quantities, filtering by date ranges for weekly/monthly summaries, and joining medicine inventory with transaction history for comprehensive reports. Pandas' time series capabilities handle temporal medical data like patient vitals over time or medicine usage trends. The `read_json()` function parses incoming request data, and `to_dict()` serializes analysis results for API responses. Pandas' data cleaning functions handle missing values in patient records (imputation, dropping nulls), ensuring ML models receive complete feature sets. Memory-efficient operations handle large datasets without performance degradation.
+- Pandas manages structured healthcare and transaction datasets.
+- DataFrames support filtering, grouping, joining, and summarization tasks.
+- Time-series analysis is used for trend-oriented reporting.
+- JSON inputs/outputs are transformed through DataFrame workflows.
+- Data cleaning improves model input quality and reporting consistency.
 
 #### Scikit-learn
-Scikit-learn is our primary machine learning library, providing implementations of classification, regression, and clustering algorithms. Health-Track's health prediction feature uses trained scikit-learn models (Random Forest, Logistic Regression) to predict disease risk based on patient symptoms and vitals. We implement diagnostic assistance using classification algorithms that map symptom combinations to probable diagnoses. The prescription analysis feature uses decision trees to identify potentially harmful drug combinations. Scikit-learn's preprocessing module standardizes input features (`StandardScaler`), ensuring consistent model performance. We use `joblib` to save trained models in the `models/` directory and load them at service startup, enabling instant predictions without retraining. Model evaluation metrics (accuracy, precision, recall, F1-score) guide model selection. Scikit-learn's consistent API (`.fit()`, `.predict()`) enables easy swapping of algorithms for experimentation.
+- Scikit-learn is the primary ML framework for predictive modules.
+- It is used for health-risk prediction, diagnostics, and prescription checks.
+- Preprocessing tools (e.g., scaling) improve model consistency.
+- Trained models are persisted with `joblib` for fast startup inference.
+- Standard evaluation metrics guide model quality and selection.
 
 #### OpenAI API
-The OpenAI API integrates GPT language models for natural language processing tasks. Health-Track's document summarization feature sends medical documents (lab reports, consultation notes) to GPT-3.5-turbo or GPT-4, receiving concise summaries highlighting critical findings, abnormal values, and recommended actions. We crafted system prompts that instruct the model to focus on medical context: "You are a medical AI assistant. Summarize this lab report, highlighting abnormal values and clinical significance." The API key is stored securely in environment variables. We implement rate limiting and error handling for API failures. Token counting prevents exceeding context windows (4K tokens for GPT-3.5-turbo). The chat completion API maintains conversation context for follow-up questions about health recommendations. OpenAI's embeddings API could enable semantic search across medical documents. Cost monitoring tracks API usage per request for budget management.
+- OpenAI API powers NLP capabilities such as medical document summarization.
+- GPT models produce concise summaries with clinical context emphasis.
+- Prompts are designed to prioritize critical findings and abnormalities.
+- API keys are managed through environment variables with secure handling.
+- Reliability and cost controls include error handling, limits, and usage monitoring.
 
 #### Python-dotenv
-Python-dotenv manages environment variables in the ML microservice, separating configuration from code. The `.env` file stores sensitive data: OpenAI API key, backend service URL, allowed CORS origins, port configuration, and model paths. At application startup, `load_dotenv()` reads the `.env` file and populates `os.environ`. We access variables via Pydantic Settings: `settings.OPENAI_API_KEY`, ensuring type safety and validation. This approach enables different configurations for development (local URLs, debug mode) and production (deployed URLs, optimizations) without code changes. Environment variables are never committed to Git (listed in `.gitignore`), protecting secrets. The `.env.example` file documents required variables for new developers. Docker deployments pass environment variables as container arguments, overriding `.env` for containerized production deployments.
+- `python-dotenv` loads environment variables from `.env` files.
+- Sensitive settings include API keys, service URLs, CORS, and model paths.
+- Startup loading is handled via `load_dotenv()`.
+- Pydantic Settings integrates typed access to environment configuration.
+- This pattern separates code from environment-specific deployment settings.
 
 #### HTTPX
-HTTPX is a modern HTTP client for Python, providing both synchronous and asynchronous request capabilities. The ML microservice uses HTTPX to communicate with the Express.js backend for data validation and retrieval. When processing health predictions, the ML service queries the backend via HTTPX to fetch patient medical history, verify authorization tokens, and log predictions. HTTPX's async client (`httpx.AsyncClient()`) enables non-blocking I/O - while waiting for backend responses, the service handles other prediction requests, maximizing throughput. We configured connection pooling to reuse TCP connections, reducing latency. Timeout settings (30 seconds) prevent hanging requests. HTTPX supports HTTP/2 for improved performance over multiple requests. Error handling catches connection errors, timeouts, and HTTP error status codes, providing graceful degradation when the backend is unavailable. The API mirrors `requests` library syntax, easing migration.
+- HTTPX is used for service-to-service communication from ML to backend APIs.
+- Both sync and async clients are available, with async used for non-blocking workflows.
+- Connection pooling and timeouts improve reliability and responsiveness.
+- It supports error handling for connection, timeout, and HTTP status failures.
+- Familiar API design simplifies usage and maintenance.
 
 ### Database & Storage
 
 #### MongoDB & Mongoose Integration
-The MongoDB and Mongoose integration provides a robust data layer for Health-Track. MongoDB's flexible schema accommodates evolving healthcare data requirements, and Mongoose schemas add structure through validation, required fields, and ObjectId-based relationships. We leverage MongoDB's aggregation pipeline for complex queries: calculating weekly activity statistics (grouping documents by date), generating pharmacy inventory summaries (sum of quantities, average prices), and analyzing disease prevalence from AI-summarized documents. Mongoose query builders (`Patient.find().populate('doctor_id').sort('-createdAt')`) retrieve patients with doctor details in a single query. Indexes on `email` (unique) and `createdAt` (for time-based queries) optimize performance. MongoDB sharding supports future scaling.
+- MongoDB provides flexible document storage for evolving healthcare data.
+- Mongoose adds schema validation, constraints, and relationship modeling.
+- Aggregation pipelines power analytics such as activity and inventory insights.
+- Query builders with populate simplify relational-style reads.
+- Indexes on key fields improve query performance and scalability.
 
 #### AWS S3 & Document Management
-AWS S3 provides enterprise-grade cloud storage for Health-Track's documents. Medical documents and pharmacy reports are uploaded to S3 buckets with organized folder structures: `documents/patient_${id}/`, `reports/pharmacist_${id}/`. S3's versioning enables document history tracking - if a patient uploads a new lab report, previous versions remain accessible. Server-side encryption (SSE-S3) encrypts all files at rest, meeting healthcare data security requirements. Pre-signed URLs (`getSignedUrl()`) with 1-hour expiration enable secure, temporary access - patients can view/download their documents without making S3 buckets public. S3's lifecycle policies automatically delete old reports after retention periods, managing storage costs. Cross-region replication ensures disaster recovery. S3 event notifications could trigger Lambda functions for automatic document processing (OCR, metadata extraction). CloudFront CDN could cache frequently accessed documents for faster global access.
+- AWS S3 stores medical documents and generated reports with organized paths.
+- Versioning supports historical document tracking.
+- Server-side encryption protects files at rest.
+- Pre-signed URLs provide temporary, secure download/view access.
+- Lifecycle and replication strategies support retention, recovery, and scale.
 
 ---
 
