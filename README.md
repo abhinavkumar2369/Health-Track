@@ -81,15 +81,15 @@
 
 ### Homepage
 
-![homepage-1](docs/screenshots/homepage-1.png)
-![homepage-2](docs/screenshots/homepage-2.png)
-![homepage-3](docs/screenshots/homepage-3.png)
-![homepage-4](docs/screenshots/homepage-4.png)
+![homepage-1](0_docs/screenshots/homepage-1.png)
+![homepage-2](0_docs/screenshots/homepage-2.png)
+![homepage-3](0_docs/screenshots/homepage-3.png)
+![homepage-4](0_docs/screenshots/homepage-4.png)
 
 ### Authentication
 
-![Sign In Page](docs/screenshots/sign-in.png)
-![Sign Up Page](docs/screenshots/sign-up.png)
+![Sign In Page](0_docs/screenshots/sign-in.png)
+![Sign Up Page](0_docs/screenshots/sign-up.png)
 
 ---
 
