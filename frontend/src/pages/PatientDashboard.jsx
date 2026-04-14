@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { documentAPI, patientAPI } from '../services/api';
+import aiService from '../services/aiService';
 import { 
     LayoutDashboard, 
     Calendar, 
@@ -50,17 +51,30 @@ const PatientDashboard = () => {
     const [medicalRecords, setMedicalRecords] = useState([]);
     const [uploading, setUploading] = useState(false);
     const [selectedFile, setSelectedFile] = useState(null);
+    const [uploadCategory, setUploadCategory] = useState('lab-report');
     const [uploadMessage, setUploadMessage] = useState({ type: '', text: '' });
     const [isDragging, setIsDragging] = useState(false);
     
     // Health reports state
     const [generatingReport, setGeneratingReport] = useState(false);
     const [healthReports, setHealthReports] = useState([]);
+    const [deletingReports, setDeletingReports] = useState({});
     
     // Document summary state
     const [summarizing, setSummarizing] = useState({});
     const [summaries, setSummaries] = useState({});
     const [viewingSummary, setViewingSummary] = useState(null);
+    
+    // Batch summarization & summary history modal state
+    const [batchSummarizing, setBatchSummarizing] = useState(false);
+    const [batchSummaryResult, setBatchSummaryResult] = useState(null);
+    const [showSummaryHistoryModal, setShowSummaryHistoryModal] = useState(false);
+    const [generatingPdfReport, setGeneratingPdfReport] = useState(false);
+
+    // Medical-Summarizer file analysis state
+    const [medicalFileSummarizing, setMedicalFileSummarizing] = useState(false);
+    const [medicalFileSummaryResult, setMedicalFileSummaryResult] = useState(null);
+    const [showMedicalFileSummaryModal, setShowMedicalFileSummaryModal] = useState(false);
     
     // Appointment state
     const [appointments, setAppointments] = useState([]);
@@ -140,6 +154,8 @@ const PatientDashboard = () => {
         }
     };
 
+    const isImageFile = (file) => Boolean(file?.type?.startsWith('image/'));
+
     const handleFileSelect = (e) => {
         const file = e.target.files?.[0];
         if (file) {
@@ -155,6 +171,7 @@ const PatientDashboard = () => {
             }
             
             setSelectedFile(file);
+            setUploadCategory(isImageFile(file) ? 'lab-report' : 'other');
             setUploadMessage({ type: '', text: '' });
         }
     };
@@ -187,6 +204,7 @@ const PatientDashboard = () => {
             }
             
             setSelectedFile(file);
+            setUploadCategory(isImageFile(file) ? 'lab-report' : 'other');
             setUploadMessage({ type: '', text: '' });
         }
     };
@@ -194,6 +212,14 @@ const PatientDashboard = () => {
     const handleFileUpload = async () => {
         if (!selectedFile) {
             setUploadMessage({ type: 'error', text: 'Please select a file first' });
+            return;
+        }
+
+        const imageUpload = isImageFile(selectedFile);
+        const selectedCategory = imageUpload ? uploadCategory : 'other';
+
+        if (imageUpload && !['lab-report', 'prescription'].includes(selectedCategory)) {
+            setUploadMessage({ type: 'error', text: 'Please choose Report or Prescription for image uploads' });
             return;
         }
 
@@ -206,7 +232,7 @@ const PatientDashboard = () => {
             const formData = new FormData();
             formData.append('document', selectedFile);
             formData.append('token', token);
-            formData.append('category', 'other');
+            formData.append('category', selectedCategory);
             formData.append('description', `Uploaded ${selectedFile.name}`);
 
             const response = await axios.post(`${API_URL}/upload`, formData, {
@@ -218,6 +244,7 @@ const PatientDashboard = () => {
             if (response.data.success) {
                 setUploadMessage({ type: 'success', text: 'Document uploaded successfully!' });
                 setSelectedFile(null);
+                setUploadCategory('lab-report');
                 const fileInput = document.getElementById('file-upload');
                 if (fileInput) fileInput.value = '';
                 await fetchMedicalRecords();
@@ -675,6 +702,142 @@ const PatientDashboard = () => {
         }
     }, [uploadMessage.text]);
 
+    // === Medical-Summarizer: Analyze an existing medical record file ===
+    const handleAnalyzeRecord = async (record) => {
+        const recordId = record._id;
+        setMedicalFileSummarizing(true);
+        setMedicalFileSummaryResult(null);
+        setUploadMessage({ type: '', text: '' });
+        try {
+            // Step 1: get the signed S3 URL for the file
+            const token = localStorage.getItem('token');
+            const viewRes = await axios.post(`${API_URL}/view/${recordId}`, { token });
+            if (!viewRes.data.success) throw new Error('Could not retrieve file URL');
+            const signedUrl = viewRes.data.url;
+
+            // Step 2: download the file as a blob
+            const blobRes = await axios.get(signedUrl, { responseType: 'blob' });
+            const mimeType = blobRes.data.type || 'application/octet-stream';
+
+            // Determine extension from originalName or fileType
+            const originalName = record.originalName || record.fileName || 'document';
+            const ext = originalName.includes('.')
+                ? originalName.slice(originalName.lastIndexOf('.')).toLowerCase()
+                : '.pdf';
+
+            const allowedExts = ['.txt', '.pdf', '.docx', '.json'];
+            if (!allowedExts.includes(ext)) {
+                throw new Error(`File type "${ext}" is not supported for analysis. Supported: .txt, .pdf, .docx, .json`);
+            }
+
+            const file = new File([blobRes.data], originalName, { type: mimeType });
+
+            // Step 3: send to Medical-Summarizer endpoint
+            const patientId = user?.id || user?._id || 'unknown';
+            const result = await aiService.summarizeMedicalFile(file, patientId, recordId);
+
+            if (result.success) {
+                setMedicalFileSummaryResult(result);
+                setShowMedicalFileSummaryModal(true);
+            }
+        } catch (error) {
+            console.error('Analyze record error:', error);
+            setUploadMessage({
+                type: 'error',
+                text: error.message || 'Failed to analyze record. Ensure the ML service is running.',
+            });
+        } finally {
+            setMedicalFileSummarizing(false);
+        }
+    };
+
+    // === Batch AI Summarization (CNN + Transformer) ===
+    const handleSummarizeAllRecords = async () => {
+        if (medicalRecords.length === 0) {
+            setUploadMessage({ type: 'error', text: 'No medical records to summarize.' });
+            return;
+        }
+
+        setBatchSummarizing(true);
+        setUploadMessage({ type: '', text: '' });
+
+        try {
+            const documents = medicalRecords.map(record => ({
+                document_id: record._id,
+                document_name: record.title || record.originalName,
+                document_type: record.category || 'other',
+                document_text: record.description || `Medical ${record.category || 'document'}: ${record.title || record.originalName}`,
+                file_type: record.fileType || ''
+            }));
+
+            const result = await aiService.summarizeAllRecords({
+                patient_id: user?.id || user?._id || 'unknown',
+                documents
+            });
+
+            if (result.success) {
+                setBatchSummaryResult(result);
+                setShowSummaryHistoryModal(true);
+                setUploadMessage({ 
+                    type: 'success', 
+                    text: `Successfully summarized ${result.processed_documents} records using AI (CNN + Transformer)!`
+                });
+            }
+        } catch (error) {
+            console.error('Batch summarization error:', error);
+            setUploadMessage({ 
+                type: 'error', 
+                text: error.message || 'Failed to summarize records. Please ensure the ML service is running.' 
+            });
+        } finally {
+            setBatchSummarizing(false);
+        }
+    };
+
+    const handleDownloadSummaryPDF = async () => {
+        if (!batchSummaryResult) return;
+
+        setGeneratingPdfReport(true);
+        try {
+            const result = await aiService.generateSummaryReport({
+                patient_id: user?.id || user?._id || 'unknown',
+                patient_name: user?.fullname || user?.name || 'Patient',
+                summaries: batchSummaryResult.summaries,
+                overall_summary: batchSummaryResult.overall_summary || ''
+            });
+
+            if (result.success && result.pdf_base64) {
+                // Convert base64 to blob and download
+                const byteCharacters = atob(result.pdf_base64);
+                const byteNumbers = new Array(byteCharacters.length);
+                for (let i = 0; i < byteCharacters.length; i++) {
+                    byteNumbers[i] = byteCharacters.charCodeAt(i);
+                }
+                const byteArray = new Uint8Array(byteNumbers);
+                const blob = new Blob([byteArray], { type: 'application/pdf' });
+                const url = window.URL.createObjectURL(blob);
+                
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = result.file_name || 'health_summary_report.pdf';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                window.URL.revokeObjectURL(url);
+
+                setUploadMessage({ type: 'success', text: 'PDF report downloaded successfully!' });
+            }
+        } catch (error) {
+            console.error('PDF report generation error:', error);
+            setUploadMessage({ 
+                type: 'error', 
+                text: error.message || 'Failed to generate PDF report.' 
+            });
+        } finally {
+            setGeneratingPdfReport(false);
+        }
+    };
+
     const handleGenerateReport = async () => {
         setGeneratingReport(true);
         setUploadMessage({ type: '', text: '' });
@@ -771,6 +934,42 @@ const PatientDashboard = () => {
             setUploadMessage({ 
                 type: 'error', 
                 text: error.response?.data?.message || 'Failed to download report' 
+            });
+        }
+    };
+
+    const handleDeleteReport = async (reportId) => {
+        if (!reportId) {
+            return;
+        }
+
+        if (!window.confirm('Are you sure you want to delete this report? This action cannot be undone.')) {
+            return;
+        }
+
+        setDeletingReports(prev => ({ ...prev, [reportId]: true }));
+
+        try {
+            const token = localStorage.getItem('token');
+            const response = await axios.delete(`${API_BASE_URL}/api/reports/${reportId}`, {
+                data: { token }
+            });
+
+            if (response.data.success) {
+                setHealthReports(prev => prev.filter((report) => (report.id || report._id) !== reportId));
+                setUploadMessage({ type: 'success', text: 'Report deleted successfully' });
+            }
+        } catch (error) {
+            console.error('Delete report error:', error);
+            setUploadMessage({
+                type: 'error',
+                text: error.response?.data?.message || 'Failed to delete report'
+            });
+        } finally {
+            setDeletingReports(prev => {
+                const next = { ...prev };
+                delete next[reportId];
+                return next;
             });
         }
     };
@@ -1126,13 +1325,44 @@ const PatientDashboard = () => {
                                         </p>
                                     </div>
                                 </div>
-                                <button
-                                    onClick={() => document.getElementById('file-upload').click()}
-                                    className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg hover:from-green-700 hover:to-emerald-700 transition-all shadow-md hover:shadow-lg font-medium"
-                                >
-                                    <Upload className="w-4 h-4" />
-                                    <span>Upload Document</span>
-                                </button>
+                                <div className="flex items-center gap-2">
+                                    {/* Summarize All Button */}
+                                    <button
+                                        onClick={handleSummarizeAllRecords}
+                                        disabled={batchSummarizing || medicalRecords.length === 0}
+                                        className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-lg hover:from-purple-700 hover:to-indigo-700 transition-all shadow-md hover:shadow-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                                        title="Summarize all records using CNN + Transformer AI"
+                                    >
+                                        {batchSummarizing ? (
+                                            <>
+                                                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                                <span className="hidden sm:inline">Analyzing...</span>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <Brain className="w-4 h-4" />
+                                                <span className="hidden sm:inline">Summarize All</span>
+                                            </>
+                                        )}
+                                    </button>
+                                    {/* View Summary History Button */}
+                                    {batchSummaryResult && (
+                                        <button
+                                            onClick={() => setShowSummaryHistoryModal(true)}
+                                            className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-lg hover:from-blue-700 hover:to-cyan-700 transition-all shadow-md hover:shadow-lg font-medium"
+                                        >
+                                            <Sparkles className="w-4 h-4" />
+                                            <span className="hidden sm:inline">View Summary</span>
+                                        </button>
+                                    )}
+                                    <button
+                                        onClick={() => document.getElementById('file-upload').click()}
+                                        className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg hover:from-green-700 hover:to-emerald-700 transition-all shadow-md hover:shadow-lg font-medium"
+                                    >
+                                        <Upload className="w-4 h-4" />
+                                        <span className="hidden sm:inline">Upload</span>
+                                    </button>
+                                </div>
                                 <input
                                     id="file-upload"
                                     type="file"
@@ -1145,14 +1375,30 @@ const PatientDashboard = () => {
                             {/* Selected File Info & Upload */}
                             {selectedFile && (
                                 <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
-                                    <div className="flex items-center justify-between">
-                                        <div className="flex items-center gap-3">
+                                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                                        <div className="flex items-start gap-3 flex-1 min-w-0">
                                             <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
                                                 <FileText className="w-5 h-5 text-green-600" />
                                             </div>
-                                            <div>
+                                            <div className="min-w-0">
                                                 <p className="font-medium text-gray-900">{selectedFile.name}</p>
                                                 <p className="text-sm text-gray-600">Size: {formatFileSize(selectedFile.size)}</p>
+                                                {isImageFile(selectedFile) && (
+                                                    <div className="mt-3">
+                                                        <label className="block text-xs font-semibold text-gray-700 mb-1">
+                                                            Document Type
+                                                        </label>
+                                                        <select
+                                                            value={uploadCategory}
+                                                            onChange={(e) => setUploadCategory(e.target.value)}
+                                                            disabled={uploading}
+                                                            className="px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 bg-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none disabled:bg-gray-100"
+                                                        >
+                                                            <option value="lab-report">Report</option>
+                                                            <option value="prescription">Prescription</option>
+                                                        </select>
+                                                    </div>
+                                                )}
                                             </div>
                                         </div>
                                         <button
@@ -1176,6 +1422,33 @@ const PatientDashboard = () => {
                                 </div>
                             )}
 
+                            {/* Urgency Overview - shown when any records are summarized */}
+                            {medicalRecords.some(r => r.isSummarized) && (() => {
+                                const counts = { high: 0, medium: 0, low: 0 };
+                                medicalRecords.forEach(r => {
+                                    if (r.isSummarized && r.aiSummary?.urgencyLevel) {
+                                        const lvl = r.aiSummary.urgencyLevel.toLowerCase();
+                                        if (counts[lvl] !== undefined) counts[lvl]++;
+                                    }
+                                });
+                                return (
+                                    <div className="grid grid-cols-3 gap-3 mb-4">
+                                        <div className="bg-red-50 rounded-xl p-3 border border-red-100 text-center">
+                                            <p className="text-2xl font-bold text-red-600">{counts.high}</p>
+                                            <p className="text-xs font-medium text-red-500 mt-1">🔴 High Urgency</p>
+                                        </div>
+                                        <div className="bg-yellow-50 rounded-xl p-3 border border-yellow-100 text-center">
+                                            <p className="text-2xl font-bold text-yellow-600">{counts.medium}</p>
+                                            <p className="text-xs font-medium text-yellow-500 mt-1">🟡 Moderate</p>
+                                        </div>
+                                        <div className="bg-green-50 rounded-xl p-3 border border-green-100 text-center">
+                                            <p className="text-2xl font-bold text-green-600">{counts.low}</p>
+                                            <p className="text-xs font-medium text-green-500 mt-1">🟢 Low</p>
+                                        </div>
+                                    </div>
+                                );
+                            })()}
+
                             <div>
                                 {medicalRecords.length === 0 ? (
                                     <div className="text-center py-12">
@@ -1191,6 +1464,7 @@ const PatientDashboard = () => {
                                             const getStatusColor = (status) => {
                                                 switch(status) {
                                                     case 'verified': return 'bg-green-100 text-green-700 border-green-200';
+                                                    case 'pending':
                                                     case 'under-review': return 'bg-yellow-100 text-yellow-700 border-yellow-200';
                                                     default: return 'bg-gray-100 text-gray-700 border-gray-200';
                                                 }
@@ -1217,7 +1491,12 @@ const PatientDashboard = () => {
                                                                 <div className="flex items-start justify-between gap-2 mb-2">
                                                                     <h4 className="font-semibold text-gray-900 text-base truncate">{record.title || record.originalName}</h4>
                                                                     <span className={`inline-flex items-center px-2.5 py-1 text-xs font-medium rounded-full border ${getStatusColor(record.status)} flex-shrink-0`}>
-                                                                        {record.status === 'under-review' ? 'Pending' : record.status === 'verified' ? 'Verified' : record.status.charAt(0).toUpperCase() + record.status.slice(1)}
+                                                                        {record.status === 'verified' 
+                                                                            ? 'Verified'
+                                                                            : (record.status === 'under-review' || record.status === 'pending')
+                                                                            ? 'Under Review'
+                                                                            : record.status.charAt(0).toUpperCase() + record.status.slice(1)
+                                                                        }
                                                                     </span>
                                                                 </div>
                                                                 <p className="text-sm text-gray-600 mb-3">
@@ -1238,7 +1517,7 @@ const PatientDashboard = () => {
                                                                         <Download className="w-3.5 h-3.5" />
                                                                         <span>Download</span>
                                                                     </button>
-                                                                    {record.isSummarized ? (
+                                                                    {record.isSummarized && (
                                                                         <button 
                                                                             onClick={() => handleViewSummary(record._id)}
                                                                             className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-purple-600 text-white text-sm rounded-lg hover:bg-purple-700 transition-colors"
@@ -1246,25 +1525,20 @@ const PatientDashboard = () => {
                                                                             <Brain className="w-3.5 h-3.5" />
                                                                             <span>Summary</span>
                                                                         </button>
-                                                                    ) : (
-                                                                        <button 
-                                                                            onClick={() => handleSummarizeDocument(record._id)}
-                                                                            disabled={summarizing[record._id]}
-                                                                            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-purple-600 text-white text-sm rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                                                                        >
-                                                                            {summarizing[record._id] ? (
-                                                                                <>
-                                                                                    <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                                                                                    <span>Generating...</span>
-                                                                                </>
-                                                                            ) : (
-                                                                                <>
-                                                                                    <Sparkles className="w-3.5 h-3.5" />
-                                                                                    <span>Summarize</span>
-                                                                                </>
-                                                                            )}
-                                                                        </button>
                                                                     )}
+                                                                    <button
+                                                                        onClick={() => handleAnalyzeRecord(record)}
+                                                                        disabled={medicalFileSummarizing}
+                                                                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-violet-600 text-white text-sm rounded-lg hover:bg-violet-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                                                        title="Deep-analyze this file: extracts summary, patient info, red flags, clinical sections"
+                                                                    >
+                                                                        {medicalFileSummarizing ? (
+                                                                            <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                                                        ) : (
+                                                                            <Sparkles className="w-3.5 h-3.5" />
+                                                                        )}
+                                                                        <span>Analyze</span>
+                                                                    </button>
                                                                     <button 
                                                                         onClick={() => handleDeleteDocument(record._id)}
                                                                         className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-red-600 text-white text-sm rounded-lg hover:bg-red-700 transition-colors"
@@ -1343,55 +1617,74 @@ const PatientDashboard = () => {
                                 </div>
 
                                 <div className="space-y-3">
-                                    {healthReports.map((report, index) => (
-                                        <div 
-                                            key={report.id || report._id} 
-                                            className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200"
-                                        >
-                                            <div className="flex items-center gap-4">
-                                                <div className="text-center">
-                                                    <div className="w-12 h-12 bg-blue-600 rounded-lg flex items-center justify-center">
-                                                        <span className="text-xl font-bold text-white">{healthReports.length - index}</span>
+                                    {healthReports.map((report, index) => {
+                                        const reportId = report.id || report._id;
+                                        const isDeletingReport = Boolean(deletingReports[reportId]);
+
+                                        return (
+                                            <div 
+                                                key={reportId}
+                                                className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200"
+                                            >
+                                                <div className="flex items-center gap-4">
+                                                    <div className="text-center">
+                                                        <div className="w-12 h-12 bg-blue-600 rounded-lg flex items-center justify-center">
+                                                            <span className="text-xl font-bold text-white">{healthReports.length - index}</span>
+                                                        </div>
+                                                    </div>
+                                                    <div className="border-l border-gray-300 pl-4">
+                                                        <p className="font-semibold text-gray-900">
+                                                            {report.title || 'Health Summary Report'}
+                                                        </p>
+                                                        <p className="text-sm text-gray-600 mt-1">
+                                                            {new Date(report.generatedAt || report.createdAt).toLocaleDateString('en-US', {
+                                                                month: 'short',
+                                                                day: 'numeric',
+                                                                year: 'numeric',
+                                                                hour: '2-digit',
+                                                                minute: '2-digit'
+                                                            })}
+                                                        </p>
+                                                        {report.fileSize && (
+                                                            <p className="text-xs text-gray-500 mt-0.5">
+                                                                • {(report.fileSize / 1024).toFixed(1)} KB
+                                                            </p>
+                                                        )}
                                                     </div>
                                                 </div>
-                                                <div className="border-l border-gray-300 pl-4">
-                                                    <p className="font-semibold text-gray-900">
-                                                        {report.title || 'Health Summary Report'}
-                                                    </p>
-                                                    <p className="text-sm text-gray-600 mt-1">
-                                                        {new Date(report.generatedAt || report.createdAt).toLocaleDateString('en-US', {
-                                                            month: 'short',
-                                                            day: 'numeric',
-                                                            year: 'numeric',
-                                                            hour: '2-digit',
-                                                            minute: '2-digit'
-                                                        })}
-                                                    </p>
-                                                    {report.fileSize && (
-                                                        <p className="text-xs text-gray-500 mt-0.5">
-                                                            • {(report.fileSize / 1024).toFixed(1)} KB
-                                                        </p>
-                                                    )}
+                                                <div className="flex gap-2">
+                                                    <button 
+                                                        onClick={() => handleViewReport(reportId)}
+                                                        disabled={isDeletingReport}
+                                                        className="p-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
+                                                        title="View Report"
+                                                    >
+                                                        <Eye className="w-4 h-4" />
+                                                    </button>
+                                                    <button 
+                                                        onClick={() => handleDownloadReport(reportId)}
+                                                        disabled={isDeletingReport}
+                                                        className="p-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
+                                                        title="Download Report"
+                                                    >
+                                                        <Download className="w-4 h-4" />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleDeleteReport(reportId)}
+                                                        disabled={isDeletingReport}
+                                                        className="p-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
+                                                        title="Delete Report"
+                                                    >
+                                                        {isDeletingReport ? (
+                                                            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                                        ) : (
+                                                            <Trash2 className="w-4 h-4" />
+                                                        )}
+                                                    </button>
                                                 </div>
                                             </div>
-                                            <div className="flex gap-2">
-                                                <button 
-                                                    onClick={() => handleViewReport(report.id || report._id)}
-                                                    className="p-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                                                    title="View Report"
-                                                >
-                                                    <Eye className="w-4 h-4" />
-                                                </button>
-                                                <button 
-                                                    onClick={() => handleDownloadReport(report.id || report._id)}
-                                                    className="p-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-                                                    title="Download Report"
-                                                >
-                                                    <Download className="w-4 h-4" />
-                                                </button>
-                                            </div>
-                                        </div>
-                                    ))}
+                                        );
+                                    })}
                                 </div>
                             </div>
                         ) : (
@@ -1966,16 +2259,54 @@ const PatientDashboard = () => {
                                 <div className="flex items-center space-x-2">
                                     <AlertCircle className={`w-5 h-5 ${
                                         viewingSummary.data.urgencyLevel === 'high' ? 'text-red-500' :
-                                        viewingSummary.data.urgencyLevel === 'medium' ? 'text-yellow-500' :
+                                        viewingSummary.data.urgencyLevel === 'medium' || viewingSummary.data.urgencyLevel === 'moderate' ? 'text-yellow-500' :
                                         'text-green-500'
                                     }`} />
                                     <span className={`px-3 py-1 rounded-full text-sm font-medium ${
                                         viewingSummary.data.urgencyLevel === 'high' ? 'bg-red-100 text-red-700' :
-                                        viewingSummary.data.urgencyLevel === 'medium' ? 'bg-yellow-100 text-yellow-700' :
+                                        viewingSummary.data.urgencyLevel === 'medium' || viewingSummary.data.urgencyLevel === 'moderate' ? 'bg-yellow-100 text-yellow-700' :
                                         'bg-green-100 text-green-700'
                                     }`}>
                                         {viewingSummary.data.urgencyLevel.charAt(0).toUpperCase() + viewingSummary.data.urgencyLevel.slice(1)} Priority
                                     </span>
+                                </div>
+                            )}
+
+                            {/* Red Flags / Clinical Alerts */}
+                            {viewingSummary.data.redFlags && viewingSummary.data.redFlags.length > 0 && (
+                                <div className="rounded-xl border border-red-200 overflow-hidden">
+                                    <div className="bg-red-50 px-5 py-3 flex items-center gap-2">
+                                        <AlertCircle className="w-5 h-5 text-red-600" />
+                                        <h3 className="text-base font-semibold text-red-800">Clinical Alerts — {viewingSummary.data.redFlags.length} found</h3>
+                                    </div>
+                                    <ul className="divide-y divide-red-100">
+                                        {viewingSummary.data.redFlags.map((flag, i) => (
+                                            <li key={i} className={`flex items-center gap-3 px-5 py-3 ${flag.severity === 'error' ? 'bg-red-50' : 'bg-yellow-50'}`}>
+                                                <span className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${flag.severity === 'error' ? 'bg-red-500' : 'bg-yellow-500'}`}></span>
+                                                <span className={`text-sm font-medium ${flag.severity === 'error' ? 'text-red-700' : 'text-yellow-700'}`}>
+                                                    {flag.severity === 'error' ? '⛔ ALERT' : '⚠ NOTICE'}: {flag.description}
+                                                </span>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            )}
+
+                            {/* Patient Info Card */}
+                            {viewingSummary.data.patientInfo && Object.keys(viewingSummary.data.patientInfo).length > 0 && (
+                                <div className="bg-blue-50 rounded-xl p-5 border border-blue-200">
+                                    <h3 className="text-base font-semibold text-blue-900 mb-3 flex items-center gap-2">
+                                        <User className="w-4 h-4 text-blue-600" />
+                                        Patient Information
+                                    </h3>
+                                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                                        {Object.entries(viewingSummary.data.patientInfo).map(([k, v]) => (
+                                            <div key={k} className="bg-white rounded-lg p-3 border border-blue-100">
+                                                <p className="text-xs text-blue-500 font-medium uppercase tracking-wide">{k}</p>
+                                                <p className="text-sm text-gray-800 font-semibold mt-0.5">{v}</p>
+                                            </div>
+                                        ))}
+                                    </div>
                                 </div>
                             )}
                             
@@ -1986,8 +2317,52 @@ const PatientDashboard = () => {
                                     Summary
                                 </h3>
                                 <p className="text-gray-700 leading-relaxed">{viewingSummary.data.summary}</p>
+                                {(viewingSummary.data.wordCount || viewingSummary.data.sentenceCount) && (
+                                    <div className="flex gap-4 mt-3 pt-3 border-t border-blue-200">
+                                        {viewingSummary.data.wordCount && <span className="text-xs text-gray-500">{viewingSummary.data.wordCount.toLocaleString()} words</span>}
+                                        {viewingSummary.data.sentenceCount && <span className="text-xs text-gray-500">{viewingSummary.data.sentenceCount} sentences</span>}
+                                    </div>
+                                )}
                             </div>
-                            
+
+                            {/* Section Highlights */}
+                            {viewingSummary.data.highlights && Object.keys(viewingSummary.data.highlights).length > 0 && (
+                                <div className="bg-white rounded-xl p-5 border border-gray-200">
+                                    <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                                        <Sparkles className="w-5 h-5 mr-2 text-indigo-600" />
+                                        Section Highlights
+                                    </h3>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        {Object.entries(viewingSummary.data.highlights).map(([section, items]) => (
+                                            <div key={section} className="bg-indigo-50 rounded-lg p-4 border border-indigo-100">
+                                                <h4 className="text-sm font-semibold text-indigo-800 mb-2">{section}</h4>
+                                                <ul className="space-y-1">
+                                                    {items.map((item, i) => (
+                                                        <li key={i} className="text-xs text-gray-700 flex items-start gap-1.5">
+                                                            <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 mt-1.5 flex-shrink-0"></span>
+                                                            {item}
+                                                        </li>
+                                                    ))}
+                                                </ul>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Extracted Document Text */}
+                            {viewingSummary.data.extractedText && (
+                                <div className="bg-white rounded-xl p-5 border border-gray-200">
+                                    <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center">
+                                        <FileText className="w-5 h-5 mr-2 text-indigo-600" />
+                                        Document Text
+                                    </h3>
+                                    <div className="bg-gray-50 rounded-lg p-4 border border-gray-100 max-h-60 overflow-y-auto">
+                                        <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">{viewingSummary.data.extractedText}</p>
+                                    </div>
+                                </div>
+                            )}
+
                             {/* Key Findings */}
                             {viewingSummary.data.keyFindings && viewingSummary.data.keyFindings.length > 0 && (
                                 <div className="bg-white rounded-xl p-5 border border-gray-200">
@@ -2062,6 +2437,146 @@ const PatientDashboard = () => {
                                     Close
                                 </button>
                             </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Medical-Summarizer File Analysis Modal */}
+            {showMedicalFileSummaryModal && medicalFileSummaryResult && (
+                <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 overflow-y-auto">
+                    <div className="bg-white rounded-xl max-w-4xl w-full my-8 shadow-2xl">
+                        {/* Header */}
+                        <div className="bg-gradient-to-r from-violet-600 to-purple-700 p-6 rounded-t-xl">
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-11 h-11 bg-white/20 rounded-lg flex items-center justify-center">
+                                        <Brain className="w-6 h-6 text-white" />
+                                    </div>
+                                    <div>
+                                        <h2 className="text-xl font-bold text-white">Medical Record Analysis</h2>
+                                        <p className="text-violet-200 text-xs mt-0.5 truncate max-w-xs">
+                                            {medicalFileSummaryResult.filename} &nbsp;·&nbsp; {medicalFileSummaryResult.word_count?.toLocaleString()} words &nbsp;·&nbsp; {medicalFileSummaryResult.sentence_count} sentences
+                                        </p>
+                                    </div>
+                                </div>
+                                <button onClick={() => setShowMedicalFileSummaryModal(false)} className="text-white hover:bg-white/20 p-2 rounded-lg">
+                                    <X className="w-5 h-5" />
+                                </button>
+                            </div>
+                        </div>
+
+                        <div className="p-6 space-y-5 max-h-[72vh] overflow-y-auto">
+                            {/* Urgency */}
+                            <div className="flex items-center gap-3">
+                                <AlertCircle className={`w-5 h-5 ${medicalFileSummaryResult.urgency_level === 'high' ? 'text-red-500' : medicalFileSummaryResult.urgency_level === 'moderate' ? 'text-yellow-500' : 'text-green-500'}`} />
+                                <span className={`px-3 py-1 rounded-full text-sm font-medium ${medicalFileSummaryResult.urgency_level === 'high' ? 'bg-red-100 text-red-700' : medicalFileSummaryResult.urgency_level === 'moderate' ? 'bg-yellow-100 text-yellow-700' : 'bg-green-100 text-green-700'}`}>
+                                    {medicalFileSummaryResult.urgency_level?.charAt(0).toUpperCase() + medicalFileSummaryResult.urgency_level?.slice(1)} Priority
+                                </span>
+                                <span className="ml-auto text-xs text-gray-400">{new Date(medicalFileSummaryResult.timestamp).toLocaleString()}</span>
+                            </div>
+
+                            {/* Red Flags */}
+                            {medicalFileSummaryResult.red_flags?.length > 0 && (
+                                <div className="rounded-xl border border-red-200 overflow-hidden">
+                                    <div className="bg-red-50 px-5 py-3 flex items-center gap-2">
+                                        <AlertCircle className="w-4 h-4 text-red-600" />
+                                        <span className="text-sm font-semibold text-red-800">Clinical Alerts &mdash; {medicalFileSummaryResult.red_flags.length} found</span>
+                                    </div>
+                                    <ul className="divide-y divide-red-100">
+                                        {medicalFileSummaryResult.red_flags.map((f, i) => (
+                                            <li key={i} className={`flex items-center gap-3 px-5 py-2.5 ${f.severity === 'error' ? 'bg-red-50' : 'bg-yellow-50'}`}>
+                                                <span className={`w-2 h-2 rounded-full flex-shrink-0 ${f.severity === 'error' ? 'bg-red-500' : 'bg-yellow-500'}`}></span>
+                                                <span className={`text-sm ${f.severity === 'error' ? 'text-red-700 font-medium' : 'text-yellow-700'}`}>
+                                                    {f.severity === 'error' ? '⛔ ALERT' : '⚠ NOTICE'}: {f.description}
+                                                </span>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            )}
+
+                            {/* Patient Info */}
+                            {medicalFileSummaryResult.patient_info && Object.keys(medicalFileSummaryResult.patient_info).length > 0 && (
+                                <div className="bg-blue-50 rounded-xl p-5 border border-blue-200">
+                                    <h3 className="text-sm font-semibold text-blue-900 mb-3 flex items-center gap-2">
+                                        <User className="w-4 h-4 text-blue-600" /> Patient Information
+                                    </h3>
+                                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                                        {Object.entries(medicalFileSummaryResult.patient_info).map(([k, v]) => (
+                                            <div key={k} className="bg-white rounded-lg p-3 border border-blue-100">
+                                                <p className="text-xs text-blue-500 font-medium uppercase tracking-wide">{k}</p>
+                                                <p className="text-sm text-gray-800 font-semibold mt-0.5">{v}</p>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Summary */}
+                            <div className="bg-gradient-to-r from-violet-50 to-purple-50 rounded-xl p-5 border border-violet-200">
+                                <h3 className="text-base font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                                    <FileText className="w-4 h-4 text-violet-600" /> Clinical Summary
+                                </h3>
+                                <p className="text-gray-700 text-sm leading-relaxed">{medicalFileSummaryResult.summary}</p>
+                            </div>
+
+                            {/* Section Highlights */}
+                            {medicalFileSummaryResult.highlights && Object.keys(medicalFileSummaryResult.highlights).length > 0 && (
+                                <div className="bg-white rounded-xl p-5 border border-gray-200">
+                                    <h3 className="text-base font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                                        <Sparkles className="w-4 h-4 text-indigo-600" /> Section Highlights
+                                    </h3>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        {Object.entries(medicalFileSummaryResult.highlights).map(([section, items]) => (
+                                            <div key={section} className="bg-indigo-50 rounded-lg p-4 border border-indigo-100">
+                                                <h4 className="text-xs font-semibold text-indigo-800 uppercase tracking-wide mb-2">{section}</h4>
+                                                <ul className="space-y-1">
+                                                    {items.map((item, i) => (
+                                                        <li key={i} className="text-xs text-gray-700 flex items-start gap-1.5">
+                                                            <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 mt-1.5 flex-shrink-0"></span>
+                                                            {item}
+                                                        </li>
+                                                    ))}
+                                                </ul>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Parsed Sections */}
+                            {medicalFileSummaryResult.sections && Object.keys(medicalFileSummaryResult.sections).filter(k => k !== 'General').length > 0 && (
+                                <div className="bg-white rounded-xl p-5 border border-gray-200">
+                                    <h3 className="text-base font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                                        <FileBarChart className="w-4 h-4 text-teal-600" /> Parsed Clinical Sections
+                                    </h3>
+                                    <div className="space-y-3">
+                                        {Object.entries(medicalFileSummaryResult.sections)
+                                            .filter(([k]) => k !== 'General')
+                                            .map(([section, content]) => (
+                                                <details key={section} className="bg-teal-50 rounded-lg border border-teal-100">
+                                                    <summary className="px-4 py-2.5 text-sm font-medium text-teal-800 cursor-pointer select-none">{section}</summary>
+                                                    <div className="px-4 pb-3 pt-1">
+                                                        <p className="text-xs text-gray-700 leading-relaxed whitespace-pre-wrap">{content}</p>
+                                                    </div>
+                                                </details>
+                                            ))}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="p-5 bg-gray-50 rounded-b-xl border-t border-gray-200 flex items-center justify-between">
+                            <p className="text-xs text-gray-500">
+                                <span className="font-medium">Note:</span> Extractive AI analysis. Always review with a qualified clinician.
+                            </p>
+                            <button
+                                onClick={() => setShowMedicalFileSummaryModal(false)}
+                                className="bg-violet-600 text-white px-5 py-2 rounded-lg hover:bg-violet-700 transition-colors text-sm font-medium"
+                            >
+                                Close
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -2376,6 +2891,173 @@ const PatientDashboard = () => {
                                     ))}
                                 </div>
                             )}
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* === AI Summary History Modal === */}
+            {showSummaryHistoryModal && batchSummaryResult && (
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-2xl max-w-4xl w-full max-h-[92vh] overflow-hidden flex flex-col shadow-2xl">
+                        {/* Modal Header */}
+                        <div className="p-6 border-b border-gray-100 bg-gradient-to-r from-purple-50 to-blue-50">
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg">
+                                        <Brain className="w-6 h-6 text-white" />
+                                    </div>
+                                    <div>
+                                        <h2 className="text-xl font-bold text-gray-900">AI Medical Summary</h2>
+                                        <p className="text-sm text-gray-500">
+                                            {batchSummaryResult.processed_documents} of {batchSummaryResult.total_documents} records analyzed
+                                        </p>
+                                    </div>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <button
+                                        onClick={handleDownloadSummaryPDF}
+                                        disabled={generatingPdfReport}
+                                        className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium text-sm disabled:opacity-50"
+                                    >
+                                        {generatingPdfReport ? (
+                                            <>
+                                                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                                <span>Generating PDF...</span>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <Download className="w-4 h-4" />
+                                                <span>Download PDF</span>
+                                            </>
+                                        )}
+                                    </button>
+                                    <button
+                                        onClick={() => setShowSummaryHistoryModal(false)}
+                                        className="p-2 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors"
+                                    >
+                                        <X className="w-5 h-5" />
+                                    </button>
+                                </div>
+                            </div>
+
+                        </div>
+
+                        {/* Modal Body */}
+                        <div className="flex-1 overflow-y-auto p-6 space-y-6">
+                            {/* Individual Document Summaries */}
+                            <div>
+                                <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                                    <FileText className="w-5 h-5 text-gray-400" />
+                                    Document Summaries
+                                </h3>
+                                <div className="space-y-4">
+                                    {batchSummaryResult.summaries?.map((doc, index) => {
+                                        const urgencyColors = {
+                                            high: 'bg-red-100 text-red-700 border-red-200',
+                                            moderate: 'bg-yellow-100 text-yellow-700 border-yellow-200',
+                                            low: 'bg-green-100 text-green-700 border-green-200'
+                                        };
+                                        const urgencyLevel = (doc.urgency_level || 'low').toLowerCase();
+                                        const typeColors = {
+                                            'lab-report': 'from-blue-500 to-blue-600',
+                                            'prescription': 'from-purple-500 to-purple-600',
+                                            'scan': 'from-pink-500 to-pink-600',
+                                            'consultation': 'from-green-500 to-green-600',
+                                            'other': 'from-gray-500 to-gray-600'
+                                        };
+                                        const typeColor = typeColors[doc.document_type] || typeColors.other;
+
+                                        return (
+                                            <div key={index} className="bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-lg transition-shadow">
+                                                {/* Document Header */}
+                                                <div className="flex items-center gap-3 p-4 bg-gray-50 border-b border-gray-100">
+                                                    <div className={`w-10 h-10 bg-gradient-to-br ${typeColor} rounded-lg flex items-center justify-center shadow-md flex-shrink-0`}>
+                                                        <FileText className="w-5 h-5 text-white" />
+                                                    </div>
+                                                    <div className="flex-1 min-w-0">
+                                                        <h4 className="font-semibold text-gray-900 text-sm truncate">
+                                                            {doc.document_name || `Document ${index + 1}`}
+                                                        </h4>
+                                                        <div className="flex items-center gap-2 mt-0.5">
+                                                            <span className="text-xs text-gray-500 capitalize">
+                                                                {(doc.document_type || 'other').replace('-', ' ')}
+                                                            </span>
+                                                            <span className={`inline-flex items-center px-2 py-0.5 text-xs font-medium rounded-full border ${urgencyColors[urgencyLevel] || urgencyColors.low}`}>
+                                                                {urgencyLevel === 'high' ? '🔴' : urgencyLevel === 'moderate' ? '🟡' : '🟢'} {urgencyLevel}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                {/* Document Content */}
+                                                <div className="p-4 space-y-3">
+                                                    {/* Summary */}
+                                                    <div>
+                                                        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Summary</p>
+                                                        <p className="text-sm text-gray-700 leading-relaxed">
+                                                            {doc.summary || 'No summary available.'}
+                                                        </p>
+                                                    </div>
+
+                                                    {/* Key Findings */}
+                                                    {doc.key_findings && doc.key_findings.length > 0 && (
+                                                        <div>
+                                                            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Key Findings</p>
+                                                            <ul className="space-y-1">
+                                                                {doc.key_findings.slice(0, 5).map((finding, fi) => (
+                                                                    <li key={fi} className="flex items-start gap-2 text-sm text-gray-600">
+                                                                        <span className="text-blue-500 mt-1 flex-shrink-0">•</span>
+                                                                        <span>{finding}</span>
+                                                                    </li>
+                                                                ))}
+                                                            </ul>
+                                                        </div>
+                                                    )}
+
+                                                    {/* Recommendations */}
+                                                    {doc.recommendations && doc.recommendations.length > 0 && (
+                                                        <div className="bg-blue-50 rounded-lg p-3 border border-blue-100">
+                                                            <p className="text-xs font-semibold text-blue-600 uppercase tracking-wider mb-1">Recommendations</p>
+                                                            <ul className="space-y-1">
+                                                                {doc.recommendations.slice(0, 3).map((rec, ri) => (
+                                                                    <li key={ri} className="flex items-start gap-2 text-sm text-blue-700">
+                                                                        <span className="text-blue-400 mt-0.5 flex-shrink-0">→</span>
+                                                                        <span>{rec}</span>
+                                                                    </li>
+                                                                ))}
+                                                            </ul>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Modal Footer */}
+                        <div className="p-4 border-t border-gray-100 bg-gray-50 flex items-center justify-between">
+                            <p className="text-xs text-gray-400">
+                                ⚠️ AI-generated summaries are for reference only. Consult your healthcare provider for medical advice.
+                            </p>
+                            <div className="flex items-center gap-2">
+                                <button
+                                    onClick={handleDownloadSummaryPDF}
+                                    disabled={generatingPdfReport}
+                                    className="flex items-center gap-1.5 px-3 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium disabled:opacity-50"
+                                >
+                                    <Download className="w-3.5 h-3.5" />
+                                    <span>{generatingPdfReport ? 'Generating...' : 'Download PDF Report'}</span>
+                                </button>
+                                <button
+                                    onClick={() => setShowSummaryHistoryModal(false)}
+                                    className="px-3 py-1.5 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors text-sm font-medium"
+                                >
+                                    Close
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>

@@ -108,7 +108,82 @@ class DocumentSummarizationResponse(BaseModel):
     medical_terms: List[Dict[str, str]]
     recommendations: List[str]
     urgency_level: str
+    # Medical-Summarizer enrichment fields
+    highlights: Optional[Dict[str, List[str]]] = None
+    patient_info: Optional[Dict[str, str]] = None
+    red_flags: Optional[List[Dict[str, str]]] = None
+    sections: Optional[Dict[str, str]] = None
+    word_count: Optional[int] = None
+    sentence_count: Optional[int] = None
     timestamp: str
+
+
+# Medical-Summarizer file-upload response
+class MedicalFileSummarizeResponse(BaseModel):
+    success: bool
+    patient_id: str
+    document_id: str
+    filename: str
+    file_type: str
+    summary: str
+    highlights: Dict[str, List[str]]
+    patient_info: Dict[str, str]
+    red_flags: List[Dict[str, str]]
+    sections: Dict[str, str]
+    word_count: int
+    sentence_count: int
+    urgency_level: str
+    timestamp: str
+
+# Image OCR + Summarization Models
+class ImageOCRRequest(BaseModel):
+    patient_id: str
+    document_id: str
+    document_type: str = Field(default="prescription", pattern="^(lab-report|prescription|scan|consultation|other)$")
+    is_handwritten: bool = True
+
+class ImageOCRResponse(BaseModel):
+    success: bool
+    patient_id: str
+    document_id: str
+    extracted_text: str
+    summary: str
+    key_findings: List[str]
+    ocr_method: str
+    ocr_confidence: float
+    model_info: Optional[Dict[str, Any]] = None
+    urgency_level: str
+    recommendations: List[str]
+    timestamp: str
+
+# Batch Summarization Models
+class BatchDocumentInfo(BaseModel):
+    document_id: str
+    document_name: str
+    document_type: str = Field(default="other", pattern="^(lab-report|prescription|scan|consultation|other)$")
+    document_text: Optional[str] = None
+    file_type: Optional[str] = None
+
+class BatchSummarizeRequest(BaseModel):
+    patient_id: str
+    documents: List[BatchDocumentInfo]
+
+class BatchSummarizeResponse(BaseModel):
+    success: bool
+    patient_id: str
+    summaries: List[Dict[str, Any]]
+    overall_summary: str
+    total_documents: int
+    processed_documents: int
+    models_used: Dict[str, str]
+    timestamp: str
+
+# Combined PDF Report Models
+class GeneratePDFReportRequest(BaseModel):
+    patient_id: str
+    patient_name: Optional[str] = "Patient"
+    summaries: List[Dict[str, Any]]
+    overall_summary: Optional[str] = None
 
 # Generic Error Response
 class ErrorResponse(BaseModel):
@@ -116,3 +191,4 @@ class ErrorResponse(BaseModel):
     error: str
     message: str
     timestamp: str
+

@@ -23,11 +23,12 @@ const documentSchema = new mongoose.Schema(
     status: {
       type: String,
       enum: ['pending', 'verified', 'under-review'],
-      default: 'pending'
+      default: 'under-review'
     },
     // AI Summarization fields
     aiSummary: {
       summary: { type: String },
+      extractedText: { type: String },
       keyFindings: [{ type: String }],
       medicalTerms: [{
         term: { type: String },

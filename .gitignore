@@ -6,3 +6,5 @@ ml-microservice/app/api/v1/__pycache__/router.cpython-313.pyc
 __pycache__/
 *.log
 ml-microservice/logs/
+/*.pyc
+# ml-microservice/app/api/v1/endpoints/__init__.py

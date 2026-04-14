@@ -201,10 +201,10 @@ Respond with only ONE word: low, moderate, or high"""
         for term in list(found_terms)[:5]:
             terms.append({
                 "term": term,
-                "definition": f"Medical term found in document: {term}"
+                "explanation": f"Medical term found in document: {term}"
             })
         
-        return terms if terms else [{"term": "Medical terminology", "definition": "Refer to medical glossary"}]
+        return terms if terms else [{"term": "Medical terminology", "explanation": "Refer to medical glossary"}]
     
     def _generate_recommendations_offline(self, text: str, doc_type: str) -> List[str]:
         """Generate recommendations based on document type and content"""
@@ -694,54 +694,96 @@ Respond with only one word: low, moderate, or high."""
     
     def _generate_summary(self, text: str, doc_type: str) -> str:
         """
-        Generate a concise summary of the medical document
-        In production: Use transformer models or medical NLP libraries
+        Generate a concise summary of the medical document using actual content.
         """
-        # Simplified summarization logic
-        text_length = len(text.split())
-        
-        if doc_type == 'lab-report':
-            return f"Lab Report Summary: This document contains laboratory test results with {text_length} data points. The report includes various diagnostic tests and their values. Key parameters have been analyzed for abnormalities and trends."
-        elif doc_type == 'prescription':
-            return f"Prescription Summary: This prescription document outlines medication details and treatment instructions. It contains prescribed medications, dosages, and administration guidelines for the patient's condition."
-        elif doc_type == 'scan':
-            return f"Medical Scan Summary: This imaging report contains diagnostic scan results. The document includes radiological findings, interpretations, and clinical impressions from the imaging study."
-        elif doc_type == 'consultation':
-            return f"Consultation Summary: This consultation note documents a medical visit including patient complaints, examination findings, diagnosis, and treatment plan. The healthcare provider has recorded clinical observations and recommendations."
-        else:
-            return f"Medical Document Summary: This document contains medical information relevant to patient care. The document has been analyzed and key medical information has been extracted for quick reference."
+        import re
+        text_stripped = text.strip()
+        if not text_stripped:
+            return "No document content available for summarization."
+
+        # Pull first meaningful sentences (up to ~300 chars worth)
+        sentences = re.split(r'(?<=[.!?])\s+', text_stripped)
+        meaningful = [s.strip() for s in sentences if len(s.strip()) > 20]
+
+        if meaningful:
+            # Take up to 3 sentences as the base summary
+            snippet = ' '.join(meaningful[:3])
+            snippet = re.sub(r'\s+', ' ', snippet).strip()
+            # Prepend a doc-type label
+            label_map = {
+                'lab-report': 'Lab Report',
+                'prescription': 'Prescription',
+                'scan': 'Medical Scan',
+                'consultation': 'Consultation Note',
+            }
+            label = label_map.get(doc_type, 'Medical Document')
+            return f"{label}: {snippet}"
+
+        # Fallback: truncate raw text
+        snippet = re.sub(r'\s+', ' ', text_stripped[:300]).strip()
+        return snippet + ('...' if len(text_stripped) > 300 else '')
     
     def _extract_key_findings(self, text: str, doc_type: str) -> List[str]:
         """
-        Extract key findings from the document
-        In production: Use NER (Named Entity Recognition) and medical entity extraction
+        Extract key findings from the document by pulling actual sentences/values.
         """
+        import re
         findings = []
-        
-        # Common medical keywords to look for
-        keywords = {
-            'lab-report': ['normal', 'elevated', 'decreased', 'abnormal', 'positive', 'negative', 'glucose', 'cholesterol', 'hemoglobin'],
-            'prescription': ['tablet', 'capsule', 'mg', 'ml', 'twice daily', 'once daily', 'before meals', 'after meals'],
-            'scan': ['fracture', 'mass', 'lesion', 'normal', 'abnormal', 'impression', 'findings'],
-            'consultation': ['diagnosis', 'symptoms', 'complaint', 'treatment', 'follow-up', 'advised']
-        }
-        
-        text_lower = text.lower()
-        relevant_keywords = keywords.get(doc_type, [])
-        
-        for keyword in relevant_keywords:
-            if keyword in text_lower:
-                findings.append(f"Document contains reference to: {keyword}")
-        
-        # If no specific findings, provide general observations
-        if not findings:
-            findings = [
-                "Medical terminology detected in document",
-                "Document contains standard medical record information",
-                "Patient-specific data has been recorded"
+        text_stripped = text.strip()
+
+        if not text_stripped or len(text_stripped) < 20:
+            return ["Document text too short to extract specific findings."]
+
+        # --- Pattern-based extraction: grab lines with numeric values or medical results ---
+        # Match lines like: "Hemoglobin: 13.5 g/dL", "Blood Pressure: 130/85 mmHg"
+        value_pattern = re.compile(
+            r'([A-Za-z][A-Za-z\s/\(\)]{3,40})\s*[:\-]\s*([\d\.]+\s*(?:mg|g|ml|mmol|mmHg|%|U/L|IU/L|mEq|ng|pg|fl|fL|km|bpm|°C|°F|/dL|/L|/mm|/uL)?(?:\s*/\s*[\d\.]+)?)',
+            re.IGNORECASE
+        )
+        for match in value_pattern.finditer(text_stripped):
+            label = match.group(1).strip().strip('-').strip()
+            value = match.group(2).strip()
+            if len(label) > 3 and len(label) < 50:
+                findings.append(f"{label}: {value}")
+            if len(findings) >= 6:
+                break
+
+        # --- Sentence-based extraction: pull sentences with strong medical signal words ---
+        if len(findings) < 3:
+            signal_words = [
+                'diagnosis', 'diagnosed', 'impression', 'finding', 'result', 'positive',
+                'negative', 'abnormal', 'elevated', 'decreased', 'normal', 'deficiency',
+                'prescribed', 'medication', 'dosage', 'treatment', 'condition', 'fracture',
+                'lesion', 'mass', 'infection', 'inflammation', 'chronic', 'acute', 'severe',
+                'mild', 'moderate', 'urgent', 'critical', 'complaint', 'symptom', 'allergy'
             ]
-        
-        return findings[:5]  # Limit to top 5 findings
+            sentences = re.split(r'(?<=[.!?])\s+', text_stripped)
+            for sentence in sentences:
+                sentence = sentence.strip()
+                if 15 < len(sentence) < 200:
+                    s_lower = sentence.lower()
+                    if any(w in s_lower for w in signal_words):
+                        # Clean up and add
+                        clean = re.sub(r'\s+', ' ', sentence)
+                        if clean not in findings:
+                            findings.append(clean)
+                if len(findings) >= 5:
+                    break
+
+        # --- Line-based extraction fallback: grab informative lines ---
+        if len(findings) < 2:
+            lines = [l.strip() for l in text_stripped.splitlines() if len(l.strip()) > 15]
+            for line in lines[:10]:
+                clean = re.sub(r'\s+', ' ', line)
+                if clean not in findings:
+                    findings.append(clean)
+                if len(findings) >= 5:
+                    break
+
+        if not findings:
+            findings = ["No specific findings could be extracted from this document."]
+
+        return findings[:6]
     
     def _extract_medical_terms(self, text: str) -> List[Dict[str, str]]:
         """
@@ -847,5 +889,343 @@ Respond with only one word: low, moderate, or high."""
         
         return 'low'
 
-# Singleton instance
+class MedicalRecordSummarizer:
+    """
+    CNN + Transformer based medical record summarizer.
+    Uses BART (facebook/bart-large-cnn) for text summarization
+    and TrOCR for handwritten prescription OCR.
+    """
+    
+    def __init__(self):
+        self.summarizer = None
+        self.model_loaded = False
+        self._loading = False
+        logger.info("MedicalRecordSummarizer initialized (lazy loading)")
+    
+    def _load_model(self):
+        """Lazily load the BART summarization model"""
+        if self.model_loaded or self._loading:
+            return
+        
+        self._loading = True
+        try:
+            from transformers import pipeline
+            import torch
+            
+            device = 0 if torch.cuda.is_available() else -1
+            logger.info("Loading BART summarization model (facebook/bart-large-cnn)...")
+            
+            self.summarizer = pipeline(
+                "summarization",
+                model="facebook/bart-large-cnn",
+                device=device
+            )
+            
+            self.model_loaded = True
+            logger.info(f"BART model loaded on {'GPU' if device == 0 else 'CPU'}")
+        except Exception as e:
+            logger.error(f"Failed to load BART model: {e}")
+            self.model_loaded = False
+        finally:
+            self._loading = False
+    
+    async def summarize_text(self, text: str, max_length: int = 200, min_length: int = 50) -> str:
+        """
+        Summarize medical text using BART transformer model.
+        Falls back to extractive summarization if model unavailable.
+        """
+        self._load_model()
+        
+        if not self.model_loaded or not text or len(text.strip()) < 50:
+            # Fallback: simple extractive summary
+            return self._extractive_summary(text)
+        
+        try:
+            # BART has a max token limit — truncate if needed
+            input_text = text[:4096]
+            
+            result = self.summarizer(
+                input_text,
+                max_length=max_length,
+                min_length=min(min_length, len(input_text.split()) // 2),
+                do_sample=False,
+                truncation=True
+            )
+            
+            return result[0]["summary_text"]
+        except Exception as e:
+            logger.error(f"BART summarization error: {e}")
+            return self._extractive_summary(text)
+    
+    def _extractive_summary(self, text: str) -> str:
+        """Simple extractive summary as fallback"""
+        if not text:
+            return "No content available for summarization."
+        
+        sentences = [s.strip() for s in text.split('.') if len(s.strip()) > 20]
+        if not sentences:
+            return text[:300] + "..." if len(text) > 300 else text
+        
+        # Take first 3-5 meaningful sentences
+        summary_sentences = sentences[:min(5, len(sentences))]
+        return '. '.join(summary_sentences) + '.'
+    
+    async def process_and_summarize_image(self, image_bytes: bytes, doc_type: str = "prescription") -> Dict[str, Any]:
+        """
+        Full pipeline: Image → OCR (TrOCR CNN+Transformer) → Summarize (BART)
+        """
+        from app.services.ocr_service import ocr_service
+        
+        # Step 1: OCR with TrOCR
+        is_handwritten = doc_type in ["prescription"]
+        ocr_result = await ocr_service.extract_text_from_image(image_bytes, is_handwritten=is_handwritten)
+        
+        extracted_text = ocr_result.get("extracted_text", "")
+        
+        if not extracted_text:
+            return {
+                "extracted_text": "",
+                "summary": "Could not extract text from the image. The image may be unclear or contain non-text content.",
+                "key_findings": ["Text extraction unsuccessful"],
+                "medical_terms": [{"term": "OCR", "explanation": "Optical Character Recognition — text extraction from images"}],
+                "ocr_method": ocr_result.get("method", "unknown"),
+                "ocr_confidence": ocr_result.get("confidence", 0.0),
+                "model_info": ocr_result.get("model_info", {})
+            }
+        
+        # Step 2: Summarize extracted text with BART
+        summary = await self.summarize_text(extracted_text)
+        medical_terms = ml_service._extract_medical_terms_offline(extracted_text)
+        
+        return {
+            "extracted_text": extracted_text,
+            "summary": summary,
+            "key_findings": self._extract_findings_from_text(extracted_text, doc_type),
+            "medical_terms": medical_terms,
+            "ocr_method": ocr_result.get("method", "unknown"),
+            "ocr_confidence": ocr_result.get("confidence", 0.0),
+            "num_lines": ocr_result.get("num_lines_detected", 0),
+            "model_info": ocr_result.get("model_info", {}),
+            "summarization_model": "facebook/bart-large-cnn" if self.model_loaded else "extractive_fallback"
+        }
+    
+    async def process_and_summarize_pdf(self, pdf_bytes: bytes, doc_type: str = "other") -> Dict[str, Any]:
+        """
+        Full pipeline: PDF → pdfplumber extraction → Summarize (BART)
+        """
+        from app.services.pdf_service import pdf_service
+        
+        # Step 1: Extract text from PDF
+        pdf_result = pdf_service.extract_text_from_pdf(pdf_bytes)
+        extracted_text = pdf_result.get("extracted_text", "")
+        
+        if not extracted_text:
+            return {
+                "extracted_text": "",
+                "summary": "Could not extract text from the PDF. The document may be scanned or image-based.",
+                "key_findings": ["Text extraction unsuccessful from PDF"],
+                "medical_terms": [{"term": "PDF", "explanation": "Portable Document Format — the uploaded file format"}],
+                "page_count": pdf_result.get("page_count", 0),
+                "extraction_method": "pdfplumber"
+            }
+        
+        # Step 2: Summarize with BART
+        summary = await self.summarize_text(extracted_text)
+        medical_terms = ml_service._extract_medical_terms_offline(extracted_text)
+        
+        return {
+            "extracted_text": extracted_text,
+            "summary": summary,
+            "key_findings": self._extract_findings_from_text(extracted_text, doc_type),
+            "medical_terms": medical_terms,
+            "page_count": pdf_result.get("page_count", 0),
+            "extraction_method": "pdfplumber",
+            "summarization_model": "facebook/bart-large-cnn" if self.model_loaded else "extractive_fallback"
+        }
+    
+    def _extract_findings_from_text(self, text: str, doc_type: str) -> List[str]:
+        """Extract key medical findings using actual document content (3-tier approach)."""
+        import re
+        findings = []
+        text_stripped = text.strip()
+
+        if not text_stripped or len(text_stripped) < 20:
+            return [f"Medical {doc_type.replace('-', ' ')} document analyzed."]
+
+        # Tier 1: lines with numeric measurements / lab values
+        value_pattern = re.compile(
+            r'([A-Za-z][A-Za-z\s/\(\)]{3,40})\s*[:\-]\s*([\d\.]+\s*(?:mg|g|ml|mmol|mmHg|%|U/L|IU/L|mEq|ng|pg|fl|fL|bpm|°C|°F|/dL|/L|/mm|/uL)?(?:\s*/\s*[\d\.]+)?)',
+            re.IGNORECASE
+        )
+        for match in value_pattern.finditer(text_stripped):
+            label = match.group(1).strip().strip('-').strip()
+            value = match.group(2).strip()
+            if 3 < len(label) < 50:
+                findings.append(f"{label}: {value}")
+            if len(findings) >= 6:
+                break
+
+        # Tier 2: sentences with medical signal words
+        if len(findings) < 3:
+            signal_words = [
+                'diagnosis', 'diagnosed', 'impression', 'finding', 'result', 'positive',
+                'negative', 'abnormal', 'elevated', 'decreased', 'normal', 'deficiency',
+                'prescribed', 'medication', 'dosage', 'treatment', 'condition',
+                'fracture', 'lesion', 'infection', 'inflammation', 'chronic', 'acute',
+                'severe', 'mild', 'moderate', 'urgent', 'critical', 'complaint', 'symptom',
+            ]
+            sentences = re.split(r'(?<=[.!?])\s+', text_stripped)
+            for sentence in sentences:
+                sentence = sentence.strip()
+                if 15 < len(sentence) < 200:
+                    if any(w in sentence.lower() for w in signal_words):
+                        clean = re.sub(r'\s+', ' ', sentence)
+                        if clean not in findings:
+                            findings.append(clean)
+                if len(findings) >= 5:
+                    break
+
+        # Tier 3: informative lines as last resort
+        if len(findings) < 2:
+            lines = [l.strip() for l in text_stripped.splitlines() if len(l.strip()) > 15]
+            for line in lines[:10]:
+                clean = re.sub(r'\s+', ' ', line)
+                if clean not in findings:
+                    findings.append(clean)
+                if len(findings) >= 5:
+                    break
+
+        if not findings:
+            findings = [f"Medical {doc_type.replace('-', ' ')} document analyzed."]
+
+        return findings[:6]
+    
+    async def batch_summarize(self, documents: List[Dict[str, Any]]) -> Dict[str, Any]:
+        """
+        Batch summarize multiple medical records.
+        Processes each document through appropriate pipeline based on file type.
+        """
+        summaries = []
+        overall_texts = []
+        
+        for doc in documents:
+            file_type = doc.get("file_type", "")
+            doc_type = doc.get("document_type", "other")
+            doc_name = doc.get("document_name", "Unknown Document")
+            file_bytes = doc.get("file_bytes")
+            document_text = doc.get("document_text", "")
+            
+            try:
+                if file_bytes and file_type.startswith("image/"):
+                    # Image → TrOCR → BART
+                    result = await self.process_and_summarize_image(file_bytes, doc_type)
+                elif file_bytes and file_type == "application/pdf":
+                    # PDF → pdfplumber → BART
+                    result = await self.process_and_summarize_pdf(file_bytes, doc_type)
+                elif document_text:
+                    # Raw text → BART
+                    summary = await self.summarize_text(document_text)
+                    result = {
+                        "extracted_text": document_text,
+                        "summary": summary,
+                        "key_findings": self._extract_findings_from_text(document_text, doc_type),
+                        "summarization_model": "facebook/bart-large-cnn" if self.model_loaded else "extractive_fallback"
+                    }
+                else:
+                    result = {
+                        "extracted_text": "",
+                        "summary": "No content available for this document.",
+                        "key_findings": ["Document content not accessible"]
+                    }
+                
+                # Add document metadata
+                result["document_name"] = doc_name
+                result["document_type"] = doc_type
+                result["document_id"] = doc.get("document_id", "")
+                
+                # Determine urgency
+                text_for_urgency = result.get("extracted_text", "") + " " + result.get("summary", "")
+                result["urgency_level"] = self._assess_urgency(text_for_urgency)
+                
+                # Generate recommendations
+                result["recommendations"] = self._generate_recs(text_for_urgency, doc_type)
+                
+                summaries.append(result)
+                
+                if result.get("extracted_text"):
+                    overall_texts.append(result["extracted_text"][:500])
+                    
+            except Exception as e:
+                logger.error(f"Error processing document {doc_name}: {e}")
+                summaries.append({
+                    "document_name": doc_name,
+                    "document_type": doc_type,
+                    "document_id": doc.get("document_id", ""),
+                    "summary": f"Error processing: {str(e)}",
+                    "key_findings": ["Processing error occurred"],
+                    "urgency_level": "low",
+                    "recommendations": ["Review this document manually"]
+                })
+        
+        # Generate overall summary from all texts
+        overall_text = "\n\n".join(overall_texts)
+        overall_summary = await self.summarize_text(overall_text) if overall_text else "No documents were processed."
+        
+        return {
+            "summaries": summaries,
+            "overall_summary": overall_summary,
+            "total_documents": len(documents),
+            "processed_documents": len(summaries),
+            "models_used": {
+                "ocr": "microsoft/trocr-base-handwritten (CNN + Transformer)",
+                "summarization": "facebook/bart-large-cnn (Transformer)" if self.model_loaded else "Extractive fallback",
+                "pdf_extraction": "pdfplumber"
+            }
+        }
+    
+    def _assess_urgency(self, text: str) -> str:
+        """Assess urgency based on text content"""
+        text_lower = text.lower()
+        
+        high_urgency = ['emergency', 'urgent', 'critical', 'severe', 'immediate', 'life-threatening', 'acute']
+        moderate_urgency = ['elevated', 'abnormal', 'concerning', 'monitor', 'follow-up', 'recheck', 'borderline']
+        
+        for word in high_urgency:
+            if word in text_lower:
+                return "high"
+        for word in moderate_urgency:
+            if word in text_lower:
+                return "moderate"
+        return "low"
+    
+    def _generate_recs(self, text: str, doc_type: str) -> List[str]:
+        """Generate recommendations based on content and type"""
+        recs = []
+        text_lower = text.lower()
+        
+        if doc_type == "prescription":
+            recs.extend(["Take medications as prescribed", "Report any side effects to your doctor"])
+        elif doc_type == "lab-report":
+            recs.extend(["Discuss results with your healthcare provider"])
+        elif doc_type == "scan":
+            recs.extend(["Consult your doctor about imaging findings"])
+        
+        if 'abnormal' in text_lower or 'elevated' in text_lower:
+            recs.append("Schedule a follow-up appointment")
+        if 'urgent' in text_lower or 'critical' in text_lower:
+            recs.insert(0, "⚠️ Seek immediate medical attention")
+        
+        if not recs:
+            recs = ["Keep this document for your medical records", "Share with your healthcare provider during next visit"]
+        
+        return recs[:4]
+    
+    async def generate_combined_pdf(self, patient_info: Dict, summaries: List[Dict], overall_summary: str = "") -> bytes:
+        """Generate a combined PDF report from all summaries"""
+        from app.services.pdf_service import pdf_service
+        return pdf_service.generate_combined_report(patient_info, summaries, overall_summary)
+
+
+# Singleton instances
 ml_service = MLService()
+medical_summarizer = MedicalRecordSummarizer()

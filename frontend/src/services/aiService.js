@@ -161,6 +161,76 @@ export const aiService = {
       console.error('Recommendations request failed:', error);
       throw error;
     }
+  },
+
+  /**
+   * Batch summarize all medical records using CNN+Transformer
+   * @param {Object} data - Documents data
+   * @param {string} data.patient_id - Patient ID
+   * @param {Object[]} data.documents - List of documents with metadata
+   * @returns {Promise<Object>} Batch summarization results
+   */
+  summarizeAllRecords: async (data) => {
+    try {
+      const response = await aiClient.post('/summarize-all', data, {
+        timeout: 120000 // 2 minutes for batch processing
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Batch summarization failed:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Generate combined PDF report from all summaries
+   * @param {Object} data - Report data
+   * @param {string} data.patient_id - Patient ID
+   * @param {string} data.patient_name - Patient name
+   * @param {Object[]} data.summaries - List of document summaries
+   * @param {string} [data.overall_summary] - Overall health summary
+   * @returns {Promise<Object>} PDF report response with base64 data
+   */
+  generateSummaryReport: async (data) => {
+    try {
+      const response = await aiClient.post('/generate-summary-report', data, {
+        timeout: 60000
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Summary report generation failed:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Summarize a medical file using the Medical-Summarizer engine.
+   * Supports .txt, .pdf, .docx, .json files.
+   * Returns: summary, highlights, patient_info, red_flags, sections, urgency_level.
+   *
+   * @param {File}   file        - The file object to upload
+   * @param {string} patientId   - Patient ID
+   * @param {string} documentId  - Document / record ID
+   * @param {Object} [options]   - Optional: { maxSentences, useBart }
+   */
+  summarizeMedicalFile: async (file, patientId, documentId, options = {}) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('patient_id', patientId);
+    formData.append('document_id', documentId);
+    if (options.maxSentences) formData.append('max_sentences', String(options.maxSentences));
+    if (options.useBart !== undefined) formData.append('use_bart', String(options.useBart));
+
+    try {
+      const response = await aiClient.post('/summarize-medical-file', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+        timeout: 60000,
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Medical file summarization failed:', error);
+      throw error;
+    }
   }
 };
 

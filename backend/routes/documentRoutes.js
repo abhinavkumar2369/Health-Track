@@ -8,8 +8,9 @@ import { Patient } from '../models/Patient.js';
 
 const router = express.Router();
 
-// ML Microservice URL
-const ML_SERVICE_URL = process.env.ML_SERVICE_URL || "http://localhost:8000/api/v1";
+// ML Microservice URL - ensure /api/v1 suffix is always present
+const ML_SERVICE_BASE = (process.env.ML_SERVICE_URL || "http://localhost:8000").replace(/\/api\/v1\/?$/, '');
+const ML_SERVICE_URL = `${ML_SERVICE_BASE}/api/v1`;
 
 // Configure AWS S3
 const s3 = new AWS.S3({
@@ -97,7 +98,7 @@ router.post('/upload', upload.single('document'), async (req, res) => {
             fileUrl: s3UploadResult.Location,
             description: description || '',
             category: category || 'other',
-            status: 'pending'
+            status: 'under-review'
         });
 
         await document.save();
@@ -294,7 +295,7 @@ router.delete('/:documentId', async (req, res) => {
     }
 });
 
-// Summarize document using AI
+// Summarize document using AI (with CNN+Transformer OCR for images, pdfplumber for PDFs)
 router.post('/summarize/:documentId', async (req, res) => {
     try {
         const { token } = req.body;
@@ -317,69 +318,129 @@ router.post('/summarize/:documentId', async (req, res) => {
             return res.status(403).json({ success: false, message: 'Unauthorized' });
         }
 
-        // Get document from S3
-        const s3Params = {
-            Bucket: process.env.AWS_BUCKET_NAME,
-            Key: document.s3Key
-        };
+        let mlResponse;
+        let s3Object = null;
+        let fallbackDocumentText = '';
 
-        const s3Object = await s3.getObject(s3Params).promise();
-        
-        // Extract text from document (simplified - in production use proper parsers)
-        let documentText = '';
-        if (document.fileType === 'application/pdf') {
-            // For PDF, you would use a library like pdf-parse
-            // For now, using placeholder text
-            documentText = `Medical document: ${document.originalName}. Category: ${document.category}. Description: ${document.description || 'No description provided'}.`;
-        } else if (document.fileType.startsWith('image/')) {
-            // For images, you would use OCR (e.g., AWS Textract)
-            documentText = `Medical image: ${document.originalName}. Category: ${document.category}. Description: ${document.description || 'No description provided'}.`;
-        } else {
-            // For text-based documents
-            documentText = s3Object.Body.toString('utf-8');
+        // Try to get file bytes from S3 for advanced OCR/PDF processing
+        try {
+            const s3Params = {
+                Bucket: process.env.AWS_BUCKET_NAME,
+                Key: document.s3Key
+            };
+            s3Object = await s3.getObject(s3Params).promise();
+        } catch (s3Error) {
+            console.log('S3 fetch failed, falling back to text-based summarization:', s3Error.message);
+            s3Object = null;
         }
 
-        // Call ML microservice for summarization
-        const mlResponse = await axios.post(
-            `${ML_SERVICE_URL}/document/summarize`,
-            {
-                patient_id: decoded.id,
-                document_id: documentId,
-                document_text: documentText,
-                document_type: document.category,
-                metadata: {
-                    originalName: document.originalName,
-                    fileType: document.fileType,
-                    fileSize: document.fileSize,
-                    uploadedAt: document.createdAt
+        if (s3Object && document.fileType.startsWith('image/')) {
+            // For images: Send to ML microservice for TrOCR (CNN+Transformer) OCR
+            const FormData = (await import('form-data')).default;
+            const formData = new FormData();
+            formData.append('file', s3Object.Body, {
+                filename: document.originalName,
+                contentType: document.fileType
+            });
+            formData.append('patient_id', decoded.id);
+            formData.append('document_id', documentId);
+            formData.append('document_type', document.category || 'prescription');
+            formData.append('is_handwritten', document.category === 'prescription' ? 'true' : 'false');
+
+            mlResponse = await axios.post(
+                `${ML_SERVICE_URL}/document/summarize-image`,
+                formData,
+                {
+                    headers: formData.getHeaders(),
+                    timeout: 60000
                 }
-            },
-            {
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                timeout: 30000
+            );
+        } else if (s3Object && document.fileType === 'application/pdf') {
+            // For PDFs: Send to ML microservice for pdfplumber extraction + BART summarization
+            const FormData = (await import('form-data')).default;
+            const formData = new FormData();
+            formData.append('file', s3Object.Body, {
+                filename: document.originalName,
+                contentType: document.fileType
+            });
+            formData.append('patient_id', decoded.id);
+            formData.append('document_id', documentId);
+            formData.append('document_type', document.category || 'other');
+
+            mlResponse = await axios.post(
+                `${ML_SERVICE_URL}/document/summarize-pdf`,
+                formData,
+                {
+                    headers: formData.getHeaders(),
+                    timeout: 60000
+                }
+            );
+        } else {
+            // Fallback: text-based summarization using document metadata
+            // This runs when S3 is unavailable or for text documents
+            if (s3Object && !document.fileType.startsWith('image/') && document.fileType !== 'application/pdf') {
+                fallbackDocumentText = s3Object.Body.toString('utf-8');
+            } else {
+                // Build context from document metadata
+                fallbackDocumentText = `Medical ${(document.category || 'document').replace('-', ' ')}: ${document.title || document.originalName}. ` +
+                    `Category: ${document.category || 'general'}. ` +
+                    `File type: ${document.fileType}. ` +
+                    `Uploaded on: ${document.createdAt}. ` +
+                    (document.description ? `Description: ${document.description}. ` : '') +
+                    `This is a medical record that requires professional analysis.`;
             }
-        );
+
+            mlResponse = await axios.post(
+                `${ML_SERVICE_URL}/document/summarize`,
+                {
+                    patient_id: decoded.id,
+                    document_id: documentId,
+                    document_text: fallbackDocumentText,
+                    document_type: document.category || 'other',
+                    metadata: {
+                        originalName: document.originalName,
+                        fileType: document.fileType,
+                        fileSize: document.fileSize,
+                        uploadedAt: document.createdAt
+                    }
+                },
+                {
+                    headers: { 'Content-Type': 'application/json' },
+                    timeout: 30000
+                }
+            );
+        }
 
         // Save summary to database
+        const responseData = mlResponse.data;
+        // Map ML service urgency levels to Document model enum ('low', 'medium', 'high')
+        const urgencyMap = { 'low': 'low', 'moderate': 'medium', 'medium': 'medium', 'high': 'high' };
         document.aiSummary = {
-            summary: mlResponse.data.summary,
-            keyFindings: mlResponse.data.key_findings,
-            medicalTerms: mlResponse.data.medical_terms,
-            recommendations: mlResponse.data.recommendations,
-            urgencyLevel: mlResponse.data.urgency_level,
+            summary: responseData.summary,
+            // Use extracted_text from ML (OCR/PDF pipelines), fall back to the text we sent
+            extractedText: responseData.extracted_text || fallbackDocumentText || '',
+            keyFindings: responseData.key_findings || [],
+            // Normalize to always use 'explanation' key (ML may return 'definition' or 'explanation')
+            medicalTerms: (responseData.medical_terms || []).map(t => ({
+                term: t.term || '',
+                explanation: t.explanation || t.definition || ''
+            })),
+            recommendations: responseData.recommendations || [],
+            urgencyLevel: urgencyMap[responseData.urgency_level] || 'low',
             summarizedAt: new Date(),
-            summarizedBy: 'AI System'
+            summarizedBy: responseData.ocr_method
+                ? `AI System (OCR: ${responseData.ocr_method})`
+                : 'AI System (BART Transformer)'
         };
         document.isSummarized = true;
 
         await document.save();
 
+        // Return the saved aiSummary (camelCase) so the frontend receives normalized fields
         res.json({
             success: true,
             message: 'Document summarized successfully',
-            summary: mlResponse.data
+            summary: document.aiSummary
         });
 
     } catch (error) {

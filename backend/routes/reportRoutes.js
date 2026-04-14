@@ -9,8 +9,9 @@ import { HealthReport } from '../models/HealthReport.js';
 
 const router = express.Router();
 
-// ML Microservice URL
-const ML_SERVICE_URL = process.env.ML_SERVICE_URL || "http://localhost:8000/api/v1";
+// ML Microservice URL - ensure /api/v1 suffix is always present
+const ML_SERVICE_BASE = (process.env.ML_SERVICE_URL || "http://localhost:8000").replace(/\/api\/v1\/?$/, '');
+const ML_SERVICE_URL = `${ML_SERVICE_BASE}/api/v1`;
 
 // Configure AWS S3
 const s3 = new AWS.S3({
@@ -652,6 +653,63 @@ router.post('/download/:reportId', async (req, res) => {
         res.status(500).json({
             success: false,
             message: error.message || 'Failed to download report'
+        });
+    }
+});
+
+// Delete report
+router.delete('/:reportId', async (req, res) => {
+    try {
+        const { token } = req.body || {};
+        const { reportId } = req.params;
+
+        if (!token) {
+            return res.status(401).json({ success: false, message: 'No token provided' });
+        }
+
+        const decoded = verifyToken(token);
+
+        if (decoded.role !== 'patient') {
+            return res.status(403).json({ success: false, message: 'Unauthorized' });
+        }
+
+        const report = await HealthReport.findById(reportId);
+
+        if (!report) {
+            return res.status(404).json({ success: false, message: 'Report not found' });
+        }
+
+        // Verify patient owns this report
+        if (report.patient_id.toString() !== decoded.id) {
+            return res.status(403).json({ success: false, message: 'Unauthorized access' });
+        }
+
+        // Delete file from S3 first
+        try {
+            await s3.deleteObject({
+                Bucket: process.env.AWS_BUCKET_NAME,
+                Key: report.s3Key
+            }).promise();
+        } catch (s3Error) {
+            if (s3Error.code !== 'NoSuchKey') {
+                throw s3Error;
+            }
+
+            console.warn('Report file missing in S3, deleting DB record anyway:', report.s3Key);
+        }
+
+        await HealthReport.findByIdAndDelete(reportId);
+
+        res.json({
+            success: true,
+            message: 'Report deleted successfully'
+        });
+
+    } catch (error) {
+        console.error('Delete report error:', error);
+        res.status(500).json({
+            success: false,
+            message: error.message || 'Failed to delete report'
         });
     }
 });
