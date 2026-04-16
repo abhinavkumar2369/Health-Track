@@ -290,6 +290,12 @@ export const doctorAPI = {
         const token = ensureToken();
         return apiRequest(`/doctor/availability?token=${token}&date=${date}`);
     },
+
+    // Get full patient overview (documents, reports, profile)
+    getPatientOverview: async (patientId) => {
+        const token = ensureToken();
+        return apiRequest(`/doctor/patient/${patientId}/overview?token=${token}`);
+    },
 };
 
 // Patient API

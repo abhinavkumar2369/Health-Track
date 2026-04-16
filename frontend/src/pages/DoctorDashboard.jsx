@@ -88,6 +88,8 @@ const DoctorDashboard = () => {
     const [selectedAppointment, setSelectedAppointment] = useState(null);
     const [showPatientDetailsModal, setShowPatientDetailsModal] = useState(false);
     const [selectedPatientDetails, setSelectedPatientDetails] = useState(null);
+    const [patientOverview, setPatientOverview] = useState(null);
+    const [patientOverviewLoading, setPatientOverviewLoading] = useState(false);
     const [appointmentViewMode, setAppointmentViewMode] = useState('slots'); // slots or list
 
     useEffect(() => {
@@ -101,6 +103,11 @@ const DoctorDashboard = () => {
         loadProfile();
         loadReports();
         loadAppointments();
+        // Load prescription count for stats
+        const savedPrescriptions = JSON.parse(localStorage.getItem('prescriptions') || '[]');
+        const doctorPrescriptions = savedPrescriptions.filter(p => p.doctorId === currentUser.id);
+        setPrescriptionHistory(doctorPrescriptions);
+        setFilteredPrescriptions(doctorPrescriptions);
     }, [navigate]);
 
     const loadPatients = async () => {
@@ -870,28 +877,43 @@ const DoctorDashboard = () => {
         
         // Find the patient details from the patients list
         const patient = patients.find(p => p._id === appointment.patientId);
-        if (patient) {
-            setSelectedPatientDetails({
-                ...patient,
-                appointmentInfo: appointment
-            });
-        } else {
-            // Use the appointment data if patient not found in list
-            setSelectedPatientDetails({
-                _id: appointment.patientId,
-                name: appointment.patientName,
-                email: appointment.patientEmail || 'Not available',
-                userId: appointment.patientId?.slice(-6) || 'N/A',
-                appointmentInfo: appointment
-            });
-        }
+        const patientData = patient ? {
+            ...patient,
+            appointmentInfo: appointment
+        } : {
+            _id: appointment.patientId,
+            name: appointment.patientName,
+            email: appointment.patientEmail || 'Not available',
+            userId: appointment.patientId?.slice(-6) || 'N/A',
+            appointmentInfo: appointment
+        };
+        setSelectedPatientDetails(patientData);
         setShowPatientDetailsModal(true);
+        // Load full overview
+        fetchPatientOverview(patientData._id);
+    };
+
+    const fetchPatientOverview = async (patientId) => {
+        if (!patientId) return;
+        setPatientOverview(null);
+        setPatientOverviewLoading(true);
+        try {
+            const response = await doctorAPI.getPatientOverview(patientId);
+            if (response.success) {
+                setPatientOverview(response);
+            }
+        } catch (err) {
+            console.error('Failed to load patient overview:', err);
+        } finally {
+            setPatientOverviewLoading(false);
+        }
     };
 
     const handleClosePatientDetailsModal = () => {
         setShowPatientDetailsModal(false);
         setSelectedAppointment(null);
         setSelectedPatientDetails(null);
+        setPatientOverview(null);
     };
 
     // Get time slot color based on status
@@ -1045,7 +1067,7 @@ const DoctorDashboard = () => {
                                     <div className="flex items-center justify-between">
                                         <div>
                                             <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Appointments</p>
-                                            <p className="text-2xl sm:text-3xl font-semibold text-gray-900 mt-2">0</p>
+                                            <p className="text-2xl sm:text-3xl font-semibold text-gray-900 mt-2">{appointments.length}</p>
                                         </div>
                                         <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
                                             <Calendar className="w-6 h-6 text-white" />
@@ -1056,7 +1078,7 @@ const DoctorDashboard = () => {
                                     <div className="flex items-center justify-between">
                                         <div>
                                             <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Prescriptions</p>
-                                            <p className="text-2xl sm:text-3xl font-semibold text-gray-900 mt-2">0</p>
+                                            <p className="text-2xl sm:text-3xl font-semibold text-gray-900 mt-2">{prescriptionHistory.length}</p>
                                         </div>
                                         <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg flex items-center justify-center">
                                             <Pill className="w-6 h-6 text-white" />
@@ -1067,7 +1089,7 @@ const DoctorDashboard = () => {
                                     <div className="flex items-center justify-between">
                                         <div>
                                             <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Pending</p>
-                                            <p className="text-2xl sm:text-3xl font-semibold text-amber-600 mt-2">0</p>
+                                            <p className="text-2xl sm:text-3xl font-semibold text-amber-600 mt-2">{appointments.filter(a => a.status === 'pending' || a.status === 'scheduled').length}</p>
                                         </div>
                                         <div className="w-12 h-12 bg-gradient-to-br from-amber-500 to-amber-600 rounded-lg flex items-center justify-center">
                                             <Clock className="w-6 h-6 text-white" />
@@ -1100,11 +1122,11 @@ const DoctorDashboard = () => {
                                                 <div key={patient._id} className="flex items-center space-x-3 p-2 rounded-lg hover:bg-gray-50">
                                                     <div className="w-10 h-10 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-full flex items-center justify-center">
                                                         <span className="text-sm font-medium text-white">
-                                                            {patient.fullname?.charAt(0).toUpperCase() || 'P'}
+                                                            {(patient.name || patient.fullname)?.charAt(0).toUpperCase() || 'P'}
                                                         </span>
                                                     </div>
                                                     <div className="flex-1 min-w-0">
-                                                        <p className="text-sm font-medium text-gray-900 truncate">{patient.fullname || 'Unknown'}</p>
+                                                        <p className="text-sm font-medium text-gray-900 truncate">{patient.name || patient.fullname || 'Unknown'}</p>
                                                         <p className="text-xs text-gray-500 truncate">{patient.email}</p>
                                                     </div>
                                                 </div>
@@ -1121,13 +1143,36 @@ const DoctorDashboard = () => {
                                             {new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                                         </span>
                                     </div>
-                                    <div className="text-center py-8">
-                                        <Calendar className="w-10 h-10 text-gray-300 mx-auto mb-3" />
-                                        <p className="text-gray-500 text-sm">No appointments scheduled</p>
-                                        <button className="mt-3 text-sm text-emerald-600 hover:text-emerald-700 font-medium">
-                                            + Add Appointment
-                                        </button>
-                                    </div>
+                                    {(() => {
+                                        const todayStr = new Date().toISOString().split('T')[0];
+                                        const todayAppts = appointments.filter(a => a.appointmentDate === todayStr);
+                                        return todayAppts.length === 0 ? (
+                                            <div className="text-center py-8">
+                                                <Calendar className="w-10 h-10 text-gray-300 mx-auto mb-3" />
+                                                <p className="text-gray-500 text-sm">No appointments scheduled</p>
+                                                <button onClick={handleOpenAppointmentModal} className="mt-3 text-sm text-emerald-600 hover:text-emerald-700 font-medium">
+                                                    + Add Appointment
+                                                </button>
+                                            </div>
+                                        ) : (
+                                            <div className="space-y-2">
+                                                {todayAppts.map(appt => (
+                                                    <div key={appt.id} className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50">
+                                                        <div className="w-2 h-2 rounded-full bg-emerald-500 flex-shrink-0"></div>
+                                                        <div className="flex-1 min-w-0">
+                                                            <p className="text-sm font-medium text-gray-900 truncate">{appt.patientName}</p>
+                                                            <p className="text-xs text-gray-500">{appt.appointmentTime}</p>
+                                                        </div>
+                                                        <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                                                            appt.status === 'completed' ? 'bg-green-100 text-green-700' :
+                                                            appt.status === 'cancelled' ? 'bg-red-100 text-red-700' :
+                                                            'bg-blue-100 text-blue-700'
+                                                        }`}>{appt.status}</span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        );
+                                    })()}
                                 </div>
                             </div>
 
@@ -1211,11 +1256,22 @@ const DoctorDashboard = () => {
                                                             </div>
                                                         </div>
                                                         <div className="min-w-0">
-                                                            <p className="text-sm font-medium text-gray-900 truncate">{patient.fullname || patient.name}</p>
+                                                            <p className="text-sm font-medium text-gray-900 truncate">{patient.name || patient.fullname}</p>
                                                             <p className="text-sm text-gray-500 truncate">{patient.email}</p>
                                                         </div>
                                                     </div>
                                                     <div className="flex items-center space-x-2 flex-shrink-0">
+                                                        <button
+                                                            onClick={() => {
+                                                                setSelectedPatientDetails(patient);
+                                                                setShowPatientDetailsModal(true);
+                                                                fetchPatientOverview(patient._id);
+                                                            }}
+                                                            className="text-emerald-600 hover:text-emerald-800 hover:bg-emerald-50 p-2 rounded-lg transition-colors"
+                                                            title="View patient records"
+                                                        >
+                                                            <Eye className="w-5 h-5" />
+                                                        </button>
                                                         <button 
                                                             onClick={() => handleRemovePatient(patient._id)}
                                                             className="text-red-600 hover:text-red-800 hover:bg-red-50 p-2 rounded-lg transition-colors"
@@ -2653,143 +2709,160 @@ const DoctorDashboard = () => {
             {/* Patient Details Modal */}
             {showPatientDetailsModal && selectedPatientDetails && (
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 overflow-y-auto">
-                    <div className="bg-white rounded-2xl max-w-lg w-full shadow-xl animate-in fade-in zoom-in duration-200 my-8">
-                        {/* Modal Header */}
+                    <div className="bg-white rounded-2xl max-w-3xl w-full shadow-xl my-8">
+                        {/* Header */}
                         <div className="bg-gradient-to-r from-emerald-500 to-teal-500 p-6 rounded-t-2xl">
                             <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-4">
-                                    <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center">
-                                        <User className="w-8 h-8 text-white" />
+                                    <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center text-2xl font-bold text-white">
+                                        {(selectedPatientDetails.name || selectedPatientDetails.email || 'P')[0].toUpperCase()}
                                     </div>
                                     <div>
-                                        <h3 className="text-xl font-bold text-white">{selectedPatientDetails.name}</h3>
-                                        <p className="text-emerald-100 text-sm">
-                                            Patient ID: {selectedPatientDetails.userId || selectedPatientDetails._id?.slice(-6) || 'N/A'}
-                                        </p>
+                                        <h3 className="text-xl font-bold text-white">{selectedPatientDetails.name || 'Patient'}</h3>
+                                        <p className="text-emerald-100 text-sm">{selectedPatientDetails.email}</p>
+                                        <p className="text-emerald-200 text-xs mt-0.5 font-mono">ID: {selectedPatientDetails.userId || '—'}</p>
                                     </div>
                                 </div>
-                                <button
-                                    onClick={handleClosePatientDetailsModal}
-                                    className="text-white/80 hover:text-white p-2 rounded-lg hover:bg-white/10 transition-colors"
-                                >
+                                <button onClick={handleClosePatientDetailsModal} className="text-white/80 hover:text-white p-2 rounded-lg hover:bg-white/10 transition-colors">
                                     <X className="w-6 h-6" />
                                 </button>
                             </div>
                         </div>
-                        
-                        {/* Modal Content */}
-                        <div className="p-6 space-y-6">
-                            {/* Patient Contact Info */}
-                            <div className="bg-gray-50 rounded-xl p-4">
-                                <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                                    <Users className="w-5 h-5 text-emerald-600" />
-                                    Contact Information
-                                </h4>
-                                <div className="space-y-2">
-                                    <div className="flex items-center justify-between">
-                                        <span className="text-sm text-gray-600">Email</span>
-                                        <span className="text-sm font-medium text-gray-900">
-                                            {selectedPatientDetails.email || 'Not available'}
-                                        </span>
-                                    </div>
-                                    <div className="flex items-center justify-between">
-                                        <span className="text-sm text-gray-600">Patient ID</span>
-                                        <span className="text-sm font-medium text-emerald-600 font-mono">
-                                            {selectedPatientDetails.userId || selectedPatientDetails._id?.slice(-6) || 'N/A'}
-                                        </span>
-                                    </div>
-                                </div>
-                            </div>
 
-                            {/* Appointment Details */}
+                        <div className="p-6 space-y-5 max-h-[70vh] overflow-y-auto">
+
+                            {/* Appointment Info */}
                             {selectedPatientDetails.appointmentInfo && (
-                                <div className="bg-blue-50 rounded-xl p-4">
-                                    <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                                        <Calendar className="w-5 h-5 text-blue-600" />
-                                        Appointment Details
-                                    </h4>
-                                    <div className="space-y-2">
-                                        <div className="flex items-center justify-between">
-                                            <span className="text-sm text-gray-600">Date</span>
-                                            <span className="text-sm font-medium text-gray-900">
-                                                {new Date(selectedPatientDetails.appointmentInfo.appointmentDate).toLocaleDateString('en-US', {
-                                                    weekday: 'long',
-                                                    year: 'numeric',
-                                                    month: 'long',
-                                                    day: 'numeric'
-                                                })}
-                                            </span>
+                                <div className="bg-blue-50 border border-blue-100 rounded-xl p-4">
+                                    <h4 className="text-sm font-semibold text-blue-800 mb-3 flex items-center gap-2"><Calendar className="w-4 h-4" /> Appointment</h4>
+                                    <div className="grid grid-cols-2 gap-3 text-sm">
+                                        <div><span className="text-gray-500">Date</span><p className="font-medium text-gray-900">{new Date(selectedPatientDetails.appointmentInfo.appointmentDate).toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' })}</p></div>
+                                        <div><span className="text-gray-500">Time</span><p className="font-medium text-gray-900">{selectedPatientDetails.appointmentInfo.appointmentTime}</p></div>
+                                        <div><span className="text-gray-500">Status</span>
+                                            <span className={`inline-block mt-0.5 px-2 py-0.5 text-xs rounded-full font-medium ${selectedPatientDetails.appointmentInfo.status === 'completed' ? 'bg-green-100 text-green-700' : selectedPatientDetails.appointmentInfo.status === 'cancelled' ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'}`}>{selectedPatientDetails.appointmentInfo.status}</span>
                                         </div>
-                                        <div className="flex items-center justify-between">
-                                            <span className="text-sm text-gray-600">Time</span>
-                                            <span className="text-sm font-medium text-gray-900">
-                                                {selectedPatientDetails.appointmentInfo.appointmentTime}
-                                            </span>
-                                        </div>
-                                        <div className="flex items-center justify-between">
-                                            <span className="text-sm text-gray-600">Status</span>
-                                            <span className={`text-xs px-2 py-1 rounded-full ${
-                                                getAppointmentStatus(selectedPatientDetails.appointmentInfo).color
-                                            }`}>
-                                                {getAppointmentStatus(selectedPatientDetails.appointmentInfo).label}
-                                            </span>
-                                        </div>
-                                        {selectedPatientDetails.appointmentInfo.notes && (
-                                            <div className="pt-2 border-t border-blue-200 mt-2">
-                                                <span className="text-sm text-gray-600 block mb-1">Notes</span>
-                                                <p className="text-sm text-gray-900 bg-white/50 rounded-lg p-2">
-                                                    {selectedPatientDetails.appointmentInfo.notes}
-                                                </p>
-                                            </div>
-                                        )}
+                                        {selectedPatientDetails.appointmentInfo.notes && <div className="col-span-2"><span className="text-gray-500">Notes</span><p className="font-medium text-gray-900">{selectedPatientDetails.appointmentInfo.notes}</p></div>}
                                     </div>
                                 </div>
                             )}
 
-                            {/* Quick Actions */}
-                            <div className="space-y-3">
-                                <h4 className="font-semibold text-gray-900">Quick Actions</h4>
-                                <div className="grid grid-cols-2 gap-3">
-                                    <button
-                                        onClick={() => {
-                                            handleClosePatientDetailsModal();
-                                            // Pre-fill prescription form with patient
-                                            setPrescriptionForm(prev => ({
-                                                ...prev,
-                                                patientId: selectedPatientDetails._id,
-                                                patientName: selectedPatientDetails.name
-                                            }));
-                                            setShowPrescriptionModal(true);
-                                        }}
-                                        className="flex items-center justify-center gap-2 px-4 py-3 bg-emerald-50 text-emerald-700 rounded-xl hover:bg-emerald-100 transition-colors font-medium"
-                                    >
-                                        <Pill className="w-5 h-5" />
-                                        <span>Write Prescription</span>
-                                    </button>
-                                    <button
-                                        onClick={() => {
-                                            handleClosePatientDetailsModal();
-                                            if (selectedAppointment) {
-                                                handleDeleteAppointment(selectedAppointment.id);
-                                            }
-                                        }}
-                                        className="flex items-center justify-center gap-2 px-4 py-3 bg-red-50 text-red-700 rounded-xl hover:bg-red-100 transition-colors font-medium"
-                                    >
-                                        <Trash2 className="w-5 h-5" />
-                                        <span>Cancel Appointment</span>
-                                    </button>
+                            {/* Patient Profile */}
+                            {patientOverview?.patient && (
+                                <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
+                                    <h4 className="text-sm font-semibold text-gray-800 mb-3 flex items-center gap-2"><User className="w-4 h-4" /> Profile</h4>
+                                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-sm">
+                                        {patientOverview.patient.phone && <div><span className="text-gray-500">Phone</span><p className="font-medium">{patientOverview.patient.phone}</p></div>}
+                                        {patientOverview.patient.dateOfBirth && <div><span className="text-gray-500">Date of Birth</span><p className="font-medium">{patientOverview.patient.dateOfBirth}</p></div>}
+                                        {patientOverview.patient.gender && <div><span className="text-gray-500">Gender</span><p className="font-medium capitalize">{patientOverview.patient.gender}</p></div>}
+                                        {patientOverview.patient.address && <div className="col-span-2"><span className="text-gray-500">Address</span><p className="font-medium">{patientOverview.patient.address}</p></div>}
+                                        <div><span className="text-gray-500">Joined</span><p className="font-medium">{new Date(patientOverview.patient.createdAt).toLocaleDateString()}</p></div>
+                                    </div>
                                 </div>
-                            </div>
-                        </div>
+                            )}
 
-                        {/* Modal Footer */}
-                        <div className="px-6 pb-6">
-                            <button
-                                onClick={handleClosePatientDetailsModal}
-                                className="w-full px-6 py-3 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition-colors font-medium"
-                            >
-                                Close
-                            </button>
+                            {/* Loading state */}
+                            {patientOverviewLoading && (
+                                <div className="text-center py-6 text-gray-400 text-sm">Loading patient records...</div>
+                            )}
+
+                            {/* Health Reports Summary */}
+                            {patientOverview?.reports && (
+                                <div className="border border-gray-200 rounded-xl overflow-hidden">
+                                    <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
+                                        <h4 className="text-sm font-semibold text-gray-800 flex items-center gap-2"><FileText className="w-4 h-4 text-purple-500" /> Health Reports ({patientOverview.reports.length})</h4>
+                                    </div>
+                                    {patientOverview.reports.length === 0 ? (
+                                        <p className="text-sm text-gray-400 px-4 py-3">No health reports generated.</p>
+                                    ) : (
+                                        <div className="divide-y divide-gray-100">
+                                            {patientOverview.reports.map(report => (
+                                                <div key={report.id} className="px-4 py-3 flex items-center justify-between">
+                                                    <div>
+                                                        <p className="text-sm font-medium text-gray-900">{report.title}</p>
+                                                        <p className="text-xs text-gray-500">{new Date(report.generatedAt).toLocaleDateString()} · {report.totalDocuments} docs · {report.summarizedDocuments} AI analysed</p>
+                                                    </div>
+                                                    <div className="flex items-center gap-1.5 flex-shrink-0">
+                                                        {report.urgencyHigh > 0 && <span className="px-2 py-0.5 text-xs font-medium bg-red-100 text-red-700 rounded-full">{report.urgencyHigh} critical</span>}
+                                                        {report.urgencyMedium > 0 && <span className="px-2 py-0.5 text-xs font-medium bg-yellow-100 text-yellow-700 rounded-full">{report.urgencyMedium} medium</span>}
+                                                        {report.urgencyLow > 0 && <span className="px-2 py-0.5 text-xs font-medium bg-green-100 text-green-700 rounded-full">{report.urgencyLow} normal</span>}
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+
+                            {/* Uploaded Documents */}
+                            {patientOverview?.documents && (
+                                <div className="border border-gray-200 rounded-xl overflow-hidden">
+                                    <div className="px-4 py-3 border-b border-gray-100">
+                                        <h4 className="text-sm font-semibold text-gray-800 flex items-center gap-2"><FileText className="w-4 h-4 text-blue-500" /> Uploaded Documents ({patientOverview.documents.length})</h4>
+                                    </div>
+                                    {patientOverview.documents.length === 0 ? (
+                                        <p className="text-sm text-gray-400 px-4 py-3">No documents uploaded.</p>
+                                    ) : (
+                                        <div className="divide-y divide-gray-100">
+                                            {patientOverview.documents.map(doc => (
+                                                <div key={doc.id} className="px-4 py-3">
+                                                    <div className="flex items-start justify-between gap-2">
+                                                        <div className="min-w-0">
+                                                            <p className="text-sm font-medium text-gray-900 truncate">{doc.originalName || doc.title}</p>
+                                                            <div className="flex items-center gap-2 mt-0.5">
+                                                                <span className="text-xs text-gray-500 capitalize">{doc.category?.replace('-', ' ')}</span>
+                                                                {doc.fileSize && <span className="text-xs text-gray-400">{(doc.fileSize / 1024).toFixed(1)} KB</span>}
+                                                                <span className="text-xs text-gray-400">{new Date(doc.createdAt).toLocaleDateString()}</span>
+                                                            </div>
+                                                            {doc.isSummarized && doc.keyFindings?.length > 0 && (
+                                                                <ul className="mt-1.5 space-y-0.5">
+                                                                    {doc.keyFindings.slice(0, 2).map((f, i) => (
+                                                                        <li key={i} className="text-xs text-gray-600 flex items-start gap-1"><span className="text-gray-400 mt-0.5">•</span>{f}</li>
+                                                                    ))}
+                                                                </ul>
+                                                            )}
+                                                        </div>
+                                                        <div className="flex-shrink-0">
+                                                            {doc.isSummarized && doc.urgencyLevel ? (
+                                                                <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${doc.urgencyLevel === 'high' ? 'bg-red-100 text-red-700' : doc.urgencyLevel === 'medium' ? 'bg-yellow-100 text-yellow-700' : 'bg-green-100 text-green-700'}`}>
+                                                                    {doc.urgencyLevel}
+                                                                </span>
+                                                            ) : doc.isSummarized ? (
+                                                                <span className="px-2 py-0.5 text-xs bg-blue-100 text-blue-700 rounded-full">AI analysed</span>
+                                                            ) : (
+                                                                <span className="px-2 py-0.5 text-xs bg-gray-100 text-gray-500 rounded-full">not analysed</span>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+
+                            {/* Quick Actions */}
+                            <div className="grid grid-cols-2 gap-3 pt-2">
+                                <button
+                                    onClick={() => {
+                                        handleClosePatientDetailsModal();
+                                        setPrescriptionForm(prev => ({
+                                            ...prev,
+                                            patientId: selectedPatientDetails._id,
+                                            patientName: selectedPatientDetails.name
+                                        }));
+                                        setShowPrescriptionModal(true);
+                                    }}
+                                    className="flex items-center justify-center gap-2 px-4 py-3 bg-emerald-50 text-emerald-700 rounded-xl hover:bg-emerald-100 transition-colors font-medium text-sm"
+                                >
+                                    <Pill className="w-4 h-4" />Write Prescription
+                                </button>
+                                <button
+                                    onClick={handleClosePatientDetailsModal}
+                                    className="flex items-center justify-center gap-2 px-4 py-3 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition-colors font-medium text-sm"
+                                >
+                                    Close
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>

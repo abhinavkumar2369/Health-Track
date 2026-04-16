@@ -4,6 +4,8 @@ import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
 import { Patient } from "../models/Patient.js";
 import { Schedule } from "../models/Schedule.js";
+import { Document } from "../models/Document.js";
+import { HealthReport } from "../models/HealthReport.js";
 
 const router = express.Router();
 
@@ -272,6 +274,75 @@ router.get("/availability", async (req, res) => {
       bookedSlots,
       availableSlots,
       appointments: bookedAppointments.length
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// Get full patient overview (documents, reports, profile) for doctor view
+router.get("/patient/:patientId/overview", async (req, res) => {
+  try {
+    const { token } = req.query;
+    const { patientId } = req.params;
+    const decoded = decodeDoctorToken(token, res);
+    if (!decoded) return;
+
+    // Verify the patient belongs to this doctor
+    const patient = await Patient.findOne({ _id: patientId, doctor_id: decoded.id }).lean();
+    if (!patient) {
+      return res.status(403).json({ success: false, message: "Patient not found or not assigned to you" });
+    }
+
+    // Fetch documents
+    const documents = await Document.find({ patient_id: patientId })
+      .sort({ createdAt: -1 })
+      .select('-s3Key')
+      .lean();
+
+    // Fetch health reports
+    const reports = await HealthReport.find({ patient_id: patientId })
+      .sort({ createdAt: -1 })
+      .lean();
+
+    const formattedReports = reports.map(r => ({
+      id: r._id,
+      title: r.title,
+      generatedAt: r.generatedAt,
+      totalDocuments: r.totalDocuments || 0,
+      summarizedDocuments: r.summarizedDocuments || 0,
+      urgencyHigh: r.urgencyHigh || 0,
+      urgencyMedium: r.urgencyMedium || 0,
+      urgencyLow: r.urgencyLow || 0,
+      urgencyNone: r.urgencyNone || 0,
+    }));
+
+    res.json({
+      success: true,
+      patient: {
+        _id: patient._id,
+        name: patient.name,
+        email: patient.email,
+        userId: patient.userId,
+        phone: patient.phone || null,
+        dateOfBirth: patient.dateOfBirth || null,
+        gender: patient.gender || null,
+        address: patient.address || null,
+        createdAt: patient.createdAt,
+      },
+      documents: documents.map(d => ({
+        id: d._id,
+        title: d.title,
+        originalName: d.originalName || d.title,
+        category: d.category,
+        fileSize: d.fileSize,
+        isSummarized: d.isSummarized,
+        urgencyLevel: d.aiSummary?.urgencyLevel || null,
+        keyFindings: d.aiSummary?.keyFindings || [],
+        summary: d.aiSummary?.summary || null,
+        createdAt: d.createdAt,
+      })),
+      reports: formattedReports,
     });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });

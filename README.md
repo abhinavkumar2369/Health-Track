@@ -59,6 +59,34 @@
 ### My Profile
 ![My Profile](0_docs/screenshots/patient_my_profile.png)
 
+
+## Doctor Dashboard
+
+### Dashboard Overview
+![Doctor Dashboard](0_docs/screenshots/doctor_dashboard.png)
+
+### Patient Records
+![Patient Records 1](0_docs/screenshots/doctor_patients_1.png)
+![Patient Records 2](0_docs/screenshots/doctor_patients_2.png)
+
+### Appointments
+![Appointments 1](0_docs/screenshots/doctor_appointments_1.png)
+![Appointments 2](0_docs/screenshots/doctor_appointments_2.png)
+
+### Prescriptions
+![Prescriptions](0_docs/screenshots/doctor_prescriptions.png)
+![Create Prescription](0_docs/screenshots/doctor_prescriptions_filling.png)
+![Prescription History](0_docs/screenshots/doctor_prescriptions_filled.png)
+
+### Reports
+![Reports](0_docs/screenshots/doctor_reports.png)
+
+### Settings
+![Settings](0_docs/screenshots/doctor_settings.png)
+
+### My Profile
+![My Profile](0_docs/screenshots/doctor_my_profile.png)
+
 ---
 
 ## Technologies Used
