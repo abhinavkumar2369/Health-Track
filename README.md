@@ -45,7 +45,8 @@
 ![Appointment Booking 2](0_docs/screenshots/patient_appointment_booking_2.png)
 
 ### Medical Records
-![Medical Records](0_docs/screenshots/patient_medical_records_section.png)
+![Medical Records](0_docs/screenshots/patient_medical_records_section_1.png)
+![Medical Records](0_docs/screenshots/patient_medical_records_section_2.png)
 
 ### Health Reports
 ![Health Reports](0_docs/screenshots/patient_generate_report.png)

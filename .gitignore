@@ -8,3 +8,8 @@ __pycache__/
 ml-microservice/logs/
 /*.pyc
 # ml-microservice/app/api/v1/endpoints/__init__.py
+ml-microservice/app/api/__pycache__/schemas.cpython-313.pyc
+ml-microservice/app/services/__pycache__/__init__.cpython-313.pyc
+ml-microservice/app/api/v1/endpoints/__pycache__/document_summarization.cpython-313.pyc
+ml-microservice/app/api/v1/endpoints/__pycache__/__init__.cpython-313.pyc
+ml-microservice/app/services/__pycache__/ml_service.cpython-313.pyc
