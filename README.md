@@ -5,63 +5,38 @@
 - Health Data and Information Management System (HDIMS) is a digital platform that centralizes patient health records, appointments, prescriptions, and analytics.
 - It improves accessibility, enhances healthcare decision-making, ensures secure data handling, and enables efficient interaction between patients, doctors, hospitals, and laboratories.
 
+
+### ➡️ Flow Diagram
 ![Health Track Banner](0_docs/screenshots/block-diagram-1.png)
 
-## Features
-
-- **Core Platform**: Secure authentication, role-based dashboards, EHR management, analytics, AI/ML integration, and cloud-backed storage.
-- **Admin Module**: Complete user management, operational analytics, emergency access workflows, interoperability token management, and audit visibility.
-- **Doctor Module**: Assigned patient management, detailed record access, document review, and profile maintenance.
-- **Pharmacist Module**: Medicine inventory control, dispensing workflow, transaction auditing, PDF reporting, and stock monitoring.
-- **Patient Module**: Secure document lifecycle management, categorized health records, AI-assisted summarization, and controlled file access.
 
 
+## ➡️ Screenshots
 
-## Screenshots
-
-### Homepage
+## ➡️  Homepage
 
 ![homepage-1](0_docs/screenshots/homepage-1.png)
 ![homepage-2](0_docs/screenshots/homepage-2.png)
 ![homepage-3](0_docs/screenshots/homepage-3.png)
 ![homepage-4](0_docs/screenshots/homepage-4.png)
 
-### Authentication
+
+### ➡️ Authentication
 
 ![Sign In Page](0_docs/screenshots/sign-in.png)
 ![Sign Up Page](0_docs/screenshots/sign-up.png)
 
-### Admin Dashboard
+
+
+
+### ➡️ Admin Dashboard
 
 ![Admin](0_docs/screenshots/admin-dashboard-1.png)
 
-## Patient Dashboard
-
-### Dashboard Overview
-![Patient Dashboard](0_docs/screenshots/patient_dashboard.png)
-
-### Appointment Booking
-![Appointment Booking 1](0_docs/screenshots/patient_appointment_booking_1.png)
-![Appointment Booking 2](0_docs/screenshots/patient_appointment_booking_2.png)
-
-### Medical Records
-![Medical Records](0_docs/screenshots/patient_medical_records_section_1.png)
-![Medical Records](0_docs/screenshots/patient_medical_records_section_2.png)
-
-### Health Reports
-![Health Reports](0_docs/screenshots/patient_generate_report.png)
-
-### Generated PDF Report
-![Generated Report](0_docs/screenshots/patient_generated_report.png)
-
-### Health Tracker
-![Health Tracker](0_docs/screenshots/patient_health_tracker.png)
-
-### My Profile
-![My Profile](0_docs/screenshots/patient_my_profile.png)
 
 
-## Doctor Dashboard
+
+## ➡️ Doctor Dashboard
 
 ### Dashboard Overview
 ![Doctor Dashboard](0_docs/screenshots/doctor_dashboard.png)
@@ -88,9 +63,53 @@
 ### My Profile
 ![My Profile](0_docs/screenshots/doctor_my_profile.png)
 
+
+
+
+## ➡️ Patient Dashboard
+
+### Dashboard Overview
+![Patient Dashboard](0_docs/screenshots/patient_dashboard.png)
+
+### Appointment Booking
+![Appointment Booking 1](0_docs/screenshots/patient_appointment_booking_1.png)
+![Appointment Booking 2](0_docs/screenshots/patient_appointment_booking_2.png)
+
+### Medical Records
+![Medical Records](0_docs/screenshots/patient_medical_records_section_1.png)
+![Medical Records](0_docs/screenshots/patient_medical_records_section_2.png)
+
+### Health Reports
+![Health Reports](0_docs/screenshots/patient_generate_report.png)
+
+### Generated PDF Report
+![Generated Report](0_docs/screenshots/patient_generated_report.png)
+
+### Health Tracker
+![Health Tracker](0_docs/screenshots/patient_health_tracker.png)
+
+### My Profile
+![My Profile](0_docs/screenshots/patient_my_profile.png)
+
+
+
+
+
+
+
+
 ---
 
-## Technologies Used
+## ➡️ Features
+
+- **Core Platform**: Secure authentication, role-based dashboards, EHR management, analytics, AI/ML integration, and cloud-backed storage.
+- **Admin Module**: Complete user management, operational analytics, emergency access workflows, interoperability token management, and audit visibility.
+- **Doctor Module**: Assigned patient management, detailed record access, document review, and profile maintenance.
+- **Pharmacist Module**: Medicine inventory control, dispensing workflow, transaction auditing, PDF reporting, and stock monitoring.
+- **Patient Module**: Secure document lifecycle management, categorized health records, AI-assisted summarization, and controlled file access.
+
+
+## ➡️ Technologies Used
 
 ### Frontend
 
@@ -147,7 +166,7 @@
 
 ---
 
-## Technology Implementation and Usage
+## ➡️ Technology Implementation and Usage
 
 ### Frontend Technologies
 
@@ -192,7 +211,7 @@
 - Production builds are optimized with Rollup features like splitting and tree-shaking.
 - `vite.config.js` handles environment variables and dev proxy behavior.
 
-### Backend Technologies
+### ➡️ Backend Technologies
 
 #### Node.js
 - Node.js is the backend runtime and uses the V8 JavaScript engine.
@@ -361,7 +380,7 @@
 
 ---
 
-## Project Architecture
+## ➡️ Project Architecture
 
 ```
 Health-Track/
@@ -443,7 +462,7 @@ Health-Track/
 ```
 
 
-## Data Structures
+## ➡️ Data Structures
 
 ### MongoDB Models
 
