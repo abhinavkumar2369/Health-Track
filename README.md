@@ -31,7 +31,25 @@
 
 ### ➡️ Admin Dashboard
 
-![Admin](0_docs/screenshots/admin-dashboard-1.png)
+![Admin Dashboard](0_docs/screenshots/admin-dashboard-1.png)
+
+### Doctors
+![Admin Doctors](0_docs/screenshots/admin_doctors.png)
+
+### Pharmacists
+![Admin Pharmacists](0_docs/screenshots/admin_pharmacist.png)
+
+### Reports
+![Admin Reports](0_docs/screenshots/admin_reports.png)
+
+### Emergency
+![Admin Emergency](0_docs/screenshots/admin_emergency.png)
+
+### API Access
+![Admin API Access](0_docs/screenshots/admin_api_access.png)
+
+### Settings
+![Admin Settings](0_docs/screenshots/admin_settings.png)
 
 
 
