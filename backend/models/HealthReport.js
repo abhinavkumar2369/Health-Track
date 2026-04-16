@@ -32,6 +32,12 @@ const healthReportSchema = new mongoose.Schema(
     prescriptions: { type: Number, default: 0 },
     scans: { type: Number, default: 0 },
     consultations: { type: Number, default: 0 },
+
+    // Urgency / severity breakdown from AI summaries
+    urgencyHigh: { type: Number, default: 0 },
+    urgencyMedium: { type: Number, default: 0 },
+    urgencyLow: { type: Number, default: 0 },
+    urgencyNone: { type: Number, default: 0 },   // not summarised / no data
     
     // Report Metadata
     generatedAt: { type: Date, default: Date.now },

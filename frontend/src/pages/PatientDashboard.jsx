@@ -85,6 +85,11 @@ const PatientDashboard = () => {
     const [appointmentMessage, setAppointmentMessage] = useState({ type: '', text: '' });
     const [showRescheduleModal, setShowRescheduleModal] = useState(false);
     const [rescheduleData, setRescheduleData] = useState(null);
+
+    // Profile form state
+    const [profileForm, setProfileForm] = useState({ phone: '', dateOfBirth: '', gender: '', address: '' });
+    const [profileSaving, setProfileSaving] = useState(false);
+    const [profileMessage, setProfileMessage] = useState({ type: '', text: '' });
     
     // Doctor selection state
     const [doctors, setDoctors] = useState([]);
@@ -122,7 +127,40 @@ const PatientDashboard = () => {
         fetchMedicalRecords();
         fetchHealthReports(); // Fetch existing reports
         fetchAppointments(); // Fetch appointments
+        fetchPatientProfile(); // Fetch profile extra fields
     }, [navigate]);
+
+    const fetchPatientProfile = async () => {
+        try {
+            const response = await patientAPI.getProfile();
+            if (response.success && response.profile) {
+                const p = response.profile;
+                setProfileForm({
+                    phone: p.phone || '',
+                    dateOfBirth: p.dateOfBirth || '',
+                    gender: p.gender || '',
+                    address: p.address || '',
+                });
+            }
+        } catch (err) {
+            console.error('Failed to fetch profile:', err);
+        }
+    };
+
+    const handleSaveProfile = async (e) => {
+        e.preventDefault();
+        setProfileSaving(true);
+        setProfileMessage({ type: '', text: '' });
+        try {
+            await patientAPI.updateProfile(profileForm);
+            setProfileMessage({ type: 'success', text: 'Profile saved successfully!' });
+        } catch (err) {
+            setProfileMessage({ type: 'error', text: err.message || 'Failed to save profile' });
+        } finally {
+            setProfileSaving(false);
+            setTimeout(() => setProfileMessage({ type: '', text: '' }), 3000);
+        }
+    };
 
     const fetchMedicalRecords = async () => {
         try {
@@ -863,14 +901,22 @@ const PatientDashboard = () => {
                 includePrescriptions: true,
                 includeHealthMetrics: true,
                 healthTrackerData: healthTrackerData
+            }, {
+                timeout: 600000 // 10 minutes – AI summarises each document sequentially
             });
 
             if (response.data.success) {
                 const report = response.data.report;
                 
+                const urgencyParts = [];
+                if (report.urgencyHigh > 0)   urgencyParts.push(`${report.urgencyHigh} critical`);
+                if (report.urgencyMedium > 0) urgencyParts.push(`${report.urgencyMedium} medium`);
+                if (report.urgencyLow > 0)    urgencyParts.push(`${report.urgencyLow} normal`);
+                const urgencyText = urgencyParts.length > 0 ? ` Urgency: ${urgencyParts.join(', ')}.` : '';
+
                 setUploadMessage({ 
                     type: 'success', 
-                    text: `Health report generated successfully! ${report.totalDocuments} documents analyzed, ${report.summarizedDocuments} with AI summaries.`
+                    text: `Health report generated! ${report.totalDocuments} documents analyzed, ${report.summarizedDocuments} with AI summaries.${urgencyText}`
                 });
                 
                 // Add to reports list
@@ -1188,7 +1234,6 @@ const PatientDashboard = () => {
                             <div className="flex justify-between items-center">
                                 <div>
                                     <h2 className="text-xl font-semibold text-gray-900">My Appointments</h2>
-                                    <p className="text-sm text-gray-600 mt-1">Manage your appointments with AI assistance</p>
                                 </div>
                                 <button 
                                     onClick={handleOpenAppointmentModal}
@@ -1303,434 +1348,440 @@ const PatientDashboard = () => {
                     )}
 
                 {activeSection === 'records' && (
-                    <div className="space-y-6">
+                    <div className="space-y-5">
+                        {/* Page Header */}
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <h2 className="text-xl font-semibold text-gray-900">Medical Records</h2>
+                            </div>
+                            <button
+                                onClick={() => document.getElementById('file-upload').click()}
+                                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
+                            >
+                                <Upload className="w-4 h-4" />
+                                <span>Upload</span>
+                            </button>
+                            <input
+                                id="file-upload"
+                                type="file"
+                                className="hidden"
+                                accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+                                onChange={handleFileSelect}
+                            />
+                        </div>
+
                         {/* Upload Message */}
                         {uploadMessage.text && (
-                            <div className={`p-3 rounded-lg text-sm ${uploadMessage.type === 'success' ? 'bg-green-50 text-green-800' : 'bg-red-50 text-red-800'}`}>
+                            <div className={`p-3 rounded-lg text-sm ${uploadMessage.type === 'success' ? 'bg-green-50 text-green-800 border border-green-200' : 'bg-red-50 text-red-800 border border-red-200'}`}>
                                 {uploadMessage.text}
                             </div>
                         )}
 
-                        {/* Medical Records with Upload Button */}
-                        <div className="bg-white rounded-xl border border-gray-200 p-6">
-                            <div className="flex items-center justify-between mb-6">
-                                <div className="flex items-center gap-3">
-                                    <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                                        <FileText className="w-5 h-5 text-blue-600" />
+                        {/* Selected File Info & Upload */}
+                        {selectedFile && (
+                            <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                                    <div className="flex items-start gap-3 flex-1 min-w-0">
+                                        <div className="w-10 h-10 bg-gray-200 rounded-lg flex items-center justify-center">
+                                            <FileText className="w-5 h-5 text-gray-600" />
+                                        </div>
+                                        <div className="min-w-0">
+                                            <p className="font-medium text-gray-900">{selectedFile.name}</p>
+                                            <p className="text-sm text-gray-600">Size: {formatFileSize(selectedFile.size)}</p>
+                                            {isImageFile(selectedFile) && (
+                                                <div className="mt-3">
+                                                    <label className="block text-xs font-semibold text-gray-700 mb-1">
+                                                        Document Type
+                                                    </label>
+                                                    <select
+                                                        value={uploadCategory}
+                                                        onChange={(e) => setUploadCategory(e.target.value)}
+                                                        disabled={uploading}
+                                                        className="px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 bg-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none disabled:bg-gray-100"
+                                                    >
+                                                        <option value="lab-report">Report</option>
+                                                        <option value="prescription">Prescription</option>
+                                                    </select>
+                                                </div>
+                                            )}
+                                        </div>
                                     </div>
-                                    <div>
-                                        <h3 className="text-lg font-semibold text-gray-900">My Medical Records</h3>
-                                        <p className="text-sm text-gray-600">
-                                            {medicalRecords.length} {medicalRecords.length === 1 ? 'Record' : 'Records'}
-                                        </p>
-                                    </div>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    {/* Summarize All Button */}
                                     <button
-                                        onClick={handleSummarizeAllRecords}
-                                        disabled={batchSummarizing || medicalRecords.length === 0}
-                                        className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-lg hover:from-purple-700 hover:to-indigo-700 transition-all shadow-md hover:shadow-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-                                        title="Summarize all records using CNN + Transformer AI"
+                                        onClick={handleFileUpload}
+                                        disabled={uploading}
+                                        className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-400 flex items-center gap-2 font-medium transition-colors"
                                     >
-                                        {batchSummarizing ? (
+                                        {uploading ? (
                                             <>
                                                 <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                                                <span className="hidden sm:inline">Analyzing...</span>
+                                                <span>Uploading...</span>
                                             </>
                                         ) : (
                                             <>
-                                                <Brain className="w-4 h-4" />
-                                                <span className="hidden sm:inline">Summarize All</span>
+                                                <Upload className="w-4 h-4" />
+                                                <span>Confirm Upload</span>
                                             </>
                                         )}
                                     </button>
-                                    {/* View Summary History Button */}
-                                    {batchSummaryResult && (
-                                        <button
-                                            onClick={() => setShowSummaryHistoryModal(true)}
-                                            className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-lg hover:from-blue-700 hover:to-cyan-700 transition-all shadow-md hover:shadow-lg font-medium"
-                                        >
-                                            <Sparkles className="w-4 h-4" />
-                                            <span className="hidden sm:inline">View Summary</span>
-                                        </button>
-                                    )}
-                                    <button
-                                        onClick={() => document.getElementById('file-upload').click()}
-                                        className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg hover:from-green-700 hover:to-emerald-700 transition-all shadow-md hover:shadow-lg font-medium"
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Medical Records Table */}
+                        <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+                            {/* Table header */}
+                            <div className="grid grid-cols-12 gap-2 px-5 py-3 bg-gray-50 border-b border-gray-200 text-xs font-medium text-gray-500 uppercase tracking-wide">
+                                <div className="col-span-1">#</div>
+                                <div className="col-span-5">Record</div>
+                                <div className="col-span-3 hidden sm:block">Details</div>
+                                <div className="col-span-3 sm:col-span-3 text-right">Actions</div>
+                            </div>
+
+                            {medicalRecords.length === 0 ? (
+                                <div className="px-5 py-12 text-center">
+                                    <FileText className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+                                    <p className="text-sm text-gray-500">No medical records yet. Upload your first record to get started.</p>
+                                </div>
+                            ) : (
+                                medicalRecords.map((record, index) => (
+                                    <div
+                                        key={record._id}
+                                        className="grid grid-cols-12 gap-2 px-5 py-4 items-center border-b border-gray-100 last:border-b-0 hover:bg-gray-50 transition-colors"
                                     >
-                                        <Upload className="w-4 h-4" />
-                                        <span className="hidden sm:inline">Upload</span>
-                                    </button>
-                                </div>
-                                <input
-                                    id="file-upload"
-                                    type="file"
-                                    className="hidden"
-                                    accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
-                                    onChange={handleFileSelect}
-                                />
-                            </div>
-
-                            {/* Selected File Info & Upload */}
-                            {selectedFile && (
-                                <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
-                                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                                        <div className="flex items-start gap-3 flex-1 min-w-0">
-                                            <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
-                                                <FileText className="w-5 h-5 text-green-600" />
-                                            </div>
-                                            <div className="min-w-0">
-                                                <p className="font-medium text-gray-900">{selectedFile.name}</p>
-                                                <p className="text-sm text-gray-600">Size: {formatFileSize(selectedFile.size)}</p>
-                                                {isImageFile(selectedFile) && (
-                                                    <div className="mt-3">
-                                                        <label className="block text-xs font-semibold text-gray-700 mb-1">
-                                                            Document Type
-                                                        </label>
-                                                        <select
-                                                            value={uploadCategory}
-                                                            onChange={(e) => setUploadCategory(e.target.value)}
-                                                            disabled={uploading}
-                                                            className="px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 bg-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none disabled:bg-gray-100"
-                                                        >
-                                                            <option value="lab-report">Report</option>
-                                                            <option value="prescription">Prescription</option>
-                                                        </select>
-                                                    </div>
-                                                )}
-                                            </div>
+                                        {/* Index */}
+                                        <div className="col-span-1">
+                                            <span className="text-sm font-medium text-gray-400">{medicalRecords.length - index}</span>
                                         </div>
-                                        <button
-                                            onClick={handleFileUpload}
-                                            disabled={uploading}
-                                            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-400 flex items-center gap-2 font-medium transition-colors"
-                                        >
-                                            {uploading ? (
-                                                <>
-                                                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                                                    <span>Uploading...</span>
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <Upload className="w-4 h-4" />
-                                                    <span>Confirm Upload</span>
-                                                </>
+
+                                        {/* Title & date */}
+                                        <div className="col-span-7 sm:col-span-5 min-w-0">
+                                            <p className="text-sm font-medium text-gray-900 truncate">
+                                                {record.title || record.originalName}
+                                            </p>
+                                            <p className="text-xs text-gray-400 mt-0.5">
+                                                {formatDate(record.createdAt)} • {formatFileSize(record.fileSize)}
+                                            </p>
+                                        </div>
+
+                                        {/* Details */}
+                                        <div className="col-span-3 hidden sm:flex flex-wrap gap-1">
+                                            {record.category && (
+                                                <span className="text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded">
+                                                    {record.category.replace('-', ' ')}
+                                                </span>
                                             )}
-                                        </button>
+                                            {record.isSummarized && (
+                                                <span className="text-xs text-purple-600 bg-purple-50 px-2 py-0.5 rounded border border-purple-100">
+                                                    Summarized
+                                                </span>
+                                            )}
+                                        </div>
+
+                                        {/* Actions */}
+                                        <div className="col-span-3 flex gap-1.5 justify-end">
+                                            <button
+                                                onClick={() => handleViewDocument(record._id)}
+                                                className="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                                                title="View"
+                                            >
+                                                <Eye className="w-4 h-4" />
+                                            </button>
+                                            <button
+                                                onClick={() => handleDownloadDocument(record._id)}
+                                                className="p-1.5 text-gray-500 hover:text-green-600 hover:bg-green-50 rounded transition-colors"
+                                                title="Download"
+                                            >
+                                                <Download className="w-4 h-4" />
+                                            </button>
+                                            {record.isSummarized && (
+                                                <button
+                                                    onClick={() => handleViewSummary(record._id)}
+                                                    className="p-1.5 text-gray-500 hover:text-purple-600 hover:bg-purple-50 rounded transition-colors"
+                                                    title="View Summary"
+                                                >
+                                                    <Brain className="w-4 h-4" />
+                                                </button>
+                                            )}
+                                            <button
+                                                onClick={() => handleDeleteDocument(record._id)}
+                                                className="p-1.5 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
+                                                title="Delete"
+                                            >
+                                                <Trash2 className="w-4 h-4" />
+                                            </button>
+                                        </div>
                                     </div>
-                                </div>
+                                ))
                             )}
-
-                            {/* Urgency Overview - shown when any records are summarized */}
-                            {medicalRecords.some(r => r.isSummarized) && (() => {
-                                const counts = { high: 0, medium: 0, low: 0 };
-                                medicalRecords.forEach(r => {
-                                    if (r.isSummarized && r.aiSummary?.urgencyLevel) {
-                                        const lvl = r.aiSummary.urgencyLevel.toLowerCase();
-                                        if (counts[lvl] !== undefined) counts[lvl]++;
-                                    }
-                                });
-                                return (
-                                    <div className="grid grid-cols-3 gap-3 mb-4">
-                                        <div className="bg-red-50 rounded-xl p-3 border border-red-100 text-center">
-                                            <p className="text-2xl font-bold text-red-600">{counts.high}</p>
-                                            <p className="text-xs font-medium text-red-500 mt-1">🔴 High Urgency</p>
-                                        </div>
-                                        <div className="bg-yellow-50 rounded-xl p-3 border border-yellow-100 text-center">
-                                            <p className="text-2xl font-bold text-yellow-600">{counts.medium}</p>
-                                            <p className="text-xs font-medium text-yellow-500 mt-1">🟡 Moderate</p>
-                                        </div>
-                                        <div className="bg-green-50 rounded-xl p-3 border border-green-100 text-center">
-                                            <p className="text-2xl font-bold text-green-600">{counts.low}</p>
-                                            <p className="text-xs font-medium text-green-500 mt-1">🟢 Low</p>
-                                        </div>
-                                    </div>
-                                );
-                            })()}
-
-                            <div>
-                                {medicalRecords.length === 0 ? (
-                                    <div className="text-center py-12">
-                                        <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                                            <FileText className="w-8 h-8 text-gray-400" />
-                                        </div>
-                                        <h4 className="text-lg font-semibold text-gray-900 mb-2">No medical records yet</h4>
-                                        <p className="text-sm text-gray-500">Upload your first medical record to get started</p>
-                                    </div>
-                                ) : (
-                                    <div className="space-y-3">
-                                        {medicalRecords.map((record) => {
-                                            const getStatusColor = (status) => {
-                                                switch(status) {
-                                                    case 'verified': return 'bg-green-100 text-green-700 border-green-200';
-                                                    case 'pending':
-                                                    case 'under-review': return 'bg-yellow-100 text-yellow-700 border-yellow-200';
-                                                    default: return 'bg-gray-100 text-gray-700 border-gray-200';
-                                                }
-                                            };
-                                            
-                                            const getIconColor = (category) => {
-                                                switch(category) {
-                                                    case 'lab-report': return 'bg-gradient-to-br from-blue-500 to-blue-600';
-                                                    case 'prescription': return 'bg-gradient-to-br from-purple-500 to-purple-600';
-                                                    case 'scan': return 'bg-gradient-to-br from-pink-500 to-pink-600';
-                                                    case 'consultation': return 'bg-gradient-to-br from-green-500 to-green-600';
-                                                    default: return 'bg-gradient-to-br from-gray-500 to-gray-600';
-                                                }
-                                            };
-                                            
-                                            return (
-                                                <div key={record._id} className="group bg-gradient-to-r from-gray-50 to-white rounded-xl border border-gray-200 p-4 hover:shadow-lg hover:border-gray-300 transition-all">
-                                                    <div className="flex items-start justify-between gap-4">
-                                                        <div className="flex items-start gap-4 flex-1 min-w-0">
-                                                            <div className={`w-12 h-12 ${getIconColor(record.category)} rounded-xl flex items-center justify-center flex-shrink-0 shadow-md`}>
-                                                                <FileText className="w-6 h-6 text-white" />
-                                                            </div>
-                                                            <div className="flex-1 min-w-0">
-                                                                <div className="flex items-start justify-between gap-2 mb-2">
-                                                                    <h4 className="font-semibold text-gray-900 text-base truncate">{record.title || record.originalName}</h4>
-                                                                    <span className={`inline-flex items-center px-2.5 py-1 text-xs font-medium rounded-full border ${getStatusColor(record.status)} flex-shrink-0`}>
-                                                                        {record.status === 'verified' 
-                                                                            ? 'Verified'
-                                                                            : (record.status === 'under-review' || record.status === 'pending')
-                                                                            ? 'Under Review'
-                                                                            : record.status.charAt(0).toUpperCase() + record.status.slice(1)
-                                                                        }
-                                                                    </span>
-                                                                </div>
-                                                                <p className="text-sm text-gray-600 mb-3">
-                                                                    {formatDate(record.createdAt)} • {formatFileSize(record.fileSize)}
-                                                                </p>
-                                                                <div className="flex flex-wrap gap-2">
-                                                                    <button 
-                                                                        onClick={() => handleViewDocument(record._id)}
-                                                                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors"
-                                                                    >
-                                                                        <Eye className="w-3.5 h-3.5" />
-                                                                        <span>View</span>
-                                                                    </button>
-                                                                    <button 
-                                                                        onClick={() => handleDownloadDocument(record._id)}
-                                                                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 transition-colors"
-                                                                    >
-                                                                        <Download className="w-3.5 h-3.5" />
-                                                                        <span>Download</span>
-                                                                    </button>
-                                                                    {record.isSummarized && (
-                                                                        <button 
-                                                                            onClick={() => handleViewSummary(record._id)}
-                                                                            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-purple-600 text-white text-sm rounded-lg hover:bg-purple-700 transition-colors"
-                                                                        >
-                                                                            <Brain className="w-3.5 h-3.5" />
-                                                                            <span>Summary</span>
-                                                                        </button>
-                                                                    )}
-                                                                    <button
-                                                                        onClick={() => handleAnalyzeRecord(record)}
-                                                                        disabled={medicalFileSummarizing}
-                                                                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-violet-600 text-white text-sm rounded-lg hover:bg-violet-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                                                                        title="Deep-analyze this file: extracts summary, patient info, red flags, clinical sections"
-                                                                    >
-                                                                        {medicalFileSummarizing ? (
-                                                                            <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                                                                        ) : (
-                                                                            <Sparkles className="w-3.5 h-3.5" />
-                                                                        )}
-                                                                        <span>Analyze</span>
-                                                                    </button>
-                                                                    <button 
-                                                                        onClick={() => handleDeleteDocument(record._id)}
-                                                                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-red-600 text-white text-sm rounded-lg hover:bg-red-700 transition-colors"
-                                                                    >
-                                                                        <Trash2 className="w-3.5 h-3.5" />
-                                                                        <span>Delete</span>
-                                                                    </button>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            );
-                                        })}
-                                    </div>
-                                )}
-                            </div>
                         </div>
                     </div>
                 )}
 
                 {activeSection === 'reports' && (
-                    <div className="space-y-6">
-                        {/* Page Header - Only Button */}
-                        <div className="flex justify-end">
-                            <button 
+                    <div className="space-y-5">
+                        {/* Page Header */}
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <h2 className="text-xl font-semibold text-gray-900">Health Reports</h2>
+                            </div>
+                            <button
                                 onClick={handleGenerateReport}
-                                disabled={generatingReport}
-                                className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium transition-colors shadow-sm disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+                                disabled={generatingReport || medicalRecords.length === 0}
+                                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
                             >
                                 {generatingReport ? (
                                     <>
-                                        <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                                         <span>Generating...</span>
                                     </>
                                 ) : (
                                     <>
-                                        <FileBarChart className="w-5 h-5" />
-                                        <span>Generate New Report</span>
+                                        <FileBarChart className="w-4 h-4" />
+                                        <span>Generate Report</span>
                                     </>
                                 )}
                             </button>
                         </div>
 
-                        {/* Alert Messages */}
-                        {uploadMessage.text && uploadMessage.type && (
-                            <div className={`p-4 rounded-lg border text-sm flex items-start space-x-3 ${
-                                uploadMessage.type === 'success' 
-                                    ? 'bg-green-50 border-green-300 text-green-800' 
-                                    : 'bg-red-50 border-red-300 text-red-800'
-                            }`}>
-                                {uploadMessage.type === 'success' ? (
-                                    <CheckCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
-                                ) : (
-                                    <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
-                                )}
-                                <div className="flex-1">{uploadMessage.text}</div>
+                        {/* Stats Row */}
+                        {(() => {
+                            const totalHigh   = healthReports.reduce((s, r) => s + (r.urgencyHigh   || 0), 0);
+                            const totalMedium = healthReports.reduce((s, r) => s + (r.urgencyMedium || 0), 0);
+                            const totalLow    = healthReports.reduce((s, r) => s + (r.urgencyLow    || 0), 0);
+                            const statsItems = [
+                                { label: 'Total Reports',  value: healthReports.length,  className: '' },
+                                { label: 'Critical / High', value: totalHigh,   className: totalHigh > 0   ? 'text-red-600'   : '' },
+                                { label: 'Medium', value: totalMedium, className: totalMedium > 0 ? 'text-amber-600' : '' },
+                                { label: 'Normal', value: totalLow,    className: totalLow > 0    ? 'text-green-600' : '' },
+                            ];
+                            return (
+                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                                    {statsItems.map(({ label, value, className }) => (
+                                        <div key={label} className="bg-white border border-gray-200 rounded-lg p-4">
+                                            <p className={`text-2xl font-bold text-gray-900 ${className}`}>{value}</p>
+                                            <p className="text-xs text-gray-500 mt-0.5">{label}</p>
+                                        </div>
+                                    ))}
+                                </div>
+                            );
+                        })()}
+
+                        {/* Info note */}
+                        {medicalRecords.length > 0 && !generatingReport && (
+                            <div className="bg-gray-50 border border-gray-200 rounded-lg px-4 py-3 flex items-start gap-3">
+                                <AlertCircle className="w-4 h-4 text-gray-400 flex-shrink-0 mt-0.5" />
+                                <p className="text-xs text-gray-600 leading-relaxed">
+                                    Your PDF will include AI summaries for all {medicalRecords.length} document{medicalRecords.length !== 1 ? 's' : ''}, key findings, vitals, and recommendations. Generation may take a few minutes.
+                                </p>
                             </div>
                         )}
 
-                        {/* Generated Reports List */}
-                        {healthReports.length > 0 ? (
-                            <div className="bg-white rounded-xl border border-gray-200 p-6">
-                                <div className="flex items-center justify-between mb-6">
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                                            <FileBarChart className="w-5 h-5 text-blue-600" />
-                                        </div>
-                                        <div>
-                                            <h3 className="text-lg font-semibold text-gray-900">My Health Reports</h3>
-                                            <p className="text-sm text-gray-600">
-                                                {healthReports.length} {healthReports.length === 1 ? 'Report' : 'Reports'}
-                                            </p>
+                        {/* Generation progress */}
+                        {generatingReport && (
+                            <div className="bg-white border border-gray-200 rounded-lg p-5">
+                                <div className="flex items-start gap-4">
+                                    <div className="w-10 h-10 bg-blue-50 border border-blue-200 rounded-lg flex items-center justify-center flex-shrink-0">
+                                        <div className="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                                    </div>
+                                    <div className="flex-1">
+                                        <p className="text-sm font-medium text-gray-900">Generating health report…</p>
+                                        <p className="text-xs text-gray-500 mt-0.5">
+                                            AI is analysing {medicalRecords.length} document{medicalRecords.length !== 1 ? 's' : ''} sequentially. This may take several minutes.
+                                        </p>
+                                        <div className="mt-3 space-y-2">
+                                            {[
+                                                'Fetching medical records from storage',
+                                                'Running AI summarisation on each file',
+                                                'Compiling findings & recommendations',
+                                                'Building and uploading PDF',
+                                            ].map((step, i) => (
+                                                <div key={step} className="flex items-center gap-2.5">
+                                                    <div className="w-4 h-4 rounded-full border border-gray-300 bg-white flex items-center justify-center flex-shrink-0">
+                                                        <div className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-pulse" style={{ animationDelay: `${i * 150}ms` }}></div>
+                                                    </div>
+                                                    <span className="text-xs text-gray-600">{step}</span>
+                                                </div>
+                                            ))}
                                         </div>
                                     </div>
                                 </div>
+                            </div>
+                        )}
 
-                                <div className="space-y-3">
-                                    {healthReports.map((report, index) => {
-                                        const reportId = report.id || report._id;
-                                        const isDeletingReport = Boolean(deletingReports[reportId]);
+                        {/* Alert Messages */}
+                        {uploadMessage.text && uploadMessage.type && (
+                            <div className={`px-4 py-3 rounded-lg border text-sm flex items-start gap-3 ${
+                                uploadMessage.type === 'success'
+                                    ? 'bg-green-50 border-green-200 text-green-800'
+                                    : 'bg-red-50 border-red-200 text-red-800'
+                            }`}>
+                                {uploadMessage.type === 'success' ? (
+                                    <CheckCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                                ) : (
+                                    <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                                )}
+                                <span>{uploadMessage.text}</span>
+                            </div>
+                        )}
 
-                                        return (
-                                            <div 
-                                                key={reportId}
-                                                className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200"
-                                            >
-                                                <div className="flex items-center gap-4">
-                                                    <div className="text-center">
-                                                        <div className="w-12 h-12 bg-blue-600 rounded-lg flex items-center justify-center">
-                                                            <span className="text-xl font-bold text-white">{healthReports.length - index}</span>
-                                                        </div>
-                                                    </div>
-                                                    <div className="border-l border-gray-300 pl-4">
-                                                        <p className="font-semibold text-gray-900">
-                                                            {report.title || 'Health Summary Report'}
-                                                        </p>
-                                                        <p className="text-sm text-gray-600 mt-1">
-                                                            {new Date(report.generatedAt || report.createdAt).toLocaleDateString('en-US', {
-                                                                month: 'short',
-                                                                day: 'numeric',
-                                                                year: 'numeric',
-                                                                hour: '2-digit',
-                                                                minute: '2-digit'
-                                                            })}
-                                                        </p>
-                                                        {report.fileSize && (
-                                                            <p className="text-xs text-gray-500 mt-0.5">
-                                                                • {(report.fileSize / 1024).toFixed(1)} KB
-                                                            </p>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                                <div className="flex gap-2">
-                                                    <button 
-                                                        onClick={() => handleViewReport(reportId)}
-                                                        disabled={isDeletingReport}
-                                                        className="p-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
-                                                        title="View Report"
-                                                    >
-                                                        <Eye className="w-4 h-4" />
-                                                    </button>
-                                                    <button 
-                                                        onClick={() => handleDownloadReport(reportId)}
-                                                        disabled={isDeletingReport}
-                                                        className="p-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
-                                                        title="Download Report"
-                                                    >
-                                                        <Download className="w-4 h-4" />
-                                                    </button>
-                                                    <button
-                                                        onClick={() => handleDeleteReport(reportId)}
-                                                        disabled={isDeletingReport}
-                                                        className="p-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
-                                                        title="Delete Report"
-                                                    >
-                                                        {isDeletingReport ? (
-                                                            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                                                        ) : (
-                                                            <Trash2 className="w-4 h-4" />
-                                                        )}
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        );
-                                    })}
+                        {/* Reports Table */}
+                        {healthReports.length > 0 ? (
+                            <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+                                {/* Table header */}
+                                <div className="grid grid-cols-12 gap-2 px-5 py-3 bg-gray-50 border-b border-gray-200 text-xs font-medium text-gray-500 uppercase tracking-wide">
+                                    <div className="col-span-1">#</div>
+                                    <div className="col-span-5">Report</div>
+                                    <div className="col-span-3 hidden sm:block">Details</div>
+                                    <div className="col-span-3 sm:col-span-3 text-right">Actions</div>
                                 </div>
+
+                                {healthReports.map((report, index) => {
+                                    const reportId = report.id || report._id;
+                                    const isDeletingReport = Boolean(deletingReports[reportId]);
+                                    const totalDocs = report.totalDocuments || 0;
+                                    const aiSummarized = report.summarizedDocuments || 0;
+                                    const urgHigh   = report.urgencyHigh   || 0;
+                                    const urgMedium = report.urgencyMedium || 0;
+                                    const urgLow    = report.urgencyLow    || 0;
+
+                                    return (
+                                        <div
+                                            key={reportId}
+                                            className={`grid grid-cols-12 gap-2 px-5 py-4 items-center border-b border-gray-100 last:border-b-0 hover:bg-gray-50 transition-colors ${isDeletingReport ? 'opacity-50' : ''}`}
+                                        >
+                                            {/* Index */}
+                                            <div className="col-span-1">
+                                                <span className="text-sm font-medium text-gray-400">{healthReports.length - index}</span>
+                                            </div>
+
+                                            {/* Title & date */}
+                                            <div className="col-span-8 sm:col-span-5 min-w-0">
+                                                <p className="text-sm font-medium text-gray-900 truncate">
+                                                    {report.title || 'Health Summary Report'}
+                                                </p>
+                                                <p className="text-xs text-gray-400 mt-0.5">
+                                                    {new Date(report.generatedAt || report.createdAt).toLocaleDateString('en-US', {
+                                                        month: 'short', day: 'numeric', year: 'numeric',
+                                                        hour: '2-digit', minute: '2-digit'
+                                                    })}
+                                                </p>
+                                            </div>
+
+                                            {/* Details */}
+                                            <div className="col-span-3 hidden sm:flex flex-wrap gap-1 items-center">
+                                                {totalDocs > 0 && (
+                                                    <span className="text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded">
+                                                        {totalDocs} docs
+                                                    </span>
+                                                )}
+                                                {aiSummarized > 0 && (
+                                                    <span className="text-xs text-blue-600 bg-blue-50 px-2 py-0.5 rounded border border-blue-100">
+                                                        {aiSummarized} AI
+                                                    </span>
+                                                )}
+                                                {urgHigh > 0 && (
+                                                    <span className="text-xs font-medium text-red-700 bg-red-50 px-2 py-0.5 rounded border border-red-200" title="High urgency documents">
+                                                        {urgHigh} critical
+                                                    </span>
+                                                )}
+                                                {urgMedium > 0 && (
+                                                    <span className="text-xs font-medium text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200" title="Medium urgency documents">
+                                                        {urgMedium} medium
+                                                    </span>
+                                                )}
+                                                {urgLow > 0 && (
+                                                    <span className="text-xs font-medium text-green-700 bg-green-50 px-2 py-0.5 rounded border border-green-200" title="Low urgency / normal documents">
+                                                        {urgLow} normal
+                                                    </span>
+                                                )}
+                                                {report.fileSize && (
+                                                    <span className="text-xs text-gray-400 bg-gray-50 px-2 py-0.5 rounded border border-gray-100">
+                                                        {(report.fileSize / 1024).toFixed(1)} KB
+                                                    </span>
+                                                )}
+                                            </div>
+
+                                            {/* Actions */}
+                                            <div className="col-span-3 flex gap-1.5 justify-end">
+                                                <button
+                                                    onClick={() => handleViewReport(reportId)}
+                                                    disabled={isDeletingReport}
+                                                    className="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                                                    title="View"
+                                                >
+                                                    <Eye className="w-4 h-4" />
+                                                </button>
+                                                <button
+                                                    onClick={() => handleDownloadReport(reportId)}
+                                                    disabled={isDeletingReport}
+                                                    className="p-1.5 text-gray-500 hover:text-green-600 hover:bg-green-50 rounded transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                                                    title="Download PDF"
+                                                >
+                                                    <Download className="w-4 h-4" />
+                                                </button>
+                                                <button
+                                                    onClick={() => handleDeleteReport(reportId)}
+                                                    disabled={isDeletingReport}
+                                                    className="p-1.5 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                                                    title="Delete"
+                                                >
+                                                    {isDeletingReport ? (
+                                                        <div className="w-4 h-4 border-2 border-red-400 border-t-transparent rounded-full animate-spin"></div>
+                                                    ) : (
+                                                        <Trash2 className="w-4 h-4" />
+                                                    )}
+                                                </button>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
                             </div>
                         ) : (
-                            <div className="bg-white rounded-lg border-2 border-dashed border-gray-300 p-12 text-center">
-                                <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                                    <FileBarChart className="w-10 h-10 text-gray-400" />
+                            !generatingReport && (
+                                <div className="bg-white border border-gray-200 rounded-lg p-12 text-center">
+                                    <div className="w-14 h-14 bg-gray-100 rounded-lg flex items-center justify-center mx-auto mb-4">
+                                        <FileBarChart className="w-7 h-7 text-gray-400" />
+                                    </div>
+                                    <h4 className="text-base font-semibold text-gray-800 mb-1">No reports yet</h4>
+                                    <p className="text-sm text-gray-500 mb-5 max-w-xs mx-auto">
+                                        Generate a report and AI will summarise every document you've uploaded into a single PDF.
+                                    </p>
+                                    <button
+                                        onClick={handleGenerateReport}
+                                        disabled={generatingReport || medicalRecords.length === 0}
+                                        className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
+                                    >
+                                        <FileBarChart className="w-4 h-4" />
+                                        <span>{medicalRecords.length === 0 ? 'Upload documents first' : 'Generate first report'}</span>
+                                    </button>
+                                    {medicalRecords.length === 0 && (
+                                        <p className="text-xs text-gray-400 mt-3">
+                                            Visit{' '}
+                                            <button onClick={() => setActiveSection('records')} className="text-blue-500 hover:underline">
+                                                Medical Records
+                                            </button>{' '}
+                                            to upload files.
+                                        </p>
+                                    )}
                                 </div>
-                                <h4 className="text-xl font-semibold text-gray-800 mb-2">No Reports Generated Yet</h4>
-                                <p className="text-gray-600 mb-6 max-w-md mx-auto">
-                                    Generate your first comprehensive health report to get AI-powered insights from your medical records
-                                </p>
-                                <button 
-                                    onClick={handleGenerateReport}
-                                    disabled={generatingReport || medicalRecords.length === 0}
-                                    className="px-6 py-3 bg-gray-800 text-white rounded-lg hover:bg-gray-900 font-medium transition-colors shadow-sm disabled:bg-gray-400 disabled:cursor-not-allowed inline-flex items-center space-x-2"
-                                >
-                                    <FileBarChart className="w-5 h-5" />
-                                    <span>{medicalRecords.length === 0 ? 'Upload Documents First' : 'Generate Your First Report'}</span>
-                                </button>
-                            </div>
+                            )
                         )}
                     </div>
                 )}
 
                 {/* Health Tracker Section */}
                 {activeSection === 'vitals' && (
-                    <div className="space-y-6">
+                    <div className="space-y-5">
                         {/* Page Header */}
                         <div>
-                            <h2 className="text-2xl font-bold text-gray-900">Health Tracker</h2>
-                            <p className="text-gray-600 mt-1">Track your vital signs and monitor your health metrics</p>
+                            <h2 className="text-xl font-semibold text-gray-900">Health Tracker</h2>
                         </div>
 
                         {/* BMI Calculator */}
-                        <div className="bg-white rounded-xl border border-gray-200 p-6">
-                            <div className="flex items-center gap-3 mb-6">
-                                <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                                    <Activity className="w-5 h-5 text-blue-600" />
-                                </div>
-                                <div>
-                                    <h3 className="text-lg font-semibold text-gray-900">BMI Calculator</h3>
-                                    <p className="text-sm text-gray-600">Calculate and track your Body Mass Index</p>
-                                </div>
-                            </div>
+                        <div className="bg-white border border-gray-200 rounded-lg p-6">
+                            <h3 className="text-lg font-semibold text-gray-900 mb-5">BMI Calculator</h3>
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                                 {/* Input Section */}
                                 <div className="space-y-4">
                                     <div>
@@ -1968,260 +2019,235 @@ const PatientDashboard = () => {
                 )}
 
                     {activeSection === 'profile' && (
-                        <div className="space-y-6">
+                        <div className="space-y-5">
                             {/* Page Header */}
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <h2 className="text-2xl font-bold text-gray-900">My Profile</h2>
-                                    <p className="text-gray-600 mt-1">Manage your account settings and preferences</p>
-                                </div>
-                                <div className="text-right">
-                                    <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-2xl font-bold text-white mx-auto">
-                                        {user?.fullName?.[0]?.toUpperCase() || user?.email?.[0]?.toUpperCase() || 'P'}
+                            <h2 className="text-xl font-semibold text-gray-900">My Profile</h2>
+
+                            {/* Identity Card */}
+                            <div className="bg-white border border-gray-200 rounded-lg p-6">
+                                <div className="flex items-center gap-5">
+                                    <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center text-xl font-bold text-gray-600 flex-shrink-0">
+                                        {user?.name?.[0]?.toUpperCase() || user?.email?.[0]?.toUpperCase() || 'P'}
                                     </div>
-                                    <p className="text-sm text-gray-500 mt-2">Patient ID</p>
-                                    <p className="text-lg font-mono font-bold text-blue-600">#{user?.userId || user?.id?.slice(-6) || 'N/A'}</p>
+                                    <div className="flex-1 min-w-0">
+                                        <p className="text-xl font-semibold text-gray-900 truncate">{user?.name || 'Patient'}</p>
+                                        <p className="text-sm text-gray-500 mt-0.5">{user?.email || ''}</p>
+                                    </div>
+                                    <div className="text-right flex-shrink-0">
+                                        <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Patient ID</p>
+                                        <p className="text-base font-semibold text-gray-900 mt-0.5 font-mono">{user?.userId || '—'}</p>
+                                        <span className="inline-block mt-1 px-2 py-0.5 text-xs font-medium bg-gray-100 text-gray-600 rounded">Patient</span>
+                                    </div>
                                 </div>
                             </div>
 
                             {/* Personal Information */}
-                            <div className="bg-white rounded-xl border border-gray-200">
-                                <div className="px-6 py-4 border-b border-gray-200">
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                                            <User className="w-5 h-5 text-blue-600" />
-                                        </div>
-                                        <div>
-                                            <h3 className="text-lg font-semibold text-gray-900">Personal Information</h3>
-                                            <p className="text-gray-600">Update your personal details and information</p>
-                                        </div>
+                            <div className="bg-white border border-gray-200 rounded-lg p-6">
+                                <h3 className="text-lg font-semibold text-gray-900 mb-5">Personal Information</h3>
+                                <form onSubmit={handleSaveProfile}>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                            Full Name
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={user?.name || ''}
+                                            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg outline-none bg-gray-50 text-gray-500 cursor-not-allowed"
+                                            readOnly
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                            Email Address
+                                        </label>
+                                        <input
+                                            type="email"
+                                            value={user?.email || ''}
+                                            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg outline-none bg-gray-50 text-gray-500 cursor-not-allowed"
+                                            readOnly
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                            Phone Number
+                                        </label>
+                                        <input
+                                            type="tel"
+                                            value={profileForm.phone}
+                                            onChange={(e) => setProfileForm({ ...profileForm, phone: e.target.value })}
+                                            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                                            placeholder="+91 00000 00000"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                            Date of Birth
+                                        </label>
+                                        <input
+                                            type="date"
+                                            value={profileForm.dateOfBirth}
+                                            onChange={(e) => setProfileForm({ ...profileForm, dateOfBirth: e.target.value })}
+                                            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                            Gender
+                                        </label>
+                                        <select
+                                            value={profileForm.gender}
+                                            onChange={(e) => setProfileForm({ ...profileForm, gender: e.target.value })}
+                                            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                                        >
+                                            <option value="">Select gender</option>
+                                            <option value="male">Male</option>
+                                            <option value="female">Female</option>
+                                            <option value="other">Other</option>
+                                            <option value="prefer-not">Prefer not to say</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                            Address
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={profileForm.address}
+                                            onChange={(e) => setProfileForm({ ...profileForm, address: e.target.value })}
+                                            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                                            placeholder="City, State, Country"
+                                        />
                                     </div>
                                 </div>
-                                <div className="p-6">
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                                                Full Name
-                                            </label>
-                                            <div className="relative">
-                                                <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                                                <input
-                                                    type="text"
-                                                    value={user?.fullName || ''}
-                                                    className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all bg-gray-50"
-                                                    readOnly
-                                                />
-                                            </div>
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                                                Email Address
-                                            </label>
-                                            <div className="relative">
-                                                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                                                <input
-                                                    type="email"
-                                                    value={user?.email || ''}
-                                                    className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all bg-gray-50"
-                                                    readOnly
-                                                />
-                                            </div>
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                                                Phone Number
-                                            </label>
-                                            <div className="relative">
-                                                <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                                                <input
-                                                    type="tel"
-                                                    className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"
-                                                    placeholder="+1 (555) 000-0000"
-                                                />
-                                            </div>
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                                                Date of Birth
-                                            </label>
-                                            <div className="relative">
-                                                <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                                                <input
-                                                    type="date"
-                                                    className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"
-                                                />
-                                            </div>
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                                                Gender
-                                            </label>
-                                            <select className="w-full px-4 py-2.5 border border-gray-300 rounded-lg outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all">
-                                                <option value="">Select gender</option>
-                                                <option value="male">Male</option>
-                                                <option value="female">Female</option>
-                                                <option value="other">Other</option>
-                                                <option value="prefer-not">Prefer not to say</option>
-                                            </select>
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                                                Address
-                                            </label>
-                                            <div className="relative">
-                                                <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                                                <input
-                                                    type="text"
-                                                    className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"
-                                                    placeholder="City, State, Country"
-                                                />
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div className="mt-6 pt-4 border-t border-gray-200 flex gap-3">
-                                        <button className="bg-blue-600 text-white px-6 py-2.5 rounded-lg hover:bg-blue-700 transition-colors font-medium">
-                                            Save Changes
-                                        </button>
-                                        <button className="px-6 py-2.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium">
-                                            Cancel
-                                        </button>
-                                    </div>
+                                {profileMessage.text && (
+                                    <p className={`mt-4 text-sm font-medium ${profileMessage.type === 'success' ? 'text-green-600' : 'text-red-600'}`}>
+                                        {profileMessage.text}
+                                    </p>
+                                )}
+                                <div className="mt-6 pt-4 border-t border-gray-200 flex gap-3">
+                                    <button
+                                        type="submit"
+                                        disabled={profileSaving}
+                                        className="bg-blue-600 text-white px-6 py-2.5 rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:opacity-50"
+                                    >
+                                        {profileSaving ? 'Saving...' : 'Save Changes'}
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={fetchPatientProfile}
+                                        className="px-6 py-2.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
+                                    >
+                                        Cancel
+                                    </button>
                                 </div>
+                                </form>
                             </div>
 
                             {/* Security Management */}
-                            <div className="bg-white rounded-xl border border-gray-200">
-                                <div className="px-6 py-4 border-b border-gray-200">
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
-                                            <Lock className="w-5 h-5 text-purple-600" />
-                                        </div>
-                                        <div>
-                                            <h3 className="text-lg font-semibold text-gray-900">Security Management</h3>
-                                            <p className="text-sm text-gray-500">Manage your password and account security</p>
-                                        </div>
+                            <div className="bg-white border border-gray-200 rounded-lg p-6">
+                                <h3 className="text-lg font-semibold text-gray-900 mb-5">Security Management</h3>
+                                <form onSubmit={(e) => e.preventDefault()} autoComplete="off">
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                            Current Password
+                                        </label>
+                                        <input
+                                            type="password"
+                                            name="current-password"
+                                            autoComplete="current-password"
+                                            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                                            placeholder="••••••••"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                            New Password
+                                        </label>
+                                        <input
+                                            type="password"
+                                            name="new-password"
+                                            autoComplete="new-password"
+                                            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                                            placeholder="••••••••"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                            Confirm Password
+                                        </label>
+                                        <input
+                                            type="password"
+                                            name="confirm-password"
+                                            autoComplete="new-password"
+                                            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                                            placeholder="••••••••"
+                                        />
                                     </div>
                                 </div>
-                                <div className="p-6">
-                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                                                Current Password
-                                            </label>
-                                            <div className="relative">
-                                                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                                                <input
-                                                    type="password"
-                                                    className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all"
-                                                    placeholder="••••••••"
-                                                />
-                                            </div>
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                                                New Password
-                                            </label>
-                                            <div className="relative">
-                                                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                                                <input
-                                                    type="password"
-                                                    className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all"
-                                                    placeholder="••••••••"
-                                                />
-                                            </div>
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                                                Confirm Password
-                                            </label>
-                                            <div className="relative">
-                                                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                                                <input
-                                                    type="password"
-                                                    className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all"
-                                                    placeholder="••••••••"
-                                                />
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
-                                        <p className="text-sm font-medium text-gray-700 mb-2">Password Requirements:</p>
-                                        <ul className="text-sm text-gray-600 space-y-1 pl-5 list-disc">
-                                            <li>At least 8 characters long</li>
-                                            <li>Contains uppercase and lowercase letters</li>
-                                            <li>Includes at least one number</li>
-                                            <li>Contains at least one special character</li>
-                                        </ul>
-                                    </div>
-                                    <div className="mt-6 pt-4 border-t border-gray-200">
-                                        <button className="bg-purple-600 text-white px-6 py-2.5 rounded-lg hover:bg-purple-700 transition-colors font-medium">
-                                            Update Password
-                                        </button>
-                                    </div>
+                                <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                                    <p className="text-sm font-medium text-gray-700 mb-2">Password Requirements:</p>
+                                    <ul className="text-sm text-gray-600 space-y-1 pl-5 list-disc">
+                                        <li>At least 8 characters long</li>
+                                        <li>Contains uppercase and lowercase letters</li>
+                                        <li>Includes at least one number</li>
+                                        <li>Contains at least one special character</li>
+                                    </ul>
                                 </div>
+                                <div className="mt-6 pt-4 border-t border-gray-200">
+                                    <button type="submit" className="bg-blue-600 text-white px-6 py-2.5 rounded-lg hover:bg-blue-700 transition-colors font-medium">
+                                        Update Password
+                                    </button>
+                                </div>
+                                </form>
                             </div>
 
-                            {/* Emergency Management */}
-                            <div className="bg-white rounded-xl border border-gray-200">
-                                <div className="px-6 py-4 border-b border-gray-200">
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center">
-                                            <Phone className="w-5 h-5 text-red-600" />
-                                        </div>
-                                        <div>
-                                            <h3 className="text-lg font-semibold text-gray-900">Emergency Management</h3>
-                                            <p className="text-sm text-gray-500">Add emergency contact information</p>
-                                        </div>
+                            {/* Emergency Contact */}
+                            <div className="bg-white border border-gray-200 rounded-lg p-6">
+                                <h3 className="text-lg font-semibold text-gray-900 mb-5">Emergency Contact</h3>
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                            Contact Name
+                                        </label>
+                                        <input
+                                            type="text"
+                                            defaultValue=""
+                                            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                                            placeholder="Full name"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                            Contact Phone
+                                        </label>
+                                        <input
+                                            type="tel"
+                                            defaultValue=""
+                                            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                                            placeholder="+1 (555) 000-0000"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                            Relationship
+                                        </label>
+                                        <select defaultValue="" className="w-full px-4 py-2.5 border border-gray-300 rounded-lg outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500">
+                                            <option value="">Select relationship</option>
+                                            <option value="spouse">Spouse</option>
+                                            <option value="parent">Parent</option>
+                                            <option value="sibling">Sibling</option>
+                                            <option value="child">Child</option>
+                                            <option value="friend">Friend</option>
+                                            <option value="other">Other</option>
+                                        </select>
                                     </div>
                                 </div>
-                                <div className="p-6">
-                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                                                Contact Name
-                                            </label>
-                                            <div className="relative">
-                                                <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                                                <input
-                                                    type="text"
-                                                    className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition-all"
-                                                    placeholder="Full name"
-                                                />
-                                            </div>
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                                                Contact Phone
-                                            </label>
-                                            <div className="relative">
-                                                <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                                                <input
-                                                    type="tel"
-                                                    className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition-all"
-                                                    placeholder="+1 (555) 000-0000"
-                                                />
-                                            </div>
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                                                Relationship
-                                            </label>
-                                            <select className="w-full px-4 py-2.5 border border-gray-300 rounded-lg outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition-all">
-                                                <option value="">Select relationship</option>
-                                                <option value="spouse">Spouse</option>
-                                                <option value="parent">Parent</option>
-                                                <option value="sibling">Sibling</option>
-                                                <option value="child">Child</option>
-                                                <option value="friend">Friend</option>
-                                                <option value="other">Other</option>
-                                            </select>
-                                        </div>
-                                    </div>
-                                    <div className="mt-6 pt-4 border-t border-gray-200">
-                                        <button className="bg-red-600 text-white px-6 py-2.5 rounded-lg hover:bg-red-700 transition-colors font-medium">
-                                            Save Emergency Contact
-                                        </button>
-                                    </div>
+                                <div className="mt-6 pt-4 border-t border-gray-200">
+                                    <button className="bg-blue-600 text-white px-6 py-2.5 rounded-lg hover:bg-blue-700 transition-colors font-medium">
+                                        Save Emergency Contact
+                                    </button>
                                 </div>
                             </div>
                         </div>

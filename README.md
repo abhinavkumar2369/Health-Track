@@ -31,9 +31,33 @@
 ![Sign In Page](0_docs/screenshots/sign-in.png)
 ![Sign Up Page](0_docs/screenshots/sign-up.png)
 
-## Admin Dashboard
+### Admin Dashboard
 
 ![Admin](0_docs/screenshots/admin-dashboard-1.png)
+
+## Patient Dashboard
+
+### Dashboard Overview
+![Patient Dashboard](0_docs/screenshots/patient_dashboard.png)
+
+### Appointment Booking
+![Appointment Booking 1](0_docs/screenshots/patient_appointment_booking_1.png)
+![Appointment Booking 2](0_docs/screenshots/patient_appointment_booking_2.png)
+
+### Medical Records
+![Medical Records](0_docs/screenshots/patient_medical_records_section.png)
+
+### Health Reports
+![Health Reports](0_docs/screenshots/patient_generate_report.png)
+
+### Generated PDF Report
+![Generated Report](0_docs/screenshots/patient_generated_report.png)
+
+### Health Tracker
+![Health Tracker](0_docs/screenshots/patient_health_tracker.png)
+
+### My Profile
+![My Profile](0_docs/screenshots/patient_my_profile.png)
 
 ---
 

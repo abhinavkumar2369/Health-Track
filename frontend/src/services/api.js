@@ -373,6 +373,21 @@ export const patientAPI = {
             }),
         });
     },
+
+    // Get patient profile
+    getProfile: async () => {
+        const token = ensureToken();
+        return apiRequest(`/patient/profile?token=${token}`);
+    },
+
+    // Update patient profile
+    updateProfile: async (profileData) => {
+        const token = ensureToken();
+        return apiRequest('/patient/profile', {
+            method: 'PUT',
+            body: JSON.stringify({ token, ...profileData }),
+        });
+    },
 };
 
 // Document API

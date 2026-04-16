@@ -446,4 +446,43 @@ router.put("/reschedule-appointment/:id", async (req, res) => {
   }
 });
 
+/**
+ * GET PROFILE
+ */
+router.get("/profile", async (req, res) => {
+  try {
+    const { token } = req.query;
+    if (!token) return res.status(401).json({ message: "Token required" });
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const patient = await Patient.findById(decoded.id).select("-password");
+    if (!patient) return res.status(404).json({ message: "Patient not found" });
+    res.json({ success: true, profile: patient });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+/**
+ * UPDATE PROFILE
+ */
+router.put("/profile", async (req, res) => {
+  try {
+    const { token, phone, dateOfBirth, gender, address } = req.body;
+    if (!token) return res.status(401).json({ message: "Token required" });
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const patient = await Patient.findById(decoded.id);
+    if (!patient) return res.status(404).json({ message: "Patient not found" });
+
+    if (phone !== undefined) patient.phone = phone;
+    if (dateOfBirth !== undefined) patient.dateOfBirth = dateOfBirth;
+    if (gender !== undefined) patient.gender = gender;
+    if (address !== undefined) patient.address = address;
+
+    await patient.save();
+    res.json({ success: true, message: "Profile updated successfully" });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
 export default router;

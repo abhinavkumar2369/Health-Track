@@ -190,6 +190,11 @@ router.post("/issue-medicine", async (req, res) => {
 
     const decoded = verifyToken(token);
 
+    const parsedQuantity = parseInt(quantity, 10);
+    if (isNaN(parsedQuantity) || parsedQuantity <= 0) {
+      return res.status(400).json({ message: "Invalid quantity" });
+    }
+
     const medicine = await Medicine.findOne({
       _id: medicineId,
       pharmacist_id: decoded.id,
@@ -199,7 +204,7 @@ router.post("/issue-medicine", async (req, res) => {
       return res.status(404).json({ message: "Medicine not found" });
     }
 
-    if (medicine.quantity < quantity) {
+    if (medicine.quantity < parsedQuantity) {
       return res.status(400).json({
         message: "Insufficient stock",
         available: medicine.quantity,
@@ -209,7 +214,7 @@ router.post("/issue-medicine", async (req, res) => {
     const previousQuantity = medicine.quantity;
 
     // Decrease quantity
-    medicine.quantity -= quantity;
+    medicine.quantity -= parsedQuantity;
     await medicine.save();
 
     // Create transaction record
@@ -217,11 +222,11 @@ router.post("/issue-medicine", async (req, res) => {
       type: 'issue',
       medicineName: medicine.name,
       medicineId: medicine._id,
-      quantity,
+      quantity: parsedQuantity,
       price: medicine.price || 0,
-      totalAmount: quantity * (medicine.price || 0),
+      totalAmount: parsedQuantity * (medicine.price || 0),
       patientName: patientName || 'Unknown',
-      notes: notes || `Issued ${quantity} units to ${patientName || 'patient'}`,
+      notes: notes || `Issued ${parsedQuantity} units to ${patientName || 'patient'}`,
       pharmacist_id: decoded.id,
       previousQuantity,
       newQuantity: medicine.quantity
@@ -236,7 +241,7 @@ router.post("/issue-medicine", async (req, res) => {
       },
       transaction: {
         type: "issue",
-        quantity,
+        quantity: parsedQuantity,
         patientName,
         notes,
         timestamp: new Date(),

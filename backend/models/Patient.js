@@ -16,6 +16,10 @@ const patientSchema = new mongoose.Schema(
     doctor_id: { type: mongoose.Schema.Types.ObjectId, ref: "Doctor", required: true },
     admin_id: { type: mongoose.Schema.Types.ObjectId, ref: "Admin" },
     role: { type: String, default: "patient" },
+    phone: { type: String },
+    dateOfBirth: { type: String },
+    gender: { type: String },
+    address: { type: String },
   },
   { timestamps: true }
 );
