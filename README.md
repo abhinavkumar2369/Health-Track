@@ -112,6 +112,22 @@
 
 
 
+## ➡️ Pharmacist Dashboard
+
+### Overview
+![Pharmacist Overview](0_docs/screenshots/pharmacist_overview.png)
+
+### Inventory
+![Pharmacist Inventory](0_docs/screenshots/pharmacist_inventory.png)
+
+### Transactions
+![Pharmacist Transactions](0_docs/screenshots/pharmacist_transactions.png)
+
+### Reports
+![Pharmacist Reports](0_docs/screenshots/pharmacist_reports.png)
+
+### Settings
+![Pharmacist Settings](0_docs/screenshots/pharmacist_settings.png)
 
 
 

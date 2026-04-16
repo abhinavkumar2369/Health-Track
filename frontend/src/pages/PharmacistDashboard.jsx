@@ -277,6 +277,7 @@ const PharmacistDashboard = () => {
             patientName: '',
             notes: ''
         });
+        setSelectedMedicine(null);
     };
 
     const openEditModal = (medicine) => {
@@ -539,7 +540,7 @@ const PharmacistDashboard = () => {
 
                 {/* Success/Error Messages - Toast Notifications */}
                 {success && (
-                    <div className="fixed bottom-4 right-4 z-50 animate-slide-in">
+                    <div className="fixed bottom-4 right-4 z-[100] animate-slide-in">
                         <div className="bg-green-50 border border-green-200 text-green-800 px-6 py-4 rounded-lg shadow-lg flex items-center gap-3 min-w-[300px]">
                             <svg className="w-5 h-5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                                 <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
@@ -554,7 +555,7 @@ const PharmacistDashboard = () => {
                     </div>
                 )}
                 {error && (
-                    <div className="fixed bottom-4 right-4 z-50 animate-slide-in">
+                    <div className="fixed bottom-4 right-4 z-[100] animate-slide-in">
                         <div className="bg-red-50 border border-red-200 text-red-800 px-6 py-4 rounded-lg shadow-lg flex items-center gap-3 min-w-[300px]">
                             <svg className="w-5 h-5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                                 <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
@@ -1081,7 +1082,7 @@ const PharmacistDashboard = () => {
                                 <h3 className="text-lg font-semibold text-gray-900">Medicine Inventory</h3>
                                 <div className="flex gap-2">
                                     <button 
-                                        onClick={() => setShowIssueModal(true)}
+                                        onClick={() => { resetIssueForm(); setShowIssueModal(true); }}
                                         className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
                                     >
                                         <Send className="w-4 h-4" />
@@ -1891,6 +1892,11 @@ const PharmacistDashboard = () => {
                             </button>
                         </div>
                         <form onSubmit={handleIssueMedicine} className="p-6 space-y-4">
+                            {error && (
+                                <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-4 py-3">
+                                    {error}
+                                </div>
+                            )}
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">Select Medicine *</label>
                                 <select
