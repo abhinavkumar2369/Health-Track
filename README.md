@@ -7,18 +7,18 @@
 
 
 ### ➡️ Flow Diagram
-![Health Track Banner](0_docs/screenshots/block-diagram-1.png)
+![Health Track Flow Diagram](0_docs/screenshots/block-diagram-1.png)
 
 
 
 ## ➡️ Screenshots
 
-## ➡️  Homepage
+### ➡️ Homepage
 
-![homepage-1](0_docs/screenshots/homepage-1.png)
-![homepage-2](0_docs/screenshots/homepage-2.png)
-![homepage-3](0_docs/screenshots/homepage-3.png)
-![homepage-4](0_docs/screenshots/homepage-4.png)
+![Homepage Section 1](0_docs/screenshots/homepage-1.png)
+![Homepage Section 2](0_docs/screenshots/homepage-2.png)
+![Homepage Section 3](0_docs/screenshots/homepage-3.png)
+![Homepage Section 4](0_docs/screenshots/homepage-4.png)
 
 
 ### ➡️ Authentication
@@ -27,106 +27,98 @@
 ![Sign Up Page](0_docs/screenshots/sign-up.png)
 
 
-
-
 ### ➡️ Admin Dashboard
 
-![Admin Dashboard](0_docs/screenshots/admin-dashboard-1.png)
+![Admin Dashboard Overview](0_docs/screenshots/admin-dashboard-1.png)
 
-### Doctors
-![Admin Doctors](0_docs/screenshots/admin_doctors.png)
+#### Doctors
+![Admin — Doctors Management](0_docs/screenshots/admin_doctors.png)
 
-### Pharmacists
-![Admin Pharmacists](0_docs/screenshots/admin_pharmacist.png)
+#### Pharmacists
+![Admin — Pharmacists Management](0_docs/screenshots/admin_pharmacist.png)
 
-### Reports
-![Admin Reports](0_docs/screenshots/admin_reports.png)
+#### Reports
+![Admin — Reports](0_docs/screenshots/admin_reports.png)
 
-### Emergency
-![Admin Emergency](0_docs/screenshots/admin_emergency.png)
+#### Emergency
+![Admin — Emergency Access](0_docs/screenshots/admin_emergency.png)
 
-### API Access
-![Admin API Access](0_docs/screenshots/admin_api_access.png)
+#### API Access
+![Admin — API Access](0_docs/screenshots/admin_api_access.png)
 
-### Settings
-![Admin Settings](0_docs/screenshots/admin_settings.png)
-
-
+#### Settings
+![Admin — Settings](0_docs/screenshots/admin_settings.png)
 
 
-## ➡️ Doctor Dashboard
+### ➡️ Doctor Dashboard
 
-### Dashboard Overview
+#### Dashboard Overview
 ![Doctor Dashboard](0_docs/screenshots/doctor_dashboard.png)
 
-### Patient Records
+#### Patient Records
 ![Patient Records 1](0_docs/screenshots/doctor_patients_1.png)
 ![Patient Records 2](0_docs/screenshots/doctor_patients_2.png)
 
-### Appointments
+#### Appointments
 ![Appointments 1](0_docs/screenshots/doctor_appointments_1.png)
 ![Appointments 2](0_docs/screenshots/doctor_appointments_2.png)
 
-### Prescriptions
+#### Prescriptions
 ![Prescriptions](0_docs/screenshots/doctor_prescriptions.png)
 ![Create Prescription](0_docs/screenshots/doctor_prescriptions_filling.png)
 ![Prescription History](0_docs/screenshots/doctor_prescriptions_filled.png)
 
-### Reports
-![Reports](0_docs/screenshots/doctor_reports.png)
+#### Reports
+![Doctor Reports](0_docs/screenshots/doctor_reports.png)
 
-### Settings
-![Settings](0_docs/screenshots/doctor_settings.png)
+#### Settings
+![Doctor Settings](0_docs/screenshots/doctor_settings.png)
 
-### My Profile
-![My Profile](0_docs/screenshots/doctor_my_profile.png)
-
-
+#### My Profile
+![Doctor My Profile](0_docs/screenshots/doctor_my_profile.png)
 
 
-## ➡️ Patient Dashboard
+### ➡️ Patient Dashboard
 
-### Dashboard Overview
+#### Dashboard Overview
 ![Patient Dashboard](0_docs/screenshots/patient_dashboard.png)
 
-### Appointment Booking
+#### Appointment Booking
 ![Appointment Booking 1](0_docs/screenshots/patient_appointment_booking_1.png)
 ![Appointment Booking 2](0_docs/screenshots/patient_appointment_booking_2.png)
 
-### Medical Records
-![Medical Records](0_docs/screenshots/patient_medical_records_section_1.png)
-![Medical Records](0_docs/screenshots/patient_medical_records_section_2.png)
+#### Medical Records
+![Medical Records Section 1](0_docs/screenshots/patient_medical_records_section_1.png)
+![Medical Records Section 2](0_docs/screenshots/patient_medical_records_section_2.png)
 
-### Health Reports
-![Health Reports](0_docs/screenshots/patient_generate_report.png)
+#### Health Reports
+![Generate Health Report](0_docs/screenshots/patient_generate_report.png)
 
-### Generated PDF Report
+#### Generated PDF Report
 ![Generated Report](0_docs/screenshots/patient_generated_report.png)
 
-### Health Tracker
+#### Health Tracker
 ![Health Tracker](0_docs/screenshots/patient_health_tracker.png)
 
-### My Profile
-![My Profile](0_docs/screenshots/patient_my_profile.png)
+#### My Profile
+![Patient My Profile](0_docs/screenshots/patient_my_profile.png)
 
 
+### ➡️ Pharmacist Dashboard
 
-
-## ➡️ Pharmacist Dashboard
-
-### Overview
+#### Overview
 ![Pharmacist Overview](0_docs/screenshots/pharmacist_overview.png)
 
-### Inventory
+#### Inventory
 ![Pharmacist Inventory](0_docs/screenshots/pharmacist_inventory.png)
 
-### Transactions
+#### Transactions
 ![Pharmacist Transactions](0_docs/screenshots/pharmacist_transactions.png)
 
-### Reports
+#### Reports
 ![Pharmacist Reports](0_docs/screenshots/pharmacist_reports.png)
 
-### Settings
+#### Settings
 ![Pharmacist Settings](0_docs/screenshots/pharmacist_settings.png)
 
 
@@ -500,16 +492,30 @@ Health-Track/
 
 ### MongoDB Models
 
-#### Admin Schema
+#### User Schema
 
 ```javascript
 {
   fullname: String (required),
   email: String (unique, required),
   password: String (required, hashed),
+  role: String (required, enum: ["admin", "doctor", "patient", "pharmacist"])
+}
+```
+
+#### Admin Schema
+
+```javascript
+{
+  userId: String (unique, auto-generated 6-digit ID, indexed),
+  fullname: String (required),
+  email: String (unique, required),
+  password: String (required, hashed),
   role: String (default: "admin"),
-  gender: String (enum: ["male", "female", "other", ""]),
-  phone: String,
+  gender: String (enum: ["male", "female", "other", ""], default: ""),
+  phone: String (default: ""),
+  apiToken: String (default: ""),
+  apiTokenExpiry: Date (default: null),
   timestamps: true
 }
 ```
@@ -518,6 +524,7 @@ Health-Track/
 
 ```javascript
 {
+  userId: String (unique, required, immutable, 8-digit healthcare ID, indexed),
   name: String (required),
   email: String (unique, required),
   password: String (required, hashed),
@@ -532,12 +539,17 @@ Health-Track/
 
 ```javascript
 {
+  userId: String (unique, required, immutable, 8-digit healthcare ID, indexed),
   name: String (required),
   email: String (unique, required),
   password: String (required, hashed),
   doctor_id: ObjectId (ref: "Doctor", required),
   admin_id: ObjectId (ref: "Admin"),
   role: String (default: "patient"),
+  phone: String,
+  dateOfBirth: String,
+  gender: String,
+  address: String,
   timestamps: true
 }
 ```
@@ -546,12 +558,13 @@ Health-Track/
 
 ```javascript
 {
+  userId: String (unique, required, immutable, 8-digit healthcare ID, indexed),
   name: String (required),
   email: String (unique, required),
   password: String (required, hashed),
-  gender: String (enum: ["male", "female", "other", ""]),
+  gender: String (enum: ["male", "female", "other", ""], default: ""),
   phone: String,
-  inventory: [String],
+  inventory: [String] (default: []),
   admin_id: ObjectId (ref: "Admin", required),
   role: String (default: "pharmacist"),
   timestamps: true
@@ -591,8 +604,19 @@ Health-Track/
   fileSize: Number,
   s3Key: String,
   s3Url: String,
-  category: String (enum: ["lab-report", "prescription", "scan", "consultation", "other"]),
-  status: String (enum: ["pending", "verified", "under-review"]),
+  category: String (enum: ["lab-report", "prescription", "scan", "consultation", "other"], default: "other"),
+  status: String (enum: ["pending", "verified", "under-review"], default: "under-review"),
+  aiSummary: {
+    summary: String,
+    extractedText: String,
+    keyFindings: [String],
+    medicalTerms: [{ term: String, explanation: String }],
+    recommendations: [String],
+    urgencyLevel: String (enum: ["low", "medium", "high"], default: "low"),
+    summarizedAt: Date,
+    summarizedBy: String (default: "AI System")
+  },
+  isSummarized: Boolean (default: false),
   timestamps: true
 }
 ```
@@ -605,8 +629,8 @@ Health-Track/
   medicineName: String (required),
   medicineId: ObjectId (ref: "Medicine"),
   quantity: Number (required),
-  price: Number,
-  totalAmount: Number,
+  price: Number (default: 0),
+  totalAmount: Number (default: 0),
   patientName: String,
   notes: String,
   pharmacist_id: ObjectId (ref: "Pharmacist", required),
@@ -616,13 +640,13 @@ Health-Track/
 }
 ```
 
-#### Report Schema
+#### Report Schema (Pharmacist)
 
 ```javascript
 {
   title: String (required),
   description: String,
-  reportType: String (enum: ["inventory", "transaction", "summary", "custom"]),
+  reportType: String (enum: ["inventory", "transaction", "summary", "custom"], default: "summary"),
   pharmacist_id: ObjectId (ref: "Pharmacist", required),
   fileName: String,
   originalName: String,
@@ -632,8 +656,42 @@ Health-Track/
   s3Url: String,
   dateFrom: Date,
   dateTo: Date,
-  generatedAt: Date,
-  status: String (enum: ["generating", "completed", "failed"]),
+  generatedAt: Date (default: Date.now),
+  status: String (enum: ["generating", "completed", "failed"], default: "completed"),
+  timestamps: true
+}
+```
+
+#### Health Report Schema (Patient)
+
+```javascript
+{
+  patient_id: ObjectId (ref: "Patient", required, indexed),
+  title: String (default: "Health Summary Report"),
+  description: String,
+  fileName: String (required),
+  originalName: String,
+  fileType: String (default: "application/pdf"),
+  fileSize: Number,
+  s3Key: String (required),
+  s3Url: String,
+  totalDocuments: Number (default: 0),
+  summarizedDocuments: Number (default: 0),
+  labReports: Number (default: 0),
+  prescriptions: Number (default: 0),
+  scans: Number (default: 0),
+  consultations: Number (default: 0),
+  urgencyHigh: Number (default: 0),
+  urgencyMedium: Number (default: 0),
+  urgencyLow: Number (default: 0),
+  urgencyNone: Number (default: 0),
+  generatedAt: Date (default: Date.now),
+  status: String (enum: ["generating", "completed", "failed"], default: "completed"),
+  documentIds: [ObjectId (ref: "Document")],
+  includeRecords: Boolean (default: true),
+  includeAppointments: Boolean (default: true),
+  includePrescriptions: Boolean (default: true),
+  includeHealthMetrics: Boolean (default: true),
   timestamps: true
 }
 ```
@@ -646,6 +704,7 @@ Health-Track/
   patient_id: ObjectId (ref: "Patient"),
   appointmentDate: Date (required),
   notes: String,
+  status: String (enum: ["scheduled", "completed", "cancelled", "rescheduled"], default: "scheduled"),
   timestamps: true
 }
 ```
