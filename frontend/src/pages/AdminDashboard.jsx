@@ -819,9 +819,7 @@ const AdminDashboard = () => {
                 {/* Logo */}
                 <div className="h-16 flex items-center justify-between px-5 border-b border-slate-800">
                     <div className="flex items-center gap-2.5">
-                        <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-                            <LayoutDashboard className="w-4 h-4 text-white" />
-                        </div>
+                        <img src="/favicon.svg" alt="Health Track" className="w-7 h-7" />
                         <span className="text-base font-bold text-white tracking-tight">Health Track</span>
                     </div>
                     <button onClick={() => setSidebarOpen(false)} className="lg:hidden p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition">
