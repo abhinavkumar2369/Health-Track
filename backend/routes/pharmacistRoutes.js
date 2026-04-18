@@ -660,100 +660,413 @@ router.delete("/report/:reportId", async (req, res) => {
   }
 });
 
+// ─── PDF COLOUR PALETTE ──────────────────────────────────────────────────────
+const C = {
+  primary:   '#1d4ed8',   // blue-700
+  primaryDk: '#1e3a8a',   // blue-900
+  primaryLt: '#dbeafe',   // blue-100
+  teal:      '#0891b2',   // cyan-600
+  tealLt:    '#cffafe',   // cyan-100
+  green:     '#059669',   // emerald-600
+  greenLt:   '#d1fae5',   // emerald-100
+  red:       '#dc2626',   // red-600
+  redLt:     '#fee2e2',   // red-100
+  amber:     '#d97706',   // amber-600
+  amberLt:   '#fef3c7',   // amber-100
+  purple:    '#7c3aed',   // violet-700
+  purpleLt:  '#ede9fe',   // violet-100
+  dark:      '#0f172a',   // slate-900
+  mid:       '#475569',   // slate-600
+  muted:     '#94a3b8',   // slate-400
+  rowAlt:    '#f8fafc',   // slate-50
+  white:     '#ffffff',
+};
+
+// Thin horizontal rule
+function rule(doc, y, color = '#e2e8f0') {
+  doc.save().moveTo(50, y).lineTo(doc.page.width - 50, y)
+     .strokeColor(color).lineWidth(0.5).stroke().restore();
+}
+
+// Footer on every page
+function footer(doc, pageNum, total) {
+  const ph = doc.page.height;
+  rule(doc, ph - 38);
+  doc.save()
+     .fillColor(C.muted).fontSize(7).font('Helvetica')
+     .text('Health-Track Pharmacy Management System  ·  Confidential', 50, ph - 30, { width: 380 })
+     .text(`Page ${pageNum}${total ? ' of ' + total : ''}`, doc.page.width - 100, ph - 30, { width: 50, align: 'right' })
+     .restore();
+}
+
+// Coloured section heading bar
+function sectionBar(doc, label, y, color = C.primary) {
+  const W = doc.page.width - 100;
+  doc.rect(50, y, W, 26).fill(color);
+  // left accent
+  doc.rect(50, y, 5, 26).fill(C.primaryDk);
+  doc.fillColor(C.white).fontSize(11).font('Helvetica-Bold').text(label, 63, y + 8);
+  return y + 34;
+}
+
+// Small key-value pill
+function kvPill(doc, x, y, key, value, keyColor, valColor) {
+  doc.fillColor(keyColor).fontSize(8).font('Helvetica-Bold').text(key + ':', x, y);
+  doc.fillColor(valColor).font('Helvetica').text(' ' + value, { continued: false });
+}
+
+// Stat card
+function statCard(doc, x, y, w, h, value, label, color) {
+  // Shadow
+  doc.rect(x + 2, y + 2, w, h).fill('#e2e8f0');
+  // Card face
+  doc.rect(x, y, w, h).fill(C.white);
+  // Top colour strip
+  doc.rect(x, y, w, 5).fill(color);
+  // Border
+  doc.rect(x, y, w, h).stroke(color + '66');
+  // Value
+  doc.fillColor(color).fontSize(20).font('Helvetica-Bold')
+     .text(String(value), x, y + 14, { width: w, align: 'center' });
+  // Label
+  doc.fillColor(C.mid).fontSize(7.5).font('Helvetica')
+     .text(label, x + 2, y + 38, { width: w - 4, align: 'center' });
+}
+
 // Helper function to generate PDF report
 async function generatePDFReport(data, pharmacist, title, dateFrom, dateTo) {
   return new Promise((resolve, reject) => {
     try {
-      const doc = new PDFDocument({ margin: 50 });
+      const doc = new PDFDocument({ margin: 0, size: 'A4', autoFirstPage: true });
       const chunks = [];
+      let pageNum = 1;
 
       doc.on('data', chunk => chunks.push(chunk));
       doc.on('end', () => resolve(Buffer.concat(chunks)));
       doc.on('error', reject);
 
-      // Header
-      doc.fontSize(20).font('Helvetica-Bold').text('Health-Track Pharmacy', { align: 'center' });
-      doc.fontSize(16).font('Helvetica').text(title, { align: 'center' });
-      doc.moveDown();
-      
-      // Report info
-      doc.fontSize(10).font('Helvetica');
-      doc.text(`Pharmacist: ${pharmacist.name || pharmacist.email}`);
-      doc.text(`Generated: ${new Date().toLocaleString()}`);
-      if (dateFrom || dateTo) {
-        doc.text(`Period: ${dateFrom ? new Date(dateFrom).toLocaleDateString() : 'Start'} - ${dateTo ? new Date(dateTo).toLocaleDateString() : 'End'}`);
-      }
-      doc.moveDown();
+      const PW = doc.page.width;   // 595.28
+      const PH = doc.page.height;  // 841.89
+      const CW = PW - 100;         // content width
 
-      // Content based on report type
+      const medicines    = data.medicines    || [];
+      const transactions = data.transactions || [];
+      const totalStock   = medicines.reduce((s, m) => s + (m.quantity || 0), 0);
+      const lowStock     = medicines.filter(m => m.quantity > 0 && m.quantity < 50).length;
+      const outOfStock   = medicines.filter(m => m.quantity === 0).length;
+      const totalRevenue = transactions.filter(t => t.type === 'issue')
+                                       .reduce((s, t) => s + (t.totalAmount || 0), 0);
+      const issued  = transactions.filter(t => t.type === 'issue').length;
+      const added   = transactions.filter(t => t.type === 'add').length;
+      const removed = transactions.filter(t => t.type === 'remove').length;
+
+      // ══════════════════════════════════════════════════════════════════════════
+      // PAGE 1 — COVER
+      // ══════════════════════════════════════════════════════════════════════════
+
+      // Full-bleed top band
+      doc.rect(0, 0, PW, 220).fill(C.primary);
+      // Decorative circles (subtle)
+      doc.circle(PW - 60, 40, 90).fill(C.primaryDk);
+      doc.circle(PW - 20, 160, 50).fill('#1e40af');
+
+      // Brand
+      doc.fillColor(C.white).fontSize(32).font('Helvetica-Bold').text('Health-Track', 50, 55);
+      doc.fillColor(C.primaryLt).fontSize(12).font('Helvetica').text('Pharmacy Management System', 50, 96);
+
+      // Title
+      doc.rect(50, 128, CW, 2).fill('#60a5fa');
+      doc.fillColor(C.white).fontSize(17).font('Helvetica-Bold').text(title, 50, 138, { width: CW - 120 });
+
+      // Report meta strip below band
+      doc.rect(0, 220, PW, 52).fill('#f1f5f9');
+      rule(doc, 220, '#cbd5e1');
+      rule(doc, 272, '#cbd5e1');
+
+      const pharmName = pharmacist.name || pharmacist.email;
+      const genDate   = new Date().toLocaleString('en-US', { dateStyle: 'long', timeStyle: 'short' });
+      const period    = (dateFrom || dateTo)
+        ? `${dateFrom ? new Date(dateFrom).toLocaleDateString('en-GB') : 'All time'} – ${dateTo ? new Date(dateTo).toLocaleDateString('en-GB') : 'Present'}`
+        : 'All time';
+
+      doc.fillColor(C.mid).fontSize(8).font('Helvetica-Bold').text('PHARMACIST', 60, 232);
+      doc.fillColor(C.dark).font('Helvetica').text(pharmName, 60, 244);
+      doc.fillColor(C.mid).fontSize(8).font('Helvetica-Bold').text('GENERATED', 220, 232);
+      doc.fillColor(C.dark).font('Helvetica').text(genDate, 220, 244);
+      doc.fillColor(C.mid).fontSize(8).font('Helvetica-Bold').text('PERIOD', 430, 232);
+      doc.fillColor(C.dark).font('Helvetica').text(period, 430, 244);
+
+      // ── Stat cards (2 rows × 3) ─────────────────────────────────────────────
+      const cards = [
+        { value: medicines.length,              label: 'Total Medicines',   color: C.primary },
+        { value: totalStock,                    label: 'Units in Stock',    color: C.green   },
+        { value: lowStock,                      label: 'Low Stock Items',   color: C.amber   },
+        { value: outOfStock,                    label: 'Out of Stock',      color: C.red     },
+        { value: transactions.length,           label: 'Total Transactions',color: C.purple  },
+        { value: `₹${totalRevenue.toFixed(0)}`, label: 'Total Revenue',    color: C.teal    },
+      ];
+
+      const cW = 148, cH = 60, cGap = 9;
+      const row1Y = 290, row2Y = row1Y + cH + 12;
+      const startX = (PW - (3 * cW + 2 * cGap)) / 2;
+
+      cards.forEach((c, i) => {
+        const row = Math.floor(i / 3);
+        const col = i % 3;
+        statCard(doc, startX + col * (cW + cGap), row === 0 ? row1Y : row2Y, cW, cH, c.value, c.label, c.color);
+      });
+
+      // ── Stock health bar ────────────────────────────────────────────────────
+      const barY = row2Y + cH + 22;
+      doc.fillColor(C.mid).fontSize(8.5).font('Helvetica-Bold').text('STOCK HEALTH OVERVIEW', 50, barY);
+      const barH = 14, barW = CW, barTop = barY + 14;
+      const totalMeds = medicines.length || 1;
+      const okW  = Math.round((medicines.filter(m => m.quantity >= 50).length / totalMeds) * barW);
+      const lwW  = Math.round((lowStock / totalMeds) * barW);
+      const ooW  = barW - okW - lwW;
+      doc.rect(50,        barTop, okW,  barH).fill(C.green);
+      doc.rect(50 + okW,  barTop, lwW,  barH).fill(C.amber);
+      doc.rect(50 + okW + lwW, barTop, ooW, barH).fill(C.red);
+      rule(doc, barTop + barH + 1, '#94a3b8');
+      doc.fillColor(C.green).fontSize(7).font('Helvetica-Bold').text('■', 50, barTop + barH + 5);
+      doc.fillColor(C.mid).font('Helvetica').text(' Adequate', 60, barTop + barH + 5, { continued: true });
+      doc.fillColor(C.amber).font('Helvetica-Bold').text('   ■', { continued: true });
+      doc.fillColor(C.mid).font('Helvetica').text(' Low stock', { continued: true });
+      doc.fillColor(C.red).font('Helvetica-Bold').text('   ■', { continued: true });
+      doc.fillColor(C.mid).font('Helvetica').text(' Out of stock');
+
+      // ── Divider + disclaimer at bottom of cover ──────────────────────────
+      const disclaimerY = PH - 80;
+      rule(doc, disclaimerY, '#cbd5e1');
+      doc.rect(0, disclaimerY + 1, PW, PH - disclaimerY - 1).fill('#f8fafc');
+      doc.fillColor(C.muted).fontSize(7.5).font('Helvetica')
+         .text(
+           'This report is generated automatically by the Health-Track system. All data reflects the current state of the pharmacy inventory and transaction records.',
+           50, disclaimerY + 10, { width: CW, align: 'center' }
+         );
+
+      footer(doc, pageNum++);
+
+      // ══════════════════════════════════════════════════════════════════════════
+      // Helper – ensure enough space; if not, start a new page and reset y
+      // ══════════════════════════════════════════════════════════════════════════
+      const FOOTER_MARGIN = 60;
+      const safePageBreak = (y, needed) => {
+        if (y + needed > PH - FOOTER_MARGIN) {
+          footer(doc, pageNum++);
+          doc.addPage();
+          return 50;
+        }
+        return y;
+      };
+
+      // Shared y-position for cross-section continuation (summary type)
+      let continuationY = 50;
+
+      // ══════════════════════════════════════════════════════════════════════════
+      // INVENTORY SECTION
+      // ══════════════════════════════════════════════════════════════════════════
       if (data.type === 'inventory' || data.type === 'summary') {
-        doc.fontSize(14).font('Helvetica-Bold').text('Inventory Summary');
-        doc.moveDown(0.5);
-        
-        if (data.medicines && data.medicines.length > 0) {
-          doc.fontSize(10).font('Helvetica');
-          doc.text(`Total Items: ${data.medicines.length}`);
-          doc.text(`Total Stock: ${data.medicines.reduce((sum, m) => sum + m.quantity, 0)} units`);
-          doc.text(`Low Stock Items: ${data.medicines.filter(m => m.quantity < 50 && m.quantity > 0).length}`);
-          doc.text(`Out of Stock: ${data.medicines.filter(m => m.quantity === 0).length}`);
-          doc.moveDown();
+        doc.addPage();
+        let y = 50;
 
-          // Medicine table
-          doc.font('Helvetica-Bold');
-          doc.text('Name', 50, doc.y, { continued: true, width: 150 });
-          doc.text('Category', 200, doc.y, { continued: true, width: 100 });
-          doc.text('Qty', 300, doc.y, { continued: true, width: 50 });
-          doc.text('Price', 350, doc.y, { width: 80 });
-          doc.moveDown(0.5);
+        y = sectionBar(doc, `Inventory  ·  ${medicines.length} items`, y, C.primary);
+        y += 10;
 
-          doc.font('Helvetica');
-          data.medicines.forEach(med => {
-            if (doc.y > 700) {
-              doc.addPage();
+        if (medicines.length > 0) {
+          // Quick-stat mini row
+          const qStats = [
+            { label: 'Total items',  val: medicines.length,  color: C.primary },
+            { label: 'Total units',  val: totalStock,        color: C.green   },
+            { label: 'Low stock',    val: lowStock,          color: C.amber   },
+            { label: 'Out of stock', val: outOfStock,        color: C.red     },
+          ];
+          const qW = CW / qStats.length;
+          qStats.forEach((q, i) => {
+            doc.rect(50 + i * qW, y, qW - 3, 34).fill(q.color + '12');
+            doc.rect(50 + i * qW, y, 3, 34).fill(q.color);
+            doc.fillColor(q.color).fontSize(14).font('Helvetica-Bold')
+               .text(String(q.val), 58 + i * qW, y + 5, { width: qW - 10 });
+            doc.fillColor(C.mid).fontSize(7).font('Helvetica')
+               .text(q.label.toUpperCase(), 58 + i * qW, y + 22, { width: qW - 10 });
+          });
+          y += 46;
+
+          // Table
+          const cols = { name: 50, cat: 218, qty: 320, price: 388, expiry: 456 };
+          // Header
+          doc.rect(50, y, CW, 22).fill(C.primaryDk);
+          doc.fillColor(C.white).fontSize(8).font('Helvetica-Bold')
+             .text('Medicine Name',  cols.name  + 6, y + 7)
+             .text('Category',       cols.cat   + 6, y + 7)
+             .text('Qty',            cols.qty   + 6, y + 7)
+             .text('Price (₹)',      cols.price + 6, y + 7)
+             .text('Expiry',         cols.expiry+ 6, y + 7);
+          y += 22;
+
+          medicines.forEach((med, idx) => {
+            y = safePageBreak(y, 20);
+            if (y === 50) {
+              // Redraw header after page break
+              doc.rect(50, y, CW, 22).fill(C.primaryDk);
+              doc.fillColor(C.white).fontSize(8).font('Helvetica-Bold')
+                 .text('Medicine Name',  cols.name  + 6, y + 7)
+                 .text('Category',       cols.cat   + 6, y + 7)
+                 .text('Qty',            cols.qty   + 6, y + 7)
+                 .text('Price (₹)',      cols.price + 6, y + 7)
+                 .text('Expiry',         cols.expiry+ 6, y + 7);
+              y += 22;
             }
-            doc.text(med.name.substring(0, 25), 50, doc.y, { continued: true, width: 150 });
-            doc.text(med.category || 'N/A', 200, doc.y, { continued: true, width: 100 });
-            doc.text(String(med.quantity), 300, doc.y, { continued: true, width: 50 });
-            doc.text(`₹${med.price || 0}`, 350, doc.y, { width: 80 });
+
+            const rH = 18;
+            doc.rect(50, y, CW, rH).fill(idx % 2 === 0 ? C.rowAlt : C.white);
+            const sc = med.quantity === 0 ? C.red : med.quantity < 50 ? C.amber : C.green;
+            doc.rect(50, y, 4, rH).fill(sc);
+
+            doc.fillColor(C.dark).fontSize(8.5).font('Helvetica')
+               .text(med.name.substring(0, 28), cols.name + 7, y + 5, { width: 162 })
+               .text(med.category || '—',       cols.cat  + 6, y + 5, { width: 96  });
+            doc.fillColor(sc).font('Helvetica-Bold')
+               .text(String(med.quantity), cols.qty + 6, y + 5, { width: 60 });
+            doc.fillColor(C.dark).font('Helvetica')
+               .text(`₹${(med.price || 0).toLocaleString('en-IN')}`, cols.price + 6, y + 5, { width: 60 });
+            const expStr = med.expiryDate ? new Date(med.expiryDate).toLocaleDateString('en-GB') : '—';
+            const expColor = med.expiryDate && new Date(med.expiryDate) < new Date(Date.now() + 90 * 86400000) ? C.red : C.mid;
+            doc.fillColor(expColor).text(expStr, cols.expiry + 6, y + 5, { width: 80 });
+            y += rH;
+          });
+
+          // Legend
+          y += 10;
+          y = safePageBreak(y, 20);
+          doc.fillColor(C.mid).fontSize(7.5).font('Helvetica-Bold').text('LEGEND', 50, y);
+          y += 11;
+          [[C.green, 'Adequate (≥ 50 units)'], [C.amber, 'Low stock (1–49 units)'], [C.red, 'Out of stock (0 units)'], [C.red, 'Expiry within 90 days']].forEach(([c, l]) => {
+            doc.rect(50, y + 1, 7, 7).fill(c);
+            doc.fillColor(C.mid).fontSize(7.5).font('Helvetica').text(l, 62, y);
+            y += 12;
           });
         } else {
-          doc.text('No inventory data available.');
+          doc.rect(50, y, CW, 40).fill(C.rowAlt);
+          doc.fillColor(C.muted).fontSize(10).font('Helvetica')
+             .text('No inventory data available.', 50, y + 13, { width: CW, align: 'center' });
+          y += 50;
         }
-        doc.moveDown();
+
+        // If summary, check if transactions section fits below; otherwise new page
+        if (data.type === 'summary') {
+          const txnNeeded = 34 + 52 + 24 + Math.min(transactions.length, 25) * 17 + 30;
+          if (y + txnNeeded > PH - FOOTER_MARGIN) {
+            footer(doc, pageNum++);
+            doc.addPage();
+            continuationY = 50;
+          } else {
+            continuationY = y + 20;
+          }
+        } else {
+          footer(doc, pageNum++);
+        }
       }
 
+      // ══════════════════════════════════════════════════════════════════════════
+      // TRANSACTION SECTION
+      // ══════════════════════════════════════════════════════════════════════════
       if (data.type === 'transaction' || data.type === 'summary') {
-        doc.fontSize(14).font('Helvetica-Bold').text('Transaction History');
-        doc.moveDown(0.5);
-        
-        if (data.transactions && data.transactions.length > 0) {
-          doc.fontSize(10).font('Helvetica');
-          doc.text(`Total Transactions: ${data.transactions.length}`);
-          
-          const totalRevenue = data.transactions
-            .filter(t => t.type === 'issue')
-            .reduce((sum, t) => sum + (t.totalAmount || 0), 0);
-          doc.text(`Total Revenue: ₹${totalRevenue.toFixed(2)}`);
-          doc.moveDown();
-
-          // Recent transactions
-          doc.font('Helvetica-Bold').text('Recent Transactions:');
-          doc.moveDown(0.5);
-          
-          doc.font('Helvetica');
-          data.transactions.slice(0, 20).forEach(txn => {
-            if (doc.y > 700) {
-              doc.addPage();
-            }
-            doc.text(`${new Date(txn.createdAt).toLocaleDateString()} - ${txn.type.toUpperCase()} - ${txn.medicineName} - Qty: ${txn.quantity} - ₹${txn.totalAmount || 0}`);
-          });
-        } else {
-          doc.text('No transaction data available.');
+        // For transaction-only report, start fresh page
+        if (data.type === 'transaction') {
+          doc.addPage();
         }
-      }
+        let y = (data.type === 'transaction') ? 50 : continuationY;
 
-      // Footer
-      doc.fontSize(8).text('Generated by Health-Track System', 50, 750, { align: 'center' });
+        y = sectionBar(doc, `Transactions  ·  ${transactions.length} records`, y, C.teal);
+        y += 10;
+
+        if (transactions.length > 0) {
+          // 4-card summary row
+          const tCards = [
+            { label: 'Issued',   val: issued,                     color: C.green  },
+            { label: 'Added',    val: added,                      color: C.primary},
+            { label: 'Removed',  val: removed,                    color: C.red    },
+            { label: 'Revenue',  val: `₹${totalRevenue.toFixed(0)}`, color: C.teal},
+          ];
+          const tcW = CW / tCards.length;
+          tCards.forEach((tc, i) => {
+            doc.rect(50 + i * tcW, y, tcW - 4, 36).fill(tc.color + '12');
+            doc.rect(50 + i * tcW, y, tcW - 4, 4).fill(tc.color);
+            doc.fillColor(tc.color).fontSize(14).font('Helvetica-Bold')
+               .text(String(tc.val), 50 + i * tcW, y + 12, { width: tcW - 4, align: 'center' });
+            doc.fillColor(C.mid).fontSize(7).font('Helvetica')
+               .text(tc.label.toUpperCase(), 50 + i * tcW, y + 28, { width: tcW - 4, align: 'center' });
+          });
+          y += 48;
+
+          // Table
+          const tc = { date: 50, type: 140, med: 202, qty: 368, amt: 424, pat: 474 };
+          doc.rect(50, y, CW, 22).fill(C.primaryDk);
+          doc.fillColor(C.white).fontSize(8).font('Helvetica-Bold')
+             .text('Date',        tc.date + 5, y + 7)
+             .text('Type',        tc.type + 5, y + 7)
+             .text('Medicine',    tc.med  + 5, y + 7)
+             .text('Qty',         tc.qty  + 5, y + 7)
+             .text('Amount (₹)',  tc.amt  + 5, y + 7)
+             .text('Patient',     tc.pat  + 5, y + 7);
+          y += 22;
+
+          const TYPE_CLR = { issue: C.green, add: C.primary, remove: C.red, update: C.amber };
+
+          transactions.slice(0, 60).forEach((txn, idx) => {
+            y = safePageBreak(y, 20);
+            if (y === 50) {
+              // Redraw header after page break
+              doc.rect(50, y, CW, 22).fill(C.primaryDk);
+              doc.fillColor(C.white).fontSize(8).font('Helvetica-Bold')
+                 .text('Date',        tc.date + 5, y + 7)
+                 .text('Type',        tc.type + 5, y + 7)
+                 .text('Medicine',    tc.med  + 5, y + 7)
+                 .text('Qty',         tc.qty  + 5, y + 7)
+                 .text('Amount (₹)',  tc.amt  + 5, y + 7)
+                 .text('Patient',     tc.pat  + 5, y + 7);
+              y += 22;
+            }
+
+            const rH = 17;
+            doc.rect(50, y, CW, rH).fill(idx % 2 === 0 ? C.rowAlt : C.white);
+            const tColor = TYPE_CLR[txn.type] || C.mid;
+
+            doc.fillColor(C.mid).fontSize(8).font('Helvetica')
+               .text(new Date(txn.createdAt).toLocaleDateString('en-GB'), tc.date + 5, y + 5, { width: 85 });
+
+            // Type pill
+            doc.rect(tc.type + 4, y + 3, 46, 11).fill(tColor + '20');
+            doc.fillColor(tColor).fontSize(7).font('Helvetica-Bold')
+               .text(txn.type.toUpperCase(), tc.type + 4, y + 5, { width: 46, align: 'center' });
+
+            doc.fillColor(C.dark).font('Helvetica').fontSize(8)
+               .text((txn.medicineName || '—').substring(0, 22), tc.med + 5, y + 5, { width: 160 });
+            doc.fillColor(tColor).font('Helvetica-Bold')
+               .text(String(txn.quantity), tc.qty + 5, y + 5, { width: 50 });
+            doc.fillColor(C.dark).font('Helvetica')
+               .text(`₹${(txn.totalAmount || 0).toLocaleString('en-IN')}`, tc.amt + 5, y + 5, { width: 46 });
+            doc.fillColor(C.mid)
+               .text((txn.patientName || '—').substring(0, 14), tc.pat + 5, y + 5, { width: 80 });
+
+            y += rH;
+          });
+
+          if (transactions.length > 60) {
+            y += 8;
+            y = safePageBreak(y, 15);
+            doc.fillColor(C.muted).fontSize(8).font('Helvetica')
+               .text(`+ ${transactions.length - 60} more transactions not shown in this report.`, 50, y, { width: CW, align: 'center' });
+          }
+        } else {
+          doc.rect(50, y, CW, 40).fill(C.rowAlt);
+          doc.fillColor(C.muted).fontSize(10).font('Helvetica')
+             .text('No transaction data available.', 50, y + 13, { width: CW, align: 'center' });
+        }
+
+        footer(doc, pageNum++);
+      }
 
       doc.end();
     } catch (error) {

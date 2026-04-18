@@ -2,7 +2,34 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { doctorAPI } from '../services/api';
 import authService from '../services/authService';
-import { LayoutDashboard, Users, FileText, Pill, BarChart3, Settings, LogOut, Plus, Menu, X, Calendar, Clock, Download, Trash2, Eye, User, Grid3X3, List } from 'lucide-react';
+import { LayoutDashboard, Users, FileText, Pill, BarChart3, Settings, LogOut, Plus, Menu, X, Calendar, Clock, Download, Trash2, Eye, User, Grid3X3, List, ChevronRight, CheckCircle } from 'lucide-react';
+
+const inputCls = 'w-full px-3 py-2.5 text-sm border border-slate-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition';
+const labelCls = 'block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5';
+
+const Modal = ({ title, onClose, children }) => (
+    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-white border-b border-slate-100 px-6 py-4 flex items-center justify-between rounded-t-2xl">
+                <h2 className="text-base font-semibold text-slate-800">{title}</h2>
+                <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition"><X className="w-4 h-4" /></button>
+            </div>
+            {children}
+        </div>
+    </div>
+);
+
+const StatCard = ({ label, value, icon: Icon, color }) => {
+    const colors = { blue: 'bg-blue-50 text-blue-600', emerald: 'bg-emerald-50 text-emerald-600', purple: 'bg-purple-50 text-purple-600', amber: 'bg-amber-50 text-amber-600', rose: 'bg-rose-50 text-rose-600' };
+    return (
+        <div className="bg-white rounded-xl border border-slate-200 p-5">
+            <div className="flex items-center justify-between">
+                <div><p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">{label}</p><p className="text-2xl font-bold text-slate-800 mt-1">{value}</p></div>
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${colors[color] || colors.blue}`}><Icon className="w-5 h-5" /></div>
+            </div>
+        </div>
+    );
+};
 
 const initialFormState = {
     fullname: '',
@@ -937,197 +964,153 @@ const DoctorDashboard = () => {
         { id: 'settings', icon: Settings, label: 'Settings' }
     ];
 
+    const tabTitle = { dashboard: 'Dashboard', patients: 'Patients', appointments: 'Appointments', prescriptions: 'Prescriptions', reports: 'Reports', settings: 'Settings' };
+
     if (!user) {
         return (
-            <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+            <div className="min-h-screen bg-slate-50 flex items-center justify-center">
                 <div className="text-center">
-                    <div className="w-12 h-12 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-                    <p className="text-gray-600">Loading dashboard...</p>
+                    <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                    <p className="text-slate-500">Loading dashboard...</p>
                 </div>
             </div>
         );
     }
 
     return (
-        <div className="flex h-screen bg-gray-50">
+        <div className="flex h-screen bg-slate-50 font-sans">
             {/* Mobile Overlay */}
             {sidebarOpen && (
-                <div 
-                    className="fixed inset-0 bg-black/50 z-40 lg:hidden"
-                    onClick={() => setSidebarOpen(false)}
-                />
+                <div className="fixed inset-0 bg-black/50 z-40 lg:hidden" onClick={() => setSidebarOpen(false)} />
             )}
 
             {/* Sidebar */}
-            <div className={`w-64 bg-white border-r border-gray-200 flex flex-col fixed inset-y-0 left-0 z-50 transform transition-transform duration-300 lg:translate-x-0 lg:static ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+            <aside className={`w-64 bg-slate-900 flex flex-col fixed inset-y-0 left-0 z-50 transform transition-transform duration-300 lg:translate-x-0 lg:static ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
                 {/* Logo */}
-                <div className="h-16 flex items-center justify-between px-4 sm:px-6 border-b border-gray-200">
-                    <div className="flex items-center space-x-3">
-                        <img src="/favicon.svg" alt="Health Track" className="w-8 h-8" />
-                        <span className="text-lg font-bold text-gray-900">Health Track</span>
+                <div className="h-16 flex items-center justify-between px-5 border-b border-slate-800">
+                    <div className="flex items-center gap-2.5">
+                        <img src="/favicon.svg" alt="Health Track" className="w-7 h-7" />
+                        <span className="text-base font-bold text-white">Health Track</span>
                     </div>
-                    <button 
-                        onClick={() => setSidebarOpen(false)}
-                        className="lg:hidden p-2 rounded-lg hover:bg-gray-100"
-                    >
-                        <X className="w-5 h-5 text-gray-500" />
+                    <button onClick={() => setSidebarOpen(false)} className="lg:hidden p-1.5 rounded-lg hover:bg-slate-800">
+                        <X className="w-4 h-4 text-slate-400" />
                     </button>
                 </div>
 
+                <div className="px-4 pt-4 pb-1">
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Doctor Portal</p>
+                </div>
+
                 {/* Navigation */}
-                <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
+                <nav className="flex-1 px-3 py-2 space-y-0.5 overflow-y-auto">
                     {sidebarItems.map((item) => {
                         const IconComponent = item.icon;
+                        const isActive = activeSection === item.id;
                         return (
                             <button
                                 key={item.id}
-                                onClick={() => {
-                                    setActiveSection(item.id);
-                                    setSidebarOpen(false);
-                                }}
-                                className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-sm font-medium transition-all ${
-                                    activeSection === item.id
-                                        ? 'bg-emerald-50 text-emerald-600'
-                                        : 'text-gray-700 hover:bg-gray-50'
+                                onClick={() => { setActiveSection(item.id); setSidebarOpen(false); }}
+                                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
+                                    isActive ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-400 hover:text-white hover:bg-slate-800'
                                 }`}
                             >
-                                <IconComponent className="w-5 h-5" />
-                                <span>{item.label}</span>
+                                <IconComponent className="w-4 h-4 flex-shrink-0" />
+                                <span className="flex-1 text-left">{item.label}</span>
+                                {isActive && <ChevronRight className="w-3.5 h-3.5 opacity-70" />}
                             </button>
                         );
                     })}
                 </nav>
 
-                {/* User Profile */}
-                <div className="p-4 border-t border-gray-100">
-                    <button
-                        onClick={handleLogout}
-                        className="w-full flex items-center justify-center space-x-2 px-4 py-2 text-red-600 rounded-lg hover:text-red-700 transition-colors text-sm font-medium"
-                    >
-                        <LogOut className="w-4 h-4" />
-                        <span>Logout</span>
+                {/* User card */}
+                <div className="border-t border-slate-800 p-4">
+                    <div className="flex items-center gap-3 mb-3">
+                        <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
+                            {user?.name?.charAt(0)?.toUpperCase() || 'D'}
+                        </div>
+                        <div className="min-w-0">
+                            <p className="text-xs font-semibold text-white truncate">{user?.name || 'Doctor'}</p>
+                            <p className="text-[10px] text-slate-400 truncate">{user?.email || ''}</p>
+                        </div>
+                    </div>
+                    <button onClick={handleLogout} className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium text-red-400 hover:text-red-300 hover:bg-slate-800 transition">
+                        <LogOut className="w-3.5 h-3.5" />
+                        <span>Sign out</span>
                     </button>
                 </div>
-            </div>
+            </aside>
 
             {/* Main Content */}
-            <div className="flex-1 flex flex-col overflow-hidden lg:ml-0">
+            <div className="flex-1 flex flex-col overflow-hidden">
                 {/* Header */}
-                <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-4 sm:px-8">
-                    <button 
-                        onClick={() => setSidebarOpen(true)}
-                        className="lg:hidden p-2 rounded-lg hover:bg-gray-100"
-                    >
-                        <Menu className="w-6 h-6 text-gray-600" />
-                    </button>
-                    <div className="text-sm text-gray-500 ml-auto">
-                        <span className="hidden sm:inline">{new Date().toLocaleDateString('en-US', { 
-                            weekday: 'long', 
-                            year: 'numeric', 
-                            month: 'long', 
-                            day: 'numeric' 
-                        })}</span>
-                        <span className="sm:hidden">{new Date().toLocaleDateString('en-US', { 
-                            month: 'short', 
-                            day: 'numeric' 
-                        })}</span>
+                <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-5 sm:px-8 flex-shrink-0">
+                    <div className="flex items-center gap-3">
+                        <button onClick={() => setSidebarOpen(true)} className="lg:hidden p-2 rounded-lg hover:bg-slate-100">
+                            <Menu className="w-5 h-5 text-slate-600" />
+                        </button>
+                        <div>
+                            <h1 className="text-base font-semibold text-slate-800">{tabTitle[activeSection]}</h1>
+                            <p className="text-[11px] text-slate-400 hidden sm:block">{new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                        </div>
+                    </div>
+                    <div className="flex items-center gap-2.5">
+                        <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-full pl-1 pr-3 py-1">
+                            <div className="w-6 h-6 rounded-full bg-blue-600 flex items-center justify-center text-white text-[10px] font-bold">{user?.name?.charAt(0)?.toUpperCase() || 'D'}</div>
+                            <span className="text-xs font-medium text-slate-700 hidden sm:block">{user?.name || 'Doctor'}</span>
+                        </div>
                     </div>
                 </header>
 
-                {/* Content Area */}
-                <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
-                    {/* Success/Error Messages */}
+                {/* Toasts */}
+                <div className="fixed top-5 right-5 z-[100] space-y-2 pointer-events-none">
                     {successMessage && (
-                        <div className="mb-4 bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg">
-                            {successMessage}
+                        <div className="pointer-events-auto flex items-center gap-3 bg-white border border-emerald-200 text-emerald-700 px-4 py-3 rounded-xl shadow-xl text-sm font-medium">
+                            <CheckCircle className="w-4 h-4 flex-shrink-0" />{successMessage}
                         </div>
                     )}
                     {error && (
-                        <div className="mb-4 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
-                            {error}
+                        <div className="pointer-events-auto flex items-center gap-3 bg-white border border-red-200 text-red-600 px-4 py-3 rounded-xl shadow-xl text-sm font-medium">
+                            <X className="w-4 h-4 flex-shrink-0" />{error}
                         </div>
                     )}
+                </div>
+                {/* Content */}
+                <main className="flex-1 overflow-y-auto p-5 sm:p-8">
+                <div className="max-w-7xl mx-auto space-y-6">
 
                     {activeSection === 'dashboard' && (
-                        <div className="space-y-4 sm:space-y-6">
+                        <div className="space-y-6">
                             {/* Stats Cards */}
-                            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-                                <div className="bg-white rounded-xl border border-gray-200 p-4 sm:p-5">
-                                    <div className="flex items-center justify-between">
-                                        <div>
-                                            <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Total Patients</p>
-                                            <p className="text-2xl sm:text-3xl font-semibold text-gray-900 mt-2">{patients.length}</p>
-                                        </div>
-                                        <div className="w-12 h-12 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-lg flex items-center justify-center">
-                                            <Users className="w-6 h-6 text-white" />
-                                        </div>
-                                    </div>
-                                </div>
-                                <div className="bg-white rounded-xl border border-gray-200 p-4 sm:p-5">
-                                    <div className="flex items-center justify-between">
-                                        <div>
-                                            <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Appointments</p>
-                                            <p className="text-2xl sm:text-3xl font-semibold text-gray-900 mt-2">{appointments.length}</p>
-                                        </div>
-                                        <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
-                                            <Calendar className="w-6 h-6 text-white" />
-                                        </div>
-                                    </div>
-                                </div>
-                                <div className="bg-white rounded-xl border border-gray-200 p-4 sm:p-5">
-                                    <div className="flex items-center justify-between">
-                                        <div>
-                                            <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Prescriptions</p>
-                                            <p className="text-2xl sm:text-3xl font-semibold text-gray-900 mt-2">{prescriptionHistory.length}</p>
-                                        </div>
-                                        <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg flex items-center justify-center">
-                                            <Pill className="w-6 h-6 text-white" />
-                                        </div>
-                                    </div>
-                                </div>
-                                <div className="bg-white rounded-xl border border-gray-200 p-4 sm:p-5">
-                                    <div className="flex items-center justify-between">
-                                        <div>
-                                            <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Pending</p>
-                                            <p className="text-2xl sm:text-3xl font-semibold text-amber-600 mt-2">{appointments.filter(a => a.status === 'pending' || a.status === 'scheduled').length}</p>
-                                        </div>
-                                        <div className="w-12 h-12 bg-gradient-to-br from-amber-500 to-amber-600 rounded-lg flex items-center justify-center">
-                                            <Clock className="w-6 h-6 text-white" />
-                                        </div>
-                                    </div>
-                                </div>
+                            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                                <StatCard label="Total Patients" value={patients.length} icon={Users} color="blue" />
+                                <StatCard label="Appointments" value={appointments.length} icon={Calendar} color="emerald" />
+                                <StatCard label="Prescriptions" value={appointments.filter(a => a.prescriptionId).length} icon={Pill} color="purple" />
+                                <StatCard label="Reports" value={reports.length} icon={FileText} color="amber" />
                             </div>
 
                             {/* Two Column Layout */}
-                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                                 {/* Recent Patients */}
-                                <div className="bg-white rounded-xl border border-gray-200 p-5">
+                                <div className="bg-white rounded-xl border border-slate-200 p-5">
                                     <div className="flex items-center justify-between mb-4">
-                                        <h3 className="text-lg font-semibold text-gray-900">Recent Patients</h3>
-                                        <button 
-                                            onClick={() => setActiveSection('patients')}
-                                            className="text-sm text-emerald-600 hover:text-emerald-700 font-medium"
-                                        >
-                                            View All
-                                        </button>
+                                        <h3 className="text-sm font-semibold text-slate-800">Recent Patients</h3>
+                                        <button onClick={() => setActiveSection('patients')} className="text-xs text-blue-600 hover:text-blue-700 font-medium">View All</button>
                                     </div>
                                     {patients.length === 0 ? (
                                         <div className="text-center py-8">
-                                            <Users className="w-10 h-10 text-gray-300 mx-auto mb-3" />
-                                            <p className="text-gray-500 text-sm">No patients yet</p>
+                                            <Users className="w-10 h-10 text-slate-200 mx-auto mb-3" />
+                                            <p className="text-slate-400 text-sm">No patients yet</p>
                                         </div>
                                     ) : (
-                                        <div className="space-y-3">
+                                        <div className="space-y-2">
                                             {patients.slice(0, 5).map((patient) => (
-                                                <div key={patient._id} className="flex items-center space-x-3 p-2 rounded-lg hover:bg-gray-50">
-                                                    <div className="w-10 h-10 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-full flex items-center justify-center">
-                                                        <span className="text-sm font-medium text-white">
-                                                            {(patient.name || patient.fullname)?.charAt(0).toUpperCase() || 'P'}
-                                                        </span>
+                                                <div key={patient._id} className="flex items-center gap-3 p-2 rounded-lg hover:bg-slate-50">
+                                                    <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center flex-shrink-0">
+                                                        <span className="text-xs font-bold text-white">{(patient.name || patient.fullname)?.charAt(0).toUpperCase() || 'P'}</span>
                                                     </div>
                                                     <div className="flex-1 min-w-0">
-                                                        <p className="text-sm font-medium text-gray-900 truncate">{patient.name || patient.fullname || 'Unknown'}</p>
-                                                        <p className="text-xs text-gray-500 truncate">{patient.email}</p>
+                                                        <p className="text-sm font-medium text-slate-800 truncate">{patient.name || patient.fullname || 'Unknown'}</p>
+                                                        <p className="text-xs text-slate-400 truncate">{patient.email}</p>
                                                     </div>
                                                 </div>
                                             ))}
@@ -1864,19 +1847,13 @@ const DoctorDashboard = () => {
                             </div>
                         </div>
                     )}
+                </div>
                 </main>
             </div>
 
             {/* Add Patient Modal */}
             {showModal && (
-                <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-                    <div className="bg-white rounded-xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
-                        <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
-                            <h3 className="text-lg font-semibold text-gray-900">Add New Patient</h3>
-                            <button onClick={closeModal} className="text-gray-400 hover:text-gray-600">
-                                <X className="w-6 h-6" />
-                            </button>
-                        </div>
+                <Modal title="Add New Patient" onClose={closeModal}>
                         
                         {successMessage && (
                             <div className="mx-6 mt-4 bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg">
@@ -1972,20 +1949,12 @@ const DoctorDashboard = () => {
                                 </button>
                             </div>
                         </form>
-                    </div>
-                </div>
+                </Modal>
             )}
 
             {/* Generate Report Modal */}
             {showReportModal && (
-                <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-                    <div className="bg-white rounded-xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
-                        <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
-                            <h3 className="text-lg font-semibold text-gray-900">Generate Report</h3>
-                            <button onClick={() => setShowReportModal(false)} className="text-gray-400 hover:text-gray-600">
-                                <X className="w-6 h-6" />
-                            </button>
-                        </div>
+                <Modal title="Generate Report" onClose={() => setShowReportModal(false)}>
                         <form onSubmit={handleGenerateReport} className="p-6 space-y-4">
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">Report Type *</label>
@@ -2062,11 +2031,8 @@ const DoctorDashboard = () => {
                                 </button>
                             </div>
                         </form>
-                    </div>
-                </div>
+                </Modal>
             )}
-
-            {/* Patient List Modal */}
             {showPatientListModal && (
                 <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center p-4 z-50">
                     <div className="bg-white rounded-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">

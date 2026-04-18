@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { adminAPI } from '../services/api';
 import authService from '../services/authService';
-import { LayoutDashboard, Stethoscope, Users, Pill, BarChart3, Settings, LogOut, User, Lock, Plus, Menu, X, FileText, Download, Trash2, Network, AlertCircle, Search, Phone, Mail, Calendar, Activity } from 'lucide-react';
+import { LayoutDashboard, Stethoscope, Users, Pill, BarChart3, Settings, LogOut, User, Lock, Plus, Menu, X, FileText, Download, Trash2, Network, AlertCircle, Search, Phone, Mail, Calendar, Activity, ChevronRight, CheckCircle } from 'lucide-react';
 
 const initialFormState = {
     email: '',
@@ -72,9 +72,9 @@ const DASHBOARD_DUMMY_DATA = {
 };
 
 const formatDisplayDate = (isoString) => {
-    if (!isoString) return '—';
+    if (!isoString) return 'â€”';
     const parsed = new Date(isoString);
-    return Number.isNaN(parsed.getTime()) ? '—' : parsed.toLocaleDateString();
+    return Number.isNaN(parsed.getTime()) ? 'â€”' : parsed.toLocaleDateString();
 };
 
 const formatRoleLabel = (role = '') => {
@@ -90,6 +90,48 @@ const splitFullName = (name = '') => {
         firstName: parts[0] || '',
         lastName: parts.slice(1).join(' '),
     };
+};
+
+/* â”€â”€â”€ design helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+const inputCls = 'w-full px-3 py-2.5 text-sm border border-slate-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition';
+const labelCls = 'block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5';
+
+const Modal = ({ title, onClose, children, size = 'md' }) => (
+    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+        <div className={`bg-white rounded-2xl shadow-2xl w-full max-h-[90vh] overflow-y-auto ${size === 'lg' ? 'max-w-2xl' : 'max-w-lg'}`}>
+            <div className="sticky top-0 bg-white border-b border-slate-100 px-6 py-4 flex items-center justify-between rounded-t-2xl z-10">
+                <h3 className="text-base font-semibold text-slate-900">{title}</h3>
+                <button onClick={onClose} className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition">
+                    <X className="w-4 h-4" />
+                </button>
+            </div>
+            {children}
+        </div>
+    </div>
+);
+
+const StatCard = ({ label, value, sub, icon: Icon, color }) => {
+    const colors = {
+        blue:   { bg: 'bg-blue-50',   icon: 'bg-blue-100 text-blue-600',    val: 'text-blue-700'    },
+        green:  { bg: 'bg-emerald-50', icon: 'bg-emerald-100 text-emerald-600', val: 'text-emerald-700' },
+        amber:  { bg: 'bg-amber-50',  icon: 'bg-amber-100 text-amber-600',   val: 'text-amber-700'   },
+        red:    { bg: 'bg-red-50',    icon: 'bg-red-100 text-red-600',       val: 'text-red-700'     },
+        purple: { bg: 'bg-violet-50', icon: 'bg-violet-100 text-violet-600', val: 'text-violet-700'  },
+        teal:   { bg: 'bg-teal-50',   icon: 'bg-teal-100 text-teal-600',    val: 'text-teal-700'    },
+    };
+    const c = colors[color] || colors.blue;
+    return (
+        <div className={`${c.bg} rounded-xl p-4 flex items-start gap-3`}>
+            <div className={`${c.icon} p-2.5 rounded-xl shrink-0`}>
+                <Icon className="w-5 h-5" />
+            </div>
+            <div className="min-w-0">
+                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide truncate">{label}</p>
+                <p className={`text-2xl font-bold ${c.val} leading-tight mt-0.5`}>{value}</p>
+                {sub && <p className="text-xs text-slate-400 mt-0.5">{sub}</p>}
+            </div>
+        </div>
+    );
 };
 
 const AdminDashboard = () => {
@@ -759,112 +801,148 @@ const AdminDashboard = () => {
         { id: 'settings', icon: Settings, label: 'Settings' }
     ];
 
+    const tabTitle = {
+        dashboard: 'Dashboard', doctors: 'Doctors', pharmacists: 'Pharmacists',
+        reports: 'Reports', emergency: 'Emergency Access',
+        interoperability: 'API Access', settings: 'Settings',
+    };
+
     return (
-        <div className="flex h-screen bg-gray-50">
+        <div className="flex h-screen bg-slate-50 font-sans">
             {/* Mobile Overlay */}
             {sidebarOpen && (
-                <div 
-                    className="fixed inset-0 bg-black/50 z-40 lg:hidden"
-                    onClick={() => setSidebarOpen(false)}
-                />
+                <div className="fixed inset-0 bg-black/60 z-40 lg:hidden" onClick={() => setSidebarOpen(false)} />
             )}
 
-            {/* Sidebar */}
-            <div className={`w-64 bg-white border-r border-gray-200 flex flex-col fixed inset-y-0 left-0 z-50 transform transition-transform duration-300 lg:translate-x-0 lg:static ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+            {/* â”€â”€ Sidebar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+            <aside className={`w-64 bg-slate-900 flex flex-col fixed inset-y-0 left-0 z-50 transform transition-transform duration-300 lg:translate-x-0 lg:static ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
                 {/* Logo */}
-                <div className="h-16 flex items-center justify-between px-4 sm:px-6 border-b border-gray-200">
-                    <div className="flex items-center space-x-3">
-                        <img src="/favicon.svg" alt="Health Track" className="w-8 h-8" />
-                        <span className="text-lg font-bold text-gray-900">Health Track</span>
+                <div className="h-16 flex items-center justify-between px-5 border-b border-slate-800">
+                    <div className="flex items-center gap-2.5">
+                        <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+                            <LayoutDashboard className="w-4 h-4 text-white" />
+                        </div>
+                        <span className="text-base font-bold text-white tracking-tight">Health Track</span>
                     </div>
-                    <button 
-                        onClick={() => setSidebarOpen(false)}
-                        className="lg:hidden p-2 rounded-lg hover:bg-gray-100"
-                    >
-                        <X className="w-5 h-5 text-gray-500" />
+                    <button onClick={() => setSidebarOpen(false)} className="lg:hidden p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition">
+                        <X className="w-4 h-4" />
                     </button>
                 </div>
 
+                {/* Role badge */}
+                <div className="px-5 pt-5 pb-2">
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Admin Portal</span>
+                </div>
+
                 {/* Navigation */}
-                <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
-                    {sidebarItems.map((item) => {
-                        const IconComponent = item.icon;
+                <nav className="flex-1 px-3 pb-4 space-y-0.5 overflow-y-auto">
+                    {sidebarItems.map(({ id, icon: Icon, label }) => {
+                        const active = activeSection === id;
                         return (
                             <button
-                                key={item.id}
-                                onClick={() => {
-                                    setActiveSection(item.id);
-                                    setSidebarOpen(false);
-                                }}
-                                className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-sm font-medium transition-all ${
-                                    activeSection === item.id
-                                        ? 'bg-blue-50 text-blue-600'
-                                        : 'text-gray-700 hover:bg-gray-50'
+                                key={id}
+                                onClick={() => { setActiveSection(id); setSidebarOpen(false); }}
+                                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
+                                    active ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-400 hover:text-white hover:bg-slate-800'
                                 }`}
                             >
-                                <IconComponent className="w-5 h-5" />
-                                <span>{item.label}</span>
+                                <Icon className="w-4 h-4 shrink-0" />
+                                <span>{label}</span>
+                                {active && <ChevronRight className="w-3.5 h-3.5 ml-auto opacity-70" />}
                             </button>
                         );
                     })}
                 </nav>
 
-                {/* User Profile */}
-                <div className="p-4 border-t border-gray-100">
+                {/* User card at bottom */}
+                <div className="p-3 border-t border-slate-800">
+                    <div className="flex items-center gap-3 px-2 py-2 rounded-lg mb-1">
+                        <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0">
+                            {user?.fullname?.charAt(0)?.toUpperCase() || user?.fullName?.charAt(0)?.toUpperCase() || 'A'}
+                        </div>
+                        <div className="min-w-0">
+                            <p className="text-sm font-medium text-white truncate">{user?.fullname || user?.fullName || 'Admin'}</p>
+                            <p className="text-xs text-slate-400 truncate">{user?.email || ''}</p>
+                        </div>
+                    </div>
                     <button
                         onClick={handleLogout}
-                        className="w-full flex items-center justify-center space-x-2 px-4 py-2 text-red-600 rounded-lg hover:text-red-700 transition-colors text-sm font-medium"
+                        className="w-full flex items-center gap-2 px-3 py-2 text-slate-400 hover:text-red-400 hover:bg-slate-800 rounded-lg transition-all text-sm font-medium"
                     >
                         <LogOut className="w-4 h-4" />
-                        <span>Logout</span>
+                        <span>Sign out</span>
                     </button>
                 </div>
-            </div>
+            </aside>
 
-            {/* Main Content */}
-            <div className="flex-1 flex flex-col overflow-hidden lg:ml-0">
+            {/* â”€â”€ Main Content â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+            <div className="flex-1 flex flex-col overflow-hidden">
                 {/* Header */}
-                <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-4 sm:px-8">
-                    <button 
-                        onClick={() => setSidebarOpen(true)}
-                        className="lg:hidden p-2 rounded-lg hover:bg-gray-100"
-                    >
-                        <Menu className="w-6 h-6 text-gray-600" />
-                    </button>
-                    <div className="text-sm text-gray-500 ml-auto">
-                        <span className="hidden sm:inline">{new Date().toLocaleDateString('en-US', { 
-                            weekday: 'long', 
-                            year: 'numeric', 
-                            month: 'long', 
-                            day: 'numeric' 
-                        })}</span>
-                        <span className="sm:hidden">{new Date().toLocaleDateString('en-US', { 
-                            month: 'short', 
-                            day: 'numeric' 
-                        })}</span>
+                <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-5 sm:px-8 shrink-0">
+                    <div className="flex items-center gap-3">
+                        <button onClick={() => setSidebarOpen(true)} className="lg:hidden p-2 rounded-lg text-slate-500 hover:bg-slate-100 transition">
+                            <Menu className="w-5 h-5" />
+                        </button>
+                        <div>
+                            <h1 className="text-base font-bold text-slate-900 leading-tight">{tabTitle[activeSection] || 'Dashboard'}</h1>
+                            <p className="text-xs text-slate-400 hidden sm:block">{new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}</p>
+                        </div>
+                    </div>
+                    <div className="hidden sm:flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5">
+                        <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center text-xs font-bold text-blue-600">
+                            {user?.fullname?.charAt(0)?.toUpperCase() || 'A'}
+                        </div>
+                        <span className="text-sm font-medium text-slate-700 max-w-[120px] truncate">{user?.fullname || user?.fullName || 'Admin'}</span>
                     </div>
                 </header>
 
-                {/* Content Area */}
-                <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-5">
+                {/* Toasts */}
+                {(successMessage || error) && (
+                    <div className="fixed top-5 right-5 z-[100] space-y-2">
+                        {successMessage && (
+                            <div className="flex items-center gap-2.5 bg-emerald-600 text-white px-4 py-3 rounded-xl shadow-xl text-sm font-medium max-w-xs">
+                                <CheckCircle className="w-4 h-4 shrink-0" />
+                                {successMessage}
+                            </div>
+                        )}
+                        {error && (
+                            <div className="flex items-center gap-2.5 bg-red-600 text-white px-4 py-3 rounded-xl shadow-xl text-sm font-medium max-w-xs">
+                                <AlertCircle className="w-4 h-4 shrink-0" />
+                                {error}
+                            </div>
+                        )}
+                    </div>
+                )}
+
+                {/* Content */}
+                <main className="flex-1 overflow-y-auto p-5 sm:p-8">
+                <div className="max-w-7xl mx-auto space-y-6">
+
+                    {/* â”€â”€ DASHBOARD â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
                     {activeSection === 'dashboard' && (
-                        <div className="space-y-4">
-                            {/* User Statistics & Pharmacy Inventory */}
-                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                        <div className="space-y-6">
+                            {/* Stat cards */}
+                            <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
+                                <StatCard label="Doctors"     value={stats.totalDoctors}     icon={Stethoscope}    color="blue"   sub="Active staff" />
+                                <StatCard label="Pharmacists" value={stats.totalPharmacists} icon={Pill}           color="green"  sub="Active staff" />
+                                <StatCard label="Patients"    value={stats.totalPatients}    icon={Users}          color="purple" sub="Registered"   />
+                                <StatCard label="Revenue"     value={`â‚¹${(stats.totalRevenue||0).toLocaleString()}`} icon={Activity} color="teal" sub="Total earnings" />
+                            </div>
+
+                            {/* Charts row */}
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                                 {/* User Statistics - Donut Chart */}
-                                <div className="bg-white rounded-2xl border border-gray-200">
-                                    <div className="px-4 py-4 border-b border-gray-100">
-                                        <h3 className="text-base font-semibold text-gray-900">User Statistics</h3>
+                                <div className="bg-white rounded-xl border border-slate-200">
+                                    <div className="px-5 py-4 border-b border-slate-100">
+                                        <h3 className="text-sm font-semibold text-slate-900">User Statistics</h3>
                                     </div>
-                                    <div className="px-4 py-4">
+                                    <div className="px-5 py-4">
                                     <div className="flex flex-col gap-3 lg:flex-row-reverse lg:items-center lg:justify-around lg:gap-0">
-                                    {/* Donut Chart */}
                                     <div className="flex items-center justify-center lg:flex-shrink-0 lg:w-48 lg:justify-end">
                                         <div className="relative w-44 h-44">
                                             <svg viewBox="0 0 200 200" className="transform -rotate-90">
                                                 {(() => {
                                                     const total = stats.totalDoctors + stats.totalPharmacists + stats.totalPatients;
-                                                    
                                                     if (total === 0) {
                                                         const radius = 80;
                                                         const circumference = 2 * Math.PI * radius;
@@ -876,16 +954,12 @@ const AdminDashboard = () => {
                                                             </>
                                                         );
                                                     }
-                                                    
                                                     const doctorsPercent = (stats.totalDoctors / total) * 100;
                                                     const pharmacistsPercent = (stats.totalPharmacists / total) * 100;
                                                     const patientsPercent = (stats.totalPatients / total) * 100;
-                                                    
                                                     const radius = 80;
                                                     const circumference = 2 * Math.PI * radius;
-                                                    
                                                     let currentOffset = 0;
-                                                    
                                                     return (
                                                         <>
                                                             <circle cx="100" cy="100" r={radius} fill="none" stroke="#ef4444" strokeWidth="36" strokeDasharray={`${(doctorsPercent / 100) * circumference} ${circumference}`} strokeDashoffset={-currentOffset} className="transition-all duration-500" />
@@ -1210,8 +1284,8 @@ const AdminDashboard = () => {
                                                 <div key={doctor.id} className="p-4 space-y-2">
                                                     <div className="flex justify-between items-start">
                                                         <div className="min-w-0 flex-1">
-                                                            <p className="font-medium text-gray-900 text-sm truncate">{doctor.name || '—'}</p>
-                                                            <p className="text-xs text-gray-500 truncate">{doctor.email || '—'}</p>
+                                                            <p className="font-medium text-gray-900 text-sm truncate">{doctor.name || 'â€”'}</p>
+                                                            <p className="text-xs text-gray-500 truncate">{doctor.email || 'â€”'}</p>
                                                         </div>
                                                         <span className="text-xs text-blue-700 font-medium ml-2">
                                                             {doctor.specialization || 'General'}
@@ -1267,13 +1341,13 @@ const AdminDashboard = () => {
                                                                         <div className="h-8 w-8 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center text-xs font-semibold">
                                                                             {(doctor.name || 'D').charAt(0).toUpperCase()}
                                                                         </div>
-                                                                        <span className="text-sm font-semibold text-gray-900">{doctor.name || '—'}</span>
+                                                                        <span className="text-sm font-semibold text-gray-900">{doctor.name || 'â€”'}</span>
                                                                     </div>
                                                                 </td>
                                                                 <td className="px-4 lg:px-6 py-3 hidden lg:table-cell">
                                                                     <div className="flex items-center gap-2 text-sm text-gray-600">
                                                                         <Mail className="w-3.5 h-3.5 text-gray-400" />
-                                                                        <span className="truncate max-w-[220px]">{doctor.email || '—'}</span>
+                                                                        <span className="truncate max-w-[220px]">{doctor.email || 'â€”'}</span>
                                                                     </div>
                                                                 </td>
                                                                 <td className="px-4 lg:px-6 py-3 text-sm text-gray-700">
@@ -1358,8 +1432,8 @@ const AdminDashboard = () => {
                                                 <div key={pharmacist.id} className="p-4 space-y-2">
                                                     <div className="flex justify-between items-start">
                                                         <div className="min-w-0 flex-1">
-                                                            <p className="font-medium text-gray-900 text-sm truncate">{pharmacist.name || '—'}</p>
-                                                            <p className="text-xs text-gray-500 truncate">{pharmacist.email || '—'}</p>
+                                                            <p className="font-medium text-gray-900 text-sm truncate">{pharmacist.name || 'â€”'}</p>
+                                                            <p className="text-xs text-gray-500 truncate">{pharmacist.email || 'â€”'}</p>
                                                         </div>
                                                         <span className="text-xs text-emerald-700 font-medium ml-2">
                                                             Active
@@ -1415,13 +1489,13 @@ const AdminDashboard = () => {
                                                                         <div className="h-8 w-8 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center text-xs font-semibold">
                                                                             {(pharmacist.name || 'P').charAt(0).toUpperCase()}
                                                                         </div>
-                                                                        <span className="text-sm font-semibold text-gray-900">{pharmacist.name || '—'}</span>
+                                                                        <span className="text-sm font-semibold text-gray-900">{pharmacist.name || 'â€”'}</span>
                                                                     </div>
                                                                 </td>
                                                                 <td className="px-4 lg:px-6 py-3 hidden lg:table-cell">
                                                                     <div className="flex items-center gap-2 text-sm text-gray-600">
                                                                         <Mail className="w-3.5 h-3.5 text-gray-400" />
-                                                                        <span className="truncate max-w-[220px]">{pharmacist.email || '—'}</span>
+                                                                        <span className="truncate max-w-[220px]">{pharmacist.email || 'â€”'}</span>
                                                                     </div>
                                                                 </td>
                                                                 <td className="px-4 lg:px-6 py-3 text-sm font-medium text-emerald-700">
@@ -1547,7 +1621,7 @@ const AdminDashboard = () => {
                                                     disabled={isSubmitting}
                                                     className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-xl text-sm font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                                 >
-                                                    {isSubmitting ? 'Saving…' : 'Save Changes'}
+                                                    {isSubmitting ? 'Savingâ€¦' : 'Save Changes'}
                                                 </button>
                                             </div>
                                         </form>
@@ -1617,7 +1691,7 @@ const AdminDashboard = () => {
                                             disabled={isSubmitting}
                                             className="inline-flex items-center gap-2 bg-gray-900 hover:bg-gray-800 text-white px-6 py-2.5 rounded-xl text-sm font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                         >
-                                            {isSubmitting ? 'Updating…' : 'Update Password'}
+                                            {isSubmitting ? 'Updatingâ€¦' : 'Update Password'}
                                         </button>
                                     </div>
                                 </form>
@@ -2269,264 +2343,108 @@ const AdminDashboard = () => {
                             </div>
                         </div>
                     )}
+                </div>
                 </main>
             </div>
 
             {/* Add User Modal */}
             {showModal && (
-                <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-                    <div className="bg-white rounded-xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto">
-                        <div className="p-6 border-b border-gray-200">
-                            <div className="flex items-center justify-between">
-                                <h2 className="text-2xl font-bold text-gray-900 capitalize">
-                                    {modalMode === 'add' ? `Add New ${modalType}` : `Edit ${modalType}`}
-                                </h2>
-                                <button
-                                    onClick={closeModal}
-                                    className="text-gray-400 hover:text-gray-600 transition-colors"
-                                >
-                                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                    </svg>
-                                </button>
-                            </div>
-                        </div>
-
+                <Modal
+                    title={modalMode === 'add' ? `Add New ${modalType}` : `Edit ${modalType}`}
+                    onClose={closeModal}
+                >
                         <form onSubmit={handleSubmit} className="p-6 space-y-4">
-                            {error && (
-                                <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                                    <p className="text-red-700 text-sm">{error}</p>
-                                </div>
-                            )}
-
-                            {successMessage && (
-                                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                                    <p className="text-green-700 text-sm">{successMessage}</p>
-                                </div>
-                            )}
-
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        First Name *
-                                    </label>
-                                    <input
-                                        type="text"
-                                        name="firstName"
-                                        value={formData.firstName}
-                                        onChange={handleInputChange}
-                                        className={`w-full px-4 py-2 border-2 border-gray-200 rounded-lg outline-none focus:border-blue-500 focus:ring-0 transition-colors ${
-                                            formErrors.firstName ? 'border-red-500' : 'border-gray-200'
-                                        }`}
-                                        placeholder="Enter first name"
-                                    />
-                                    {formErrors.firstName && (
-                                        <p className="text-red-500 text-xs mt-1">{formErrors.firstName}</p>
-                                    )}
+                                    <label className={labelCls}>First Name *</label>
+                                    <input type="text" name="firstName" value={formData.firstName} onChange={handleInputChange}
+                                        className={`${inputCls} ${formErrors.firstName ? 'border-red-400 ring-red-200' : ''}`}
+                                        placeholder="First name" />
+                                    {formErrors.firstName && <p className="text-red-500 text-xs mt-1">{formErrors.firstName}</p>}
                                 </div>
-
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        Last Name *
-                                    </label>
-                                    <input
-                                        type="text"
-                                        name="lastName"
-                                        value={formData.lastName}
-                                        onChange={handleInputChange}
-                                        className={`w-full px-4 py-2 border-2 border-gray-200 rounded-lg outline-none focus:border-blue-500 focus:ring-0 transition-colors ${
-                                            formErrors.lastName ? 'border-red-500' : 'border-gray-200'
-                                        }`}
-                                        placeholder="Enter last name"
-                                    />
-                                    {formErrors.lastName && (
-                                        <p className="text-red-500 text-xs mt-1">{formErrors.lastName}</p>
-                                    )}
+                                    <label className={labelCls}>Last Name *</label>
+                                    <input type="text" name="lastName" value={formData.lastName} onChange={handleInputChange}
+                                        className={`${inputCls} ${formErrors.lastName ? 'border-red-400 ring-red-200' : ''}`}
+                                        placeholder="Last name" />
+                                    {formErrors.lastName && <p className="text-red-500 text-xs mt-1">{formErrors.lastName}</p>}
                                 </div>
                             </div>
-
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Email *
-                                </label>
-                                <input
-                                    type="email"
-                                    name="email"
-                                    value={formData.email}
-                                    onChange={handleInputChange}
-                                    className={`w-full px-4 py-2 border-2 border-gray-200 rounded-lg outline-none focus:border-blue-500 focus:ring-0 transition-colors ${
-                                        formErrors.email ? 'border-red-500' : 'border-gray-200'
-                                    }`}
-                                    placeholder="Enter email address"
-                                />
-                                {formErrors.email && (
-                                    <p className="text-red-500 text-xs mt-1">{formErrors.email}</p>
-                                )}
+                                <label className={labelCls}>Email *</label>
+                                <input type="email" name="email" value={formData.email} onChange={handleInputChange}
+                                    className={`${inputCls} ${formErrors.email ? 'border-red-400 ring-red-200' : ''}`}
+                                    placeholder="Email address" />
+                                {formErrors.email && <p className="text-red-500 text-xs mt-1">{formErrors.email}</p>}
                             </div>
-
                             {modalMode === 'add' && (
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        Temporary Password *
-                                    </label>
-                                    <input
-                                        type="password"
-                                        name="password"
-                                        value={formData.password}
-                                        onChange={handleInputChange}
-                                        className={`w-full px-4 py-2 border-2 border-gray-200 rounded-lg outline-none focus:border-blue-500 focus:ring-0 transition-colors ${
-                                            formErrors.password ? 'border-red-500' : 'border-gray-200'
-                                        }`}
-                                        placeholder="Enter temporary password"
-                                    />
-                                    {formErrors.password && (
-                                        <p className="text-red-500 text-xs mt-1">{formErrors.password}</p>
-                                    )}
+                                    <label className={labelCls}>Temporary Password *</label>
+                                    <input type="password" name="password" value={formData.password} onChange={handleInputChange}
+                                        className={`${inputCls} ${formErrors.password ? 'border-red-400 ring-red-200' : ''}`}
+                                        placeholder="Min 6 characters" />
+                                    {formErrors.password && <p className="text-red-500 text-xs mt-1">{formErrors.password}</p>}
                                 </div>
                             )}
-
                             {modalType === 'doctor' && (
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        Specialization *
-                                    </label>
-                                    <input
-                                        type="text"
-                                        name="specialization"
-                                        value={formData.specialization}
-                                        onChange={handleInputChange}
-                                        className={`w-full px-4 py-2 border-2 border-gray-200 rounded-lg outline-none focus:border-blue-500 focus:ring-0 transition-colors ${
-                                            formErrors.specialization ? 'border-red-500' : 'border-gray-200'
-                                        }`}
-                                        placeholder="Enter specialization"
-                                    />
-                                    {formErrors.specialization && (
-                                        <p className="text-red-500 text-xs mt-1">{formErrors.specialization}</p>
-                                    )}
+                                    <label className={labelCls}>Specialization *</label>
+                                    <input type="text" name="specialization" value={formData.specialization} onChange={handleInputChange}
+                                        className={`${inputCls} ${formErrors.specialization ? 'border-red-400 ring-red-200' : ''}`}
+                                        placeholder="e.g. Cardiology" />
+                                    {formErrors.specialization && <p className="text-red-500 text-xs mt-1">{formErrors.specialization}</p>}
                                 </div>
                             )}
-
-                            <div className="flex justify-end space-x-3 pt-4">
-                                <button
-                                    type="button"
-                                    onClick={closeModal}
-                                    className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
-                                >
-                                    Cancel
-                                </button>
-                                <button
-                                    type="submit"
-                                    disabled={isSubmitting}
-                                    className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center space-x-2"
-                                >
-                                    {isSubmitting ? (
-                                        <>
-                                            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                                            <span>{modalMode === 'add' ? 'Adding...' : 'Saving...'}</span>
-                                        </>
-                                    ) : (
-                                        <span>{modalMode === 'add' ? `Add ${modalType}` : `Save ${modalType}`}</span>
-                                    )}
+                            <div className="flex justify-end gap-3 pt-2 border-t border-slate-100 mt-4">
+                                <button type="button" onClick={closeModal} className="px-4 py-2 text-sm font-medium text-slate-600 border border-slate-200 rounded-lg hover:bg-slate-50 transition">Cancel</button>
+                                <button type="submit" disabled={isSubmitting} className="px-4 py-2 text-sm font-medium bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition flex items-center gap-2">
+                                    {isSubmitting ? <><div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"/>{modalMode === 'add' ? 'Adding...' : 'Saving...'}</> : (modalMode === 'add' ? `Add ${modalType}` : `Save changes`)}
                                 </button>
                             </div>
                         </form>
-                    </div>
-                </div>
+                </Modal>
             )}
 
             {/* Generate Report Modal */}
             {showReportModal && (
-                <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-                    <div className="bg-white rounded-xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
-                        <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
-                            <h3 className="text-lg font-semibold text-gray-900">Generate Report</h3>
-                            <button onClick={() => setShowReportModal(false)} className="text-gray-400 hover:text-gray-600">
-                                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                </svg>
-                            </button>
-                        </div>
+                <Modal title="Generate Report" onClose={() => setShowReportModal(false)}>
                         <form onSubmit={handleGenerateReport} className="p-6 space-y-4">
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Report Type *</label>
-                                <select
-                                    required
-                                    value={reportForm.reportType}
-                                    onChange={(e) => setReportForm({...reportForm, reportType: e.target.value})}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                >
+                                <label className={labelCls}>Report Type *</label>
+                                <select required value={reportForm.reportType} onChange={(e) => setReportForm({...reportForm, reportType: e.target.value})} className={inputCls}>
                                     <option value="summary">Summary Report</option>
-                                    <option value="patients">Patients Data Report</option>
-                                    <option value="doctors">Doctors Data Report</option>
-                                    <option value="pharmacists">Pharmacists Data Report</option>
+                                    <option value="patients">Patients Report</option>
+                                    <option value="doctors">Doctors Report</option>
+                                    <option value="pharmacists">Pharmacists Report</option>
                                     <option value="inventory">Inventory Report</option>
                                     <option value="transactions">Transactions Report</option>
                                     <option value="activity">Activity Report</option>
                                 </select>
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Report Title</label>
-                                <input
-                                    type="text"
-                                    value={reportForm.title}
-                                    onChange={(e) => setReportForm({...reportForm, title: e.target.value})}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                    placeholder="e.g., Monthly Summary Report"
-                                />
+                                <label className={labelCls}>Report Title</label>
+                                <input type="text" value={reportForm.title} onChange={(e) => setReportForm({...reportForm, title: e.target.value})} className={inputCls} placeholder="e.g., Monthly Summary Report" />
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-                                <textarea
-                                    value={reportForm.description}
-                                    onChange={(e) => setReportForm({...reportForm, description: e.target.value})}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                    placeholder="Brief description of the report"
-                                    rows="2"
-                                />
+                                <label className={labelCls}>Description</label>
+                                <textarea value={reportForm.description} onChange={(e) => setReportForm({...reportForm, description: e.target.value})} className={inputCls} placeholder="Brief description" rows="2" />
                             </div>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">From Date</label>
-                                    <input
-                                        type="date"
-                                        value={reportForm.dateFrom}
-                                        onChange={(e) => setReportForm({...reportForm, dateFrom: e.target.value})}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                    />
+                                    <label className={labelCls}>From Date</label>
+                                    <input type="date" value={reportForm.dateFrom} onChange={(e) => setReportForm({...reportForm, dateFrom: e.target.value})} className={inputCls} />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">To Date</label>
-                                    <input
-                                        type="date"
-                                        value={reportForm.dateTo}
-                                        onChange={(e) => setReportForm({...reportForm, dateTo: e.target.value})}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                    />
+                                    <label className={labelCls}>To Date</label>
+                                    <input type="date" value={reportForm.dateTo} onChange={(e) => setReportForm({...reportForm, dateTo: e.target.value})} className={inputCls} />
                                 </div>
                             </div>
-                            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                                <p className="text-sm text-blue-700">
-                                    <strong>Note:</strong> The report will be generated and stored locally. You can download or delete it anytime from the reports list.
-                                </p>
-                            </div>
-                            <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3 pt-4">
-                                <button
-                                    type="submit"
-                                    className="flex-1 bg-gray-900 text-white py-2 rounded-lg hover:bg-gray-800"
-                                >
-                                    Generate Report
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => setShowReportModal(false)}
-                                    className="flex-1 bg-gray-200 text-gray-700 py-2 rounded-lg hover:bg-gray-300"
-                                >
-                                    Cancel
-                                </button>
+                            <div className="flex justify-end gap-3 pt-2 border-t border-slate-100 mt-2">
+                                <button type="button" onClick={() => setShowReportModal(false)} className="px-4 py-2 text-sm font-medium text-slate-600 border border-slate-200 rounded-lg hover:bg-slate-50 transition">Cancel</button>
+                                <button type="submit" className="px-4 py-2 text-sm font-medium bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">Generate Report</button>
                             </div>
                         </form>
-                    </div>
-                </div>
+                </Modal>
             )}
         </div>
     );

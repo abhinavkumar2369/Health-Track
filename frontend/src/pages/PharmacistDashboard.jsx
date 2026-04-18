@@ -1,7 +1,78 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { pharmacistAPI } from '../services/api';
-import { LayoutDashboard, Package, ArrowLeftRight, BarChart3, User, LogOut, Settings, FileText, Download, Trash2, Plus, Menu, X, Send, TrendingUp, AlertTriangle, CheckCircle } from 'lucide-react';
+import {
+    LayoutDashboard, Package, ArrowLeftRight, BarChart3, Settings, LogOut,
+    FileText, Download, Trash2, Plus, Menu, X, Send, TrendingUp,
+    AlertTriangle, CheckCircle, Pill, Activity, IndianRupee, Boxes,
+    ChevronRight, RefreshCw, User
+} from 'lucide-react';
+
+/* â”€â”€â”€ tiny helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+const inputCls = 'w-full px-3 py-2.5 text-sm border border-slate-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition';
+const labelCls = 'block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5';
+
+const stockBadge = (qty) =>
+    qty === 0
+        ? 'bg-red-50 text-red-600 border border-red-200'
+        : qty < 50
+        ? 'bg-amber-50 text-amber-600 border border-amber-200'
+        : 'bg-emerald-50 text-emerald-600 border border-emerald-200';
+
+const typeBadge = (t) => ({
+    add:    'bg-blue-50 text-blue-600 border border-blue-200',
+    issue:  'bg-emerald-50 text-emerald-600 border border-emerald-200',
+    update: 'bg-amber-50 text-amber-600 border border-amber-200',
+    remove: 'bg-red-50 text-red-600 border border-red-200',
+}[t] || 'bg-slate-100 text-slate-600');
+
+/* â”€â”€â”€ Modal shell â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+const Modal = ({ title, onClose, children, size = 'md' }) => (
+    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+        <div className={`bg-white rounded-2xl shadow-2xl w-full max-h-[90vh] overflow-y-auto ${size === 'lg' ? 'max-w-2xl' : 'max-w-lg'}`}>
+            <div className="sticky top-0 bg-white border-b border-slate-100 px-6 py-4 flex items-center justify-between rounded-t-2xl z-10">
+                <h3 className="text-base font-semibold text-slate-900">{title}</h3>
+                <button onClick={onClose} className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition">
+                    <X className="w-4 h-4" />
+                </button>
+            </div>
+            {children}
+        </div>
+    </div>
+);
+
+/* â”€â”€â”€ Stat card â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+const StatCard = ({ label, value, sub, icon: Icon, color }) => {
+    const colors = {
+        blue:   { bg: 'bg-blue-50',   icon: 'bg-blue-100 text-blue-600',   val: 'text-blue-700'   },
+        green:  { bg: 'bg-emerald-50', icon: 'bg-emerald-100 text-emerald-600', val: 'text-emerald-700' },
+        amber:  { bg: 'bg-amber-50',  icon: 'bg-amber-100 text-amber-600',  val: 'text-amber-700'  },
+        red:    { bg: 'bg-red-50',    icon: 'bg-red-100 text-red-600',      val: 'text-red-700'    },
+        purple: { bg: 'bg-violet-50', icon: 'bg-violet-100 text-violet-600',val: 'text-violet-700' },
+        teal:   { bg: 'bg-teal-50',   icon: 'bg-teal-100 text-teal-600',   val: 'text-teal-700'   },
+    };
+    const c = colors[color] || colors.blue;
+    return (
+        <div className={`${c.bg} rounded-xl p-4 flex items-start gap-3`}>
+            <div className={`${c.icon} p-2.5 rounded-xl shrink-0`}>
+                <Icon className="w-5 h-5" />
+            </div>
+            <div className="min-w-0">
+                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide truncate">{label}</p>
+                <p className={`text-2xl font-bold ${c.val} leading-tight mt-0.5`}>{value}</p>
+                {sub && <p className="text-xs text-slate-400 mt-0.5">{sub}</p>}
+            </div>
+        </div>
+    );
+};
+
+/* â”€â”€â”€ Section header â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+const SectionHeader = ({ title, action }) => (
+    <div className="flex items-center justify-between mb-4">
+        <h2 className="text-lg font-semibold text-slate-900">{title}</h2>
+        {action}
+    </div>
+);
 
 const PharmacistDashboard = () => {
     const navigate = useNavigate();
@@ -435,811 +506,508 @@ const PharmacistDashboard = () => {
 
     if (!user) {
         return (
-            <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+            <div className="min-h-screen bg-slate-900 flex items-center justify-center">
                 <div className="text-center">
-                    <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-                    <p className="text-gray-600">Loading dashboard...</p>
+                    <div className="w-12 h-12 border-4 border-blue-400 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                    <p className="text-slate-300 text-sm">Loading dashboardâ€¦</p>
                 </div>
             </div>
         );
     }
 
     const sidebarItems = [
-        { id: 'overview', icon: LayoutDashboard, label: 'Overview' },
-        { id: 'inventory', icon: Package, label: 'Inventory' },
-        { id: 'transactions', icon: ArrowLeftRight, label: 'Transactions' },
-        { id: 'reports', icon: BarChart3, label: 'Reports' },
-        { id: 'personal-details', icon: Settings, label: 'Settings' },
+        { id: 'overview',         icon: LayoutDashboard, label: 'Overview'     },
+        { id: 'inventory',        icon: Package,         label: 'Inventory'    },
+        { id: 'transactions',     icon: ArrowLeftRight,  label: 'Transactions' },
+        { id: 'reports',          icon: BarChart3,       label: 'Reports'      },
+        { id: 'personal-details', icon: Settings,        label: 'Settings'     },
     ];
 
+    const tabTitle = {
+        'overview':         'Overview',
+        'inventory':        'Inventory',
+        'transactions':     'Transactions',
+        'reports':          'Reports',
+        'personal-details': 'Settings',
+    };
+
     return (
-        <div className="flex h-screen bg-gray-50">
+        <div className="flex h-screen bg-slate-50 font-sans">
             {/* Mobile Overlay */}
             {sidebarOpen && (
-                <div 
-                    className="fixed inset-0 bg-black/50 z-40 lg:hidden"
-                    onClick={() => setSidebarOpen(false)}
-                />
+                <div className="fixed inset-0 bg-black/60 z-40 lg:hidden" onClick={() => setSidebarOpen(false)} />
             )}
 
-            {/* Sidebar */}
-            <div className={`w-64 bg-white border-r border-gray-200 flex flex-col fixed inset-y-0 left-0 z-50 transform transition-transform duration-300 lg:translate-x-0 lg:static ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+            {/* â”€â”€ Sidebar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+            <aside className={`w-64 bg-slate-900 flex flex-col fixed inset-y-0 left-0 z-50 transform transition-transform duration-300 lg:translate-x-0 lg:static ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
                 {/* Logo */}
-                <div className="h-16 flex items-center justify-between px-4 sm:px-6 border-b border-gray-200">
-                    <div className="flex items-center space-x-3">
-                        <img src="/favicon.svg" alt="Health Track" className="w-8 h-8" />
-                        <span className="text-lg font-bold text-gray-900">Health Track</span>
+                <div className="h-16 flex items-center justify-between px-5 border-b border-slate-800">
+                    <div className="flex items-center gap-2.5">
+                        <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+                            <Pill className="w-4 h-4 text-white" />
+                        </div>
+                        <span className="text-base font-bold text-white tracking-tight">Health Track</span>
                     </div>
-                    <button 
-                        onClick={() => setSidebarOpen(false)}
-                        className="lg:hidden p-2 rounded-lg hover:bg-gray-100"
-                    >
-                        <X className="w-5 h-5 text-gray-500" />
+                    <button onClick={() => setSidebarOpen(false)} className="lg:hidden p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition">
+                        <X className="w-4 h-4" />
                     </button>
                 </div>
 
+                {/* Role badge */}
+                <div className="px-5 pt-5 pb-2">
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Pharmacist Portal</span>
+                </div>
+
                 {/* Navigation */}
-                <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
-                    {sidebarItems.map((item) => {
-                        const IconComponent = item.icon;
+                <nav className="flex-1 px-3 pb-4 space-y-0.5 overflow-y-auto">
+                    {sidebarItems.map(({ id, icon: Icon, label }) => {
+                        const active = activeTab === id;
                         return (
                             <button
-                                key={item.id}
-                                onClick={() => {
-                                    setActiveTab(item.id);
-                                    setSidebarOpen(false);
-                                }}
-                                className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-sm font-medium transition-all ${
-                                    activeTab === item.id
-                                        ? 'bg-blue-50 text-blue-600'
-                                        : 'text-gray-700 hover:bg-gray-50'
+                                key={id}
+                                onClick={() => { setActiveTab(id); setSidebarOpen(false); }}
+                                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
+                                    active
+                                        ? 'bg-blue-600 text-white shadow-sm'
+                                        : 'text-slate-400 hover:text-white hover:bg-slate-800'
                                 }`}
                             >
-                                <IconComponent className="w-5 h-5" />
-                                <span>{item.label}</span>
+                                <Icon className="w-4 h-4 shrink-0" />
+                                <span>{label}</span>
+                                {active && <ChevronRight className="w-3.5 h-3.5 ml-auto opacity-70" />}
                             </button>
                         );
                     })}
                 </nav>
 
-                {/* User Profile */}
-                <div className="p-4 border-t border-gray-100">
+                {/* User card at bottom */}
+                <div className="p-3 border-t border-slate-800">
+                    <div className="flex items-center gap-3 px-2 py-2 rounded-lg mb-1">
+                        <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0">
+                            {user?.fullName?.charAt(0)?.toUpperCase() || 'P'}
+                        </div>
+                        <div className="min-w-0">
+                            <p className="text-sm font-medium text-white truncate">{user?.fullName || 'Pharmacist'}</p>
+                            <p className="text-xs text-slate-400 truncate">{user?.email || ''}</p>
+                        </div>
+                    </div>
                     <button
                         onClick={handleLogout}
-                        className="w-full flex items-center justify-center space-x-2 px-4 py-2 text-red-600 rounded-lg hover:text-red-700 transition-colors text-sm font-medium"
+                        className="w-full flex items-center gap-2 px-3 py-2 text-slate-400 hover:text-red-400 hover:bg-slate-800 rounded-lg transition-all text-sm font-medium"
                     >
                         <LogOut className="w-4 h-4" />
-                        <span>Logout</span>
+                        <span>Sign out</span>
                     </button>
                 </div>
-            </div>
+            </aside>
 
-            {/* Main Content */}
+            {/* â”€â”€ Main Content â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
             <div className="flex-1 flex flex-col overflow-hidden">
                 {/* Header */}
-                <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-4 sm:px-8">
-                    <button 
-                        onClick={() => setSidebarOpen(true)}
-                        className="lg:hidden p-2 rounded-lg hover:bg-gray-100"
-                    >
-                        <Menu className="w-6 h-6 text-gray-600" />
-                    </button>
-                    <div className="text-sm text-gray-500 ml-auto">
-                        <span className="hidden sm:inline">{new Date().toLocaleDateString('en-US', { 
-                            weekday: 'long', 
-                            year: 'numeric', 
-                            month: 'long', 
-                            day: 'numeric' 
-                        })}</span>
-                        <span className="sm:hidden">{new Date().toLocaleDateString('en-US', { 
-                            month: 'short', 
-                            day: 'numeric' 
-                        })}</span>
+                <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-5 sm:px-8 shrink-0">
+                    <div className="flex items-center gap-3">
+                        <button onClick={() => setSidebarOpen(true)} className="lg:hidden p-2 rounded-lg text-slate-500 hover:bg-slate-100 transition">
+                            <Menu className="w-5 h-5" />
+                        </button>
+                        <div>
+                            <h1 className="text-base font-bold text-slate-900 leading-tight">{tabTitle[activeTab]}</h1>
+                            <p className="text-xs text-slate-400 hidden sm:block">{new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}</p>
+                        </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <div className="hidden sm:flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5">
+                            <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center text-xs font-bold text-blue-600">
+                                {user?.fullName?.charAt(0)?.toUpperCase() || 'P'}
+                            </div>
+                            <span className="text-sm font-medium text-slate-700 max-w-[120px] truncate">{user?.fullName || 'Pharmacist'}</span>
+                        </div>
                     </div>
                 </header>
 
-                {/* Success/Error Messages - Toast Notifications */}
-                {success && (
-                    <div className="fixed bottom-4 right-4 z-[100] animate-slide-in">
-                        <div className="bg-green-50 border border-green-200 text-green-800 px-6 py-4 rounded-lg shadow-lg flex items-center gap-3 min-w-[300px]">
-                            <svg className="w-5 h-5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                            </svg>
-                            <span className="flex-1">{success}</span>
-                            <button onClick={() => setSuccess('')} className="text-green-600 hover:text-green-800">
-                                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                                    <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-                                </svg>
-                            </button>
-                        </div>
-                    </div>
-                )}
-                {error && (
-                    <div className="fixed bottom-4 right-4 z-[100] animate-slide-in">
-                        <div className="bg-red-50 border border-red-200 text-red-800 px-6 py-4 rounded-lg shadow-lg flex items-center gap-3 min-w-[300px]">
-                            <svg className="w-5 h-5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-                            </svg>
-                            <span className="flex-1">{error}</span>
-                            <button onClick={() => setError('')} className="text-red-600 hover:text-red-800">
-                                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                                    <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-                                </svg>
-                            </button>
-                        </div>
-                    </div>
-                )}
-
-                {/* Content Area */}
-                <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
-                {activeTab === 'overview' && (
-                    <div className="space-y-4 sm:space-y-6">
-                        {/* Stats Cards + Stock Distribution in Large Box */}
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                            {/* Inventory Stats Box */}
-                            <div className="bg-white rounded-xl border border-gray-200 p-4 flex flex-col">
-                                <h3 className="text-base font-semibold text-gray-900 mb-3">Inventory Overview</h3>
-                                <div className="grid grid-cols-2 gap-3 flex-1">
-                                    <div className="p-3 rounded-lg bg-blue-50 border border-blue-100 flex flex-col justify-center">
-                                        <p className="text-xs font-medium text-blue-600 uppercase tracking-wider">Total Medicines</p>
-                                        <p className="text-xl font-semibold text-gray-900 mt-1">{stats?.totalItems || 0}</p>
-                                        <p className="text-xs text-gray-500">items in inventory</p>
-                                    </div>
-                                    <div className="p-3 rounded-lg bg-green-50 border border-green-100 flex flex-col justify-center">
-                                        <p className="text-xs font-medium text-green-600 uppercase tracking-wider">Total Stock</p>
-                                        <p className="text-xl font-semibold text-gray-900 mt-1">{stats?.totalQuantity || 0}</p>
-                                        <p className="text-xs text-gray-500">units available</p>
-                                    </div>
-                                    <div className="p-3 rounded-lg bg-yellow-50 border border-yellow-100 flex flex-col justify-center">
-                                        <p className="text-xs font-medium text-yellow-600 uppercase tracking-wider">Low Stock</p>
-                                        <p className="text-xl font-semibold text-yellow-600 mt-1">{stats?.lowStock || 0}</p>
-                                        <p className="text-xs text-gray-500">need restock</p>
-                                    </div>
-                                    <div className="p-3 rounded-lg bg-red-50 border border-red-100 flex flex-col justify-center">
-                                        <p className="text-xs font-medium text-red-600 uppercase tracking-wider">Out of Stock</p>
-                                        <p className="text-xl font-semibold text-red-600 mt-1">{stats?.outOfStock || 0}</p>
-                                        <p className="text-xs text-gray-500">unavailable</p>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Stock Distribution Box */}
-                            <div className="bg-white rounded-xl border border-gray-200 p-4">
-                                <h3 className="text-base font-semibold text-gray-900 mb-3">Stock Distribution</h3>
-                                {medicines.length === 0 ? (
-                                    <div className="text-center py-8">
-                                        <Package className="w-8 h-8 text-gray-300 mx-auto mb-2" />
-                                        <p className="text-gray-500 text-xs">No inventory data</p>
-                                    </div>
-                                ) : (
-                                    <div className="space-y-3">
-                                        {(() => {
-                                            const goodStock = medicines.filter(m => m.quantity >= 50).length;
-                                            const lowStock = medicines.filter(m => m.quantity > 0 && m.quantity < 50).length;
-                                            const outOfStock = medicines.filter(m => m.quantity === 0).length;
-                                            const total = medicines.length || 1;
-
-                                            return (
-                                                <>
-                                                    <div className="p-3 rounded-lg bg-green-50 border border-green-100">
-                                                        <div className="flex justify-between items-center mb-1.5">
-                                                            <span className="text-xs font-medium text-gray-700">Good Stock</span>
-                                                            <span className="text-base font-bold text-green-600">{goodStock}</span>
-                                                        </div>
-                                                        <div className="w-full bg-gray-200 rounded-full h-1.5">
-                                                            <div className="bg-green-500 h-1.5 rounded-full transition-all" style={{ width: `${(goodStock / total) * 100}%` }}></div>
-                                                        </div>
-                                                    </div>
-                                                    <div className="p-3 rounded-lg bg-yellow-50 border border-yellow-100">
-                                                        <div className="flex justify-between items-center mb-1.5">
-                                                            <span className="text-xs font-medium text-gray-700">Low Stock</span>
-                                                            <span className="text-base font-bold text-yellow-600">{lowStock}</span>
-                                                        </div>
-                                                        <div className="w-full bg-gray-200 rounded-full h-1.5">
-                                                            <div className="bg-yellow-500 h-1.5 rounded-full transition-all" style={{ width: `${(lowStock / total) * 100}%` }}></div>
-                                                        </div>
-                                                    </div>
-                                                    <div className="p-3 rounded-lg bg-red-50 border border-red-100">
-                                                        <div className="flex justify-between items-center mb-1.5">
-                                                            <span className="text-xs font-medium text-gray-700">Out of Stock</span>
-                                                            <span className="text-base font-bold text-red-600">{outOfStock}</span>
-                                                        </div>
-                                                        <div className="w-full bg-gray-200 rounded-full h-1.5">
-                                                            <div className="bg-red-500 h-1.5 rounded-full transition-all" style={{ width: `${(outOfStock / total) * 100}%` }}></div>
-                                                        </div>
-                                                    </div>
-                                                </>
-                                            );
-                                        })()}
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-
-                        {/* Low Stock Alerts */}
-                        {inventoryAlerts.length > 0 && (
-                            <div className="bg-white rounded-xl border border-gray-200 p-5">
-                                <h3 className="text-lg font-semibold text-gray-900 mb-4">Low Stock Alerts</h3>
-                                <div className="overflow-x-auto">
-                                    <table className="w-full">
-                                        <thead>
-                                            <tr className="border-b border-gray-200">
-                                                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Medicine</th>
-                                                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Category</th>
-                                                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Stock</th>
-                                                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Status</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody className="divide-y divide-gray-100">
-                                            {inventoryAlerts.slice(0, 5).map((med) => (
-                                                <tr key={med.id} className="hover:bg-gray-50">
-                                                    <td className="px-4 py-3 text-sm font-medium text-gray-900">{med.name}</td>
-                                                    <td className="px-4 py-3 text-sm text-gray-500">{med.category || 'N/A'}</td>
-                                                    <td className="px-4 py-3 text-sm text-gray-900">{med.quantity} units</td>
-                                                    <td className="px-4 py-3">
-                                                        <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
-                                                            med.quantity === 0 ? 'bg-red-50 text-red-700' : 'bg-yellow-50 text-yellow-700'
-                                                        }`}>
-                                                            {med.quantity === 0 ? 'Out of Stock' : 'Low Stock'}
-                                                        </span>
-                                                    </td>
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
-                                </div>
+                {/* Toasts */}
+                {(success || error) && (
+                    <div className="fixed top-5 right-5 z-[100] space-y-2">
+                        {success && (
+                            <div className="flex items-center gap-2.5 bg-emerald-600 text-white px-4 py-3 rounded-xl shadow-xl text-sm font-medium max-w-xs animate-in slide-in-from-right-5 duration-300">
+                                <CheckCircle className="w-4 h-4 shrink-0" />
+                                {success}
                             </div>
                         )}
-
-                        {/* ML Inventory Predictions */}
-                        <div className="bg-white rounded-xl border border-gray-200 p-5">
-                            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 gap-3">
-                                <div className="flex items-center gap-2">
-                                    <TrendingUp className="w-5 h-5 text-blue-600" />
-                                    <h3 className="text-lg font-semibold text-gray-900">ML Stock Predictions</h3>
-                                    <span className="px-2 py-0.5 text-xs font-medium bg-blue-100 text-blue-700 rounded-full">AI Powered</span>
-                                </div>
-                                <div className="flex flex-col sm:flex-row sm:items-center gap-2">
-                                    <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${
-                                        predictions?.dataSource === 'ml-prediction'
-                                            ? 'bg-green-100 text-green-700'
-                                            : predictions?.dataSource === 'fallback-calculation'
-                                            ? 'bg-yellow-100 text-yellow-700'
-                                            : 'bg-gray-100 text-gray-600'
-                                    }`}>
-                                        {predictions?.dataSource === 'ml-prediction'
-                                            ? 'ML Service Connected'
-                                            : predictions?.dataSource === 'fallback-calculation'
-                                            ? 'ML Service Offline (Fallback)'
-                                            : 'ML Service Not Checked'}
-                                    </span>
-                                    <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${
-                                        mlHealth?.success && mlHealth?.status === 'healthy'
-                                            ? 'bg-green-100 text-green-700'
-                                            : mlHealth?.status === 'unhealthy'
-                                            ? 'bg-yellow-100 text-yellow-700'
-                                            : mlHealth?.status === 'unreachable'
-                                            ? 'bg-red-100 text-red-700'
-                                            : 'bg-gray-100 text-gray-600'
-                                    }`}>
-                                        {mlHealthLoading
-                                            ? 'ML Health: Checking...'
-                                            : mlHealth?.success && mlHealth?.status === 'healthy'
-                                            ? 'ML Health: OK'
-                                            : mlHealth?.status === 'unhealthy'
-                                            ? 'ML Health: Unhealthy'
-                                            : mlHealth?.status === 'unreachable'
-                                            ? 'ML Health: Unreachable'
-                                            : 'ML Health: Not Checked'}
-                                    </span>
-                                    <button
-                                        type="button"
-                                        onClick={fetchPredictions}
-                                        className="px-3 py-2 text-xs font-medium border border-gray-200 rounded-lg hover:bg-gray-50"
-                                        disabled={predictionsLoading}
-                                    >
-                                        {predictionsLoading ? 'Checking...' : 'Check Connection'}
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={fetchMlHealth}
-                                        className="px-3 py-2 text-xs font-medium border border-gray-200 rounded-lg hover:bg-gray-50"
-                                        disabled={mlHealthLoading}
-                                    >
-                                        {mlHealthLoading ? 'Checking...' : 'Check ML Health'}
-                                    </button>
-                                    {predictions && predictions.predictions && predictions.predictions.length > 0 && (
-                                        <select
-                                            value={selectedPrediction?.medicineName || ''}
-                                            onChange={(e) => {
-                                                const pred = predictions.predictions.find(p => p.medicineName === e.target.value);
-                                                setSelectedPrediction(pred);
-                                            }}
-                                            className="px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500"
-                                        >
-                                            {predictions.predictions.map((pred) => (
-                                                <option key={pred.medicineName} value={pred.medicineName}>
-                                                    {pred.medicineName}
-                                                </option>
-                                            ))}
-                                        </select>
-                                    )}
-                                </div>
+                        {error && (
+                            <div className="flex items-center gap-2.5 bg-red-600 text-white px-4 py-3 rounded-xl shadow-xl text-sm font-medium max-w-xs animate-in slide-in-from-right-5 duration-300">
+                                <AlertTriangle className="w-4 h-4 shrink-0" />
+                                {error}
                             </div>
-
-                            {predictionsLoading ? (
-                                <div className="flex items-center justify-center py-12">
-                                    <div className="w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-                                    <span className="ml-3 text-gray-500 text-sm">Analyzing inventory patterns...</span>
-                                </div>
-                            ) : !predictions || !predictions.predictions || predictions.predictions.length === 0 ? (
-                                <div className="text-center py-12">
-                                    <TrendingUp className="w-10 h-10 text-gray-300 mx-auto mb-3" />
-                                    <p className="text-gray-500 text-sm">No prediction data available</p>
-                                    <p className="text-gray-400 text-xs mt-1">Add medicines and transactions to enable predictions</p>
-                                </div>
-                            ) : (
-                                <div className="space-y-5">
-                                    {/* Prediction Summary Cards */}
-                                    <div className="grid grid-cols-3 gap-3">
-                                        <div className="p-3 rounded-lg bg-gray-50 border border-gray-200">
-                                            <div className="flex items-center gap-2 mb-1">
-                                                <AlertTriangle className="w-4 h-4 text-gray-600" />
-                                                <span className="text-xs font-medium text-gray-700">Urgent Restock</span>
-                                            </div>
-                                            <p className="text-2xl font-bold text-gray-900">{predictions.summary?.urgentRestock || 0}</p>
-                                        </div>
-                                        <div className="p-3 rounded-lg bg-gray-50 border border-gray-200">
-                                            <div className="flex items-center gap-2 mb-1">
-                                                <AlertTriangle className="w-4 h-4 text-gray-600" />
-                                                <span className="text-xs font-medium text-gray-700">At Risk</span>
-                                            </div>
-                                            <p className="text-2xl font-bold text-gray-900">{predictions.summary?.atRisk || 0}</p>
-                                        </div>
-                                        <div className="p-3 rounded-lg bg-gray-50 border border-gray-200">
-                                            <div className="flex items-center gap-2 mb-1">
-                                                <CheckCircle className="w-4 h-4 text-gray-600" />
-                                                <span className="text-xs font-medium text-gray-700">Stable</span>
-                                            </div>
-                                            <p className="text-2xl font-bold text-gray-900">{predictions.summary?.stable || 0}</p>
-                                        </div>
-                                    </div>
-
-                                    {/* Selected Medicine Details */}
-                                    {selectedPrediction && (
-                                        <div className="p-4 rounded-lg bg-gray-50 border border-gray-200">
-                                            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
-                                                <div>
-                                                    <h4 className="font-semibold text-gray-900">{selectedPrediction.medicineName}</h4>
-                                                    <p className="text-sm text-gray-500">Current Stock: {selectedPrediction.currentStock} units</p>
-                                                </div>
-                                                <div className={`px-3 py-1 rounded-full text-sm font-medium ${
-                                                    selectedPrediction.restockRecommendation === 'Urgent - Restock immediately' 
-                                                        ? 'bg-red-100 text-red-700' 
-                                                        : selectedPrediction.restockRecommendation === 'Warning - Consider restocking soon'
-                                                        ? 'bg-yellow-100 text-yellow-700'
-                                                        : 'bg-green-100 text-green-700'
-                                                }`}>
-                                                    {selectedPrediction.restockRecommendation === 'Urgent - Restock immediately' ? 'Urgent Restock' :
-                                                     selectedPrediction.restockRecommendation === 'Warning - Consider restocking soon' ? 'At Risk' : 'Stable'}
-                                                </div>
-                                            </div>
-
-                                            {/* 7-Day Prediction Line Chart */}
-                                            <div className="mb-4">
-                                                <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-3">7-Day Stock Forecast</p>
-                                                <div className="relative h-48 bg-white rounded-lg border border-gray-100 p-4">
-                                                    {selectedPrediction.predictions && selectedPrediction.predictions.length > 0 && (() => {
-                                                        const data = selectedPrediction.predictions;
-                                                        const maxStock = Math.max(selectedPrediction.currentStock, ...data.map(d => d.predictedStock));
-                                                        const minStock = Math.min(0, ...data.map(d => d.predictedStock));
-                                                        const range = maxStock - minStock || 1;
-                                                        const chartWidth = 280;
-                                                        const chartHeight = 120;
-                                                        const padding = 10;
-                                                        
-                                                        const points = data.map((d, i) => {
-                                                            const x = padding + (i / (data.length - 1)) * (chartWidth - 2 * padding);
-                                                            const y = padding + (chartHeight - 2 * padding) - ((d.predictedStock - minStock) / range) * (chartHeight - 2 * padding);
-                                                            return `${x},${y}`;
-                                                        }).join(' ');
-                                                        
-                                                        const areaPoints = `${padding},${chartHeight - padding} ${points} ${chartWidth - padding},${chartHeight - padding}`;
-                                                        
-                                                        return (
-                                                            <svg className="w-full h-full" viewBox={`0 0 ${chartWidth} ${chartHeight}`} preserveAspectRatio="xMidYMid meet">
-                                                                {/* Grid Lines */}
-                                                                {[0, 0.25, 0.5, 0.75, 1].map((ratio, idx) => (
-                                                                    <line
-                                                                        key={idx}
-                                                                        x1={padding}
-                                                                        y1={padding + (chartHeight - 2 * padding) * ratio}
-                                                                        x2={chartWidth - padding}
-                                                                        y2={padding + (chartHeight - 2 * padding) * ratio}
-                                                                        stroke="#E5E7EB"
-                                                                        strokeWidth="1"
-                                                                    />
-                                                                ))}
-                                                                {/* Gradient Area */}
-                                                                <defs>
-                                                                    <linearGradient id="stockGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                                                                        <stop offset="0%" stopColor="#3B82F6" stopOpacity="0.4" />
-                                                                        <stop offset="100%" stopColor="#3B82F6" stopOpacity="0.05" />
-                                                                    </linearGradient>
-                                                                </defs>
-                                                                <polygon points={areaPoints} fill="url(#stockGradient)" />
-                                                                {/* Line */}
-                                                                <polyline
-                                                                    points={points}
-                                                                    fill="none"
-                                                                    stroke="#3B82F6"
-                                                                    strokeWidth="2.5"
-                                                                    strokeLinecap="round"
-                                                                    strokeLinejoin="round"
-                                                                />
-                                                                {/* Data Points */}
-                                                                {data.map((d, i) => {
-                                                                    const x = padding + (i / (data.length - 1)) * (chartWidth - 2 * padding);
-                                                                    const y = padding + (chartHeight - 2 * padding) - ((d.predictedStock - minStock) / range) * (chartHeight - 2 * padding);
-                                                                    return (
-                                                                        <g key={i}>
-                                                                            <circle
-                                                                                cx={x}
-                                                                                cy={y}
-                                                                                r="5"
-                                                                                fill="#3B82F6"
-                                                                                stroke="white"
-                                                                                strokeWidth="2"
-                                                                            />
-                                                                            <text
-                                                                                x={x}
-                                                                                y={y - 10}
-                                                                                textAnchor="middle"
-                                                                                fontSize="9"
-                                                                                fill="#6B7280"
-                                                                                fontWeight="500"
-                                                                            >
-                                                                                {d.predictedStock}
-                                                                            </text>
-                                                                        </g>
-                                                                    );
-                                                                })}
-                                                            </svg>
-                                                        );
-                                                    })()}
-                                                </div>
-                                                {/* X-axis Labels */}
-                                                <div className="flex justify-between mt-2 px-2 text-xs text-gray-500 font-medium">
-                                                    {selectedPrediction.predictions && selectedPrediction.predictions.slice(0, 7).map((d, i) => (
-                                                        <span key={i}>{new Date(d.date).toLocaleDateString('en-US', { weekday: 'short' })}</span>
-                                                    ))}
-                                                </div>
-                                            </div>
-
-                                            {/* Prediction Stats */}
-                                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
-                                                <div className="p-2 bg-white rounded-lg border border-gray-100">
-                                                    <p className="text-xs text-gray-500">Avg Daily Demand</p>
-                                                    <p className="text-lg font-semibold text-gray-900">{selectedPrediction.averageDailyDemand?.toFixed(1) || '0'}</p>
-                                                </div>
-                                                <div className="p-2 bg-white rounded-lg border border-gray-100">
-                                                    <p className="text-xs text-gray-500">Days Until Stockout</p>
-                                                    <p className={`text-lg font-semibold ${
-                                                        selectedPrediction.daysUntilStockout <= 3 ? 'text-red-600' :
-                                                        selectedPrediction.daysUntilStockout <= 7 ? 'text-yellow-600' : 'text-green-600'
-                                                    }`}>
-                                                        {selectedPrediction.daysUntilStockout > 30 ? '30+' : selectedPrediction.daysUntilStockout}
-                                                    </p>
-                                                </div>
-                                                <div className="p-2 bg-white rounded-lg border border-gray-100">
-                                                    <p className="text-xs text-gray-500">Trend</p>
-                                                    <p className={`text-lg font-semibold ${
-                                                        selectedPrediction.trendAnalysis === 'increasing' ? 'text-green-600' :
-                                                        selectedPrediction.trendAnalysis === 'decreasing' ? 'text-red-600' : 'text-gray-600'
-                                                    }`}>
-                                                        {selectedPrediction.trendAnalysis === 'increasing' ? '↑ Up' :
-                                                         selectedPrediction.trendAnalysis === 'decreasing' ? '↓ Down' : '→ Stable'}
-                                                    </p>
-                                                </div>
-                                                <div className="p-2 bg-white rounded-lg border border-gray-100">
-                                                    <p className="text-xs text-gray-500">Algorithm</p>
-                                                    <p className="text-sm font-semibold text-blue-600">Linear Regression</p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
-                            )}
-                        </div>
+                        )}
                     </div>
                 )}
 
-                {activeTab === 'transactions' && (
-                    <div className="space-y-4 sm:space-y-6">
-                        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-                            <div className="px-4 sm:px-6 py-4 border-b border-gray-200">
-                                <h3 className="text-base sm:text-lg font-semibold text-gray-900">Transaction History</h3>
+                {/* Scroll area */}
+                <main className="flex-1 overflow-y-auto p-5 sm:p-8">
+                    <div className="max-w-7xl mx-auto space-y-6">
+                    {/* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+                        OVERVIEW TAB
+                    â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+                    {activeTab === 'overview' && (
+                        <div className="space-y-6">
+                            {/* Stat cards row */}
+                            <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
+                                <StatCard label="Total Items"    value={stats?.totalItems    || 0} icon={Boxes}        color="blue"  sub="Medicine types"     />
+                                <StatCard label="Total Stock"    value={stats?.totalQuantity || 0} icon={Package}      color="teal"  sub="Units in inventory" />
+                                <StatCard label="Low Stock"      value={stats?.lowStock      || 0} icon={AlertTriangle}color="amber" sub="Below 50 units"     />
+                                <StatCard label="Out of Stock"   value={stats?.outOfStock    || 0} icon={Activity}     color="red"   sub="Zero units left"    />
                             </div>
-                            
-                            {loading && transactions.length === 0 ? (
-                                <div className="p-8 sm:p-16 text-center">
-                                    <div className="w-10 h-10 border-2 border-gray-900 border-t-transparent rounded-full animate-spin mx-auto"></div>
-                                    <p className="text-gray-500 mt-4 text-sm">Loading transactions...</p>
-                                </div>
-                            ) : transactions.length === 0 ? (
-                                <div className="p-8 sm:p-16 text-center">
-                                    <ArrowLeftRight className="w-10 h-10 sm:w-12 sm:h-12 text-gray-300 mx-auto mb-4" />
-                                    <h3 className="text-base sm:text-lg font-semibold text-gray-700 mb-2">No Transactions Yet</h3>
-                                    <p className="text-gray-500 text-xs sm:text-sm">Transaction history will appear here</p>
-                                </div>
-                            ) : (
-                                <div className="overflow-x-auto">
-                                    {/* Mobile Card View */}
-                                    <div className="sm:hidden divide-y divide-gray-100">
-                                        {transactions.map((txn) => (
-                                            <div key={txn.id} className="p-4 space-y-2">
-                                                <div className="flex justify-between items-start">
-                                                    <div>
-                                                        <p className="font-medium text-gray-900 text-sm">{txn.medicineName}</p>
-                                                        <p className="text-xs text-gray-500">{txn.quantity} units • ₹{txn.totalAmount?.toFixed(2) || '0.00'}</p>
+
+                            {/* Middle row */}
+                            <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+                                {/* Stock Distribution */}
+                                <div className="lg:col-span-2 bg-white border border-slate-200 rounded-2xl p-5">
+                                    <h3 className="text-sm font-semibold text-slate-900 mb-4">Stock Distribution</h3>
+                                    <div className="space-y-3">
+                                        {[
+                                            { label: 'Healthy',     value: stats?.healthyStock  || 0, color: 'bg-emerald-500' },
+                                            { label: 'Low Stock',   value: stats?.lowStock      || 0, color: 'bg-amber-400'   },
+                                            { label: 'Out of Stock',value: stats?.outOfStock    || 0, color: 'bg-red-500'     },
+                                        ].map(({ label, value, color }) => {
+                                            const total = (stats?.healthyStock || 0) + (stats?.lowStock || 0) + (stats?.outOfStock || 0) || 1;
+                                            const pct = Math.round((value / total) * 100);
+                                            return (
+                                                <div key={label}>
+                                                    <div className="flex justify-between text-xs mb-1">
+                                                        <span className="font-medium text-slate-600">{label}</span>
+                                                        <span className="font-semibold text-slate-900">{value} <span className="text-slate-400 font-normal">({pct}%)</span></span>
                                                     </div>
-                                                    <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
-                                                        txn.type === 'add' ? 'bg-blue-50 text-blue-700' :
-                                                        txn.type === 'issue' ? 'bg-green-50 text-green-700' :
-                                                        txn.type === 'update' ? 'bg-yellow-50 text-yellow-700' :
-                                                        'bg-red-50 text-red-700'
-                                                    }`}>
-                                                        {txn.type.charAt(0).toUpperCase() + txn.type.slice(1)}
-                                                    </span>
+                                                    <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+                                                        <div className={`h-full ${color} rounded-full transition-all duration-500`} style={{ width: `${pct}%` }} />
+                                                    </div>
                                                 </div>
-                                                <div className="flex justify-between text-xs text-gray-500">
-                                                    <span>{txn.patientName || 'No patient'}</span>
-                                                    <span>{new Date(txn.createdAt).toLocaleDateString('en-IN', { month: 'short', day: 'numeric' })}</span>
+                                            );
+                                        })}
+                                    </div>
+                                    {/* Revenue info */}
+                                    {stats?.totalValue !== undefined && (
+                                        <div className="mt-5 pt-4 border-t border-slate-100 flex items-center gap-2">
+                                            <IndianRupee className="w-4 h-4 text-emerald-600" />
+                                            <span className="text-xs text-slate-500">Inventory value</span>
+                                            <span className="ml-auto text-sm font-bold text-slate-900">â‚¹{stats.totalValue.toFixed(2)}</span>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Low Stock Alerts */}
+                                <div className="lg:col-span-3 bg-white border border-slate-200 rounded-2xl overflow-hidden">
+                                    <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+                                        <div className="flex items-center gap-2">
+                                            <AlertTriangle className="w-4 h-4 text-amber-500" />
+                                            <h3 className="text-sm font-semibold text-slate-900">Low Stock Alerts</h3>
+                                        </div>
+                                        {inventoryAlerts.length > 0 && (
+                                            <span className="text-xs bg-amber-100 text-amber-700 font-semibold px-2 py-0.5 rounded-full">{inventoryAlerts.length} items</span>
+                                        )}
+                                    </div>
+                                    {inventoryAlerts.length === 0 ? (
+                                        <div className="p-10 text-center">
+                                            <CheckCircle className="w-10 h-10 text-emerald-400 mx-auto mb-2" />
+                                            <p className="text-sm font-medium text-slate-700">All stocked up!</p>
+                                            <p className="text-xs text-slate-400 mt-1">No medicines below threshold</p>
+                                        </div>
+                                    ) : (
+                                        <div className="overflow-x-auto">
+                                            <table className="w-full text-sm">
+                                                <thead>
+                                                    <tr className="bg-slate-50 text-xs font-semibold text-slate-500 uppercase tracking-wide">
+                                                        <th className="px-5 py-3 text-left">Medicine</th>
+                                                        <th className="px-5 py-3 text-left">Stock</th>
+                                                        <th className="px-5 py-3 text-left">Status</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody className="divide-y divide-slate-100">
+                                                    {inventoryAlerts.slice(0, 6).map((med) => (
+                                                        <tr key={med.id} className="hover:bg-slate-50 transition-colors">
+                                                            <td className="px-5 py-3 font-medium text-slate-900">{med.name}</td>
+                                                            <td className="px-5 py-3 text-slate-600">{med.quantity} units</td>
+                                                            <td className="px-5 py-3">
+                                                                <span className={`inline-flex px-2 py-0.5 text-xs font-semibold rounded-full ${stockBadge(med.quantity)}`}>
+                                                                    {med.quantity === 0 ? 'Out of stock' : 'Low stock'}
+                                                                </span>
+                                                            </td>
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* ML Predictions — always rendered */}
+                            <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden">
+                                {/* header */}
+                                <div className="px-5 py-4 border-b border-slate-100 flex flex-wrap items-center gap-3">
+                                    <div className="flex items-center gap-2">
+                                        <div className="p-1.5 bg-blue-100 rounded-lg">
+                                            <TrendingUp className="w-4 h-4 text-blue-600" />
+                                        </div>
+                                        <h3 className="text-sm font-semibold text-slate-900">AI Stock Predictions</h3>
+                                        <span className="text-xs bg-blue-50 text-blue-600 border border-blue-200 font-semibold px-2 py-0.5 rounded-full">ML Powered</span>
+                                    </div>
+                                    <div className="ml-auto flex items-center gap-2">
+                                        {mlHealthLoading ? (
+                                            <span className="text-xs text-slate-400 flex items-center gap-1">
+                                                <RefreshCw className="w-3 h-3 animate-spin" /> Checking&#8230;
+                                            </span>
+                                        ) : mlHealth ? (
+                                            <span className={`flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full border ${
+                                                mlHealth.status === 'healthy'
+                                                    ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                                    : mlHealth.status === 'unreachable'
+                                                    ? 'bg-red-50 text-red-600 border-red-200'
+                                                    : 'bg-amber-50 text-amber-600 border-amber-200'
+                                            }`}>
+                                                <span className={`w-1.5 h-1.5 rounded-full ${mlHealth.status === 'healthy' ? 'bg-emerald-500' : mlHealth.status === 'unreachable' ? 'bg-red-500' : 'bg-amber-400'}`} />
+                                                ML {mlHealth.status}
+                                            </span>
+                                        ) : null}
+                                        <button onClick={fetchPredictions} disabled={predictionsLoading} className="p-1.5 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 border border-slate-200 transition disabled:opacity-40" title="Refresh predictions">
+                                            <RefreshCw className={`w-3.5 h-3.5 ${predictionsLoading ? 'animate-spin' : ''}`} />
+                                        </button>
+                                    </div>
+                                </div>
+
+                                {/* Summary row */}
+                                {predictions?.summary && (
+                                    <div className="grid grid-cols-3 divide-x divide-slate-100 border-b border-slate-100">
+                                        {[
+                                            { label: 'Urgent Restock', value: predictions.summary.urgentRestock ?? 0, bg: 'bg-red-50',    text: 'text-red-600',     dot: 'bg-red-500'    },
+                                            { label: 'At Risk',        value: predictions.summary.atRisk        ?? 0, bg: 'bg-amber-50',  text: 'text-amber-600',   dot: 'bg-amber-400'  },
+                                            { label: 'Stable',         value: predictions.summary.stable        ?? 0, bg: 'bg-emerald-50',text: 'text-emerald-600', dot: 'bg-emerald-500'},
+                                        ].map(({ label, value, bg, text, dot }) => (
+                                            <div key={label} className={`${bg} px-5 py-3 flex items-center gap-3`}>
+                                                <span className={`w-2 h-2 rounded-full ${dot} shrink-0`} />
+                                                <div>
+                                                    <p className="text-xs text-slate-500">{label}</p>
+                                                    <p className={`text-xl font-bold ${text}`}>{value}</p>
                                                 </div>
                                             </div>
                                         ))}
                                     </div>
-                                    {/* Desktop Table View */}
-                                    <table className="w-full hidden sm:table">
-                                        <thead>
-                                            <tr className="border-b border-gray-200">
-                                                <th className="px-4 lg:px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Date</th>
-                                                <th className="px-4 lg:px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Type</th>
-                                                <th className="px-4 lg:px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Medicine</th>
-                                                <th className="px-4 lg:px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Qty</th>
-                                                <th className="px-4 lg:px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Amount</th>
-                                                <th className="px-4 lg:px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider hidden lg:table-cell">Patient</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody className="divide-y divide-gray-100">
-                                            {transactions.map((txn) => (
-                                                <tr key={txn.id} className="hover:bg-gray-50 transition-colors">
-                                                    <td className="px-4 lg:px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                        {new Date(txn.createdAt).toLocaleString('en-IN', {
-                                                            month: 'short',
-                                                            day: 'numeric',
-                                                            hour: '2-digit',
-                                                            minute: '2-digit'
-                                                        })}
-                                                    </td>
-                                                    <td className="px-4 lg:px-6 py-4 whitespace-nowrap">
-                                                        <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
-                                                            txn.type === 'add' ? 'bg-blue-50 text-blue-700' :
-                                                            txn.type === 'issue' ? 'bg-green-50 text-green-700' :
-                                                            txn.type === 'update' ? 'bg-yellow-50 text-yellow-700' :
-                                                            'bg-red-50 text-red-700'
-                                                        }`}>
-                                                            {txn.type.charAt(0).toUpperCase() + txn.type.slice(1)}
-                                                        </span>
-                                                    </td>
-                                                    <td className="px-4 lg:px-6 py-4 text-sm font-medium text-gray-900">
-                                                        {txn.medicineName}
-                                                    </td>
-                                                    <td className="px-4 lg:px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                                                        {txn.quantity}
-                                                    </td>
-                                                    <td className="px-4 lg:px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                                                        ₹{txn.totalAmount ? txn.totalAmount.toFixed(2) : '0.00'}
-                                                    </td>
-                                                    <td className="px-4 lg:px-6 py-4 text-sm text-gray-600 hidden lg:table-cell">
-                                                        {txn.patientName || '—'}
-                                                    </td>
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                )}
+                                )}
 
-                {activeTab === 'inventory' && (
-                    <div className="space-y-4 sm:space-y-6">
-                        {/* Inventory Header with Stats */}
-                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-                            <div className="bg-white rounded-lg border border-gray-200 p-4">
-                                <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Total Items</p>
-                                <p className="text-2xl font-semibold text-gray-900 mt-1">{stats?.totalItems || 0}</p>
-                            </div>
-                            <div className="bg-white rounded-lg border border-gray-200 p-4">
-                                <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Total Stock</p>
-                                <p className="text-2xl font-semibold text-gray-900 mt-1">{stats?.totalQuantity || 0}</p>
-                            </div>
-                            <div className="bg-white rounded-lg border border-gray-200 p-4">
-                                <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Low Stock</p>
-                                <p className="text-2xl font-semibold text-gray-900 mt-1">{stats?.lowStock || 0}</p>
-                            </div>
-                            <div className="bg-white rounded-lg border border-gray-200 p-4">
-                                <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Out of Stock</p>
-                                <p className="text-2xl font-semibold text-gray-900 mt-1">{stats?.outOfStock || 0}</p>
-                            </div>
-                        </div>
+                                <div className="p-5">
+                                    {predictionsLoading && (
+                                        <div className="flex items-center justify-center py-14 gap-3">
+                                            <RefreshCw className="w-5 h-5 text-blue-500 animate-spin" />
+                                            <span className="text-sm text-slate-400">Analysing inventory patterns&#8230;</span>
+                                        </div>
+                                    )}
 
-                        {/* Medicines List */}
-                        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-                            <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
-                                <h3 className="text-lg font-semibold text-gray-900">Medicine Inventory</h3>
-                                <div className="flex gap-2">
-                                    <button 
-                                        onClick={() => { resetIssueForm(); setShowIssueModal(true); }}
-                                        className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
-                                    >
-                                        <Send className="w-4 h-4" />
-                                        <span>Issue Medicine</span>
-                                    </button>
-                                    <button 
-                                        onClick={() => setShowAddModal(true)}
-                                        className="flex items-center space-x-2 px-4 py-2 bg-gray-900 text-white rounded-lg text-sm font-medium hover:bg-gray-800 transition-colors"
-                                    >
-                                        <Plus className="w-4 h-4" />
-                                        <span>Add Medicine</span>
-                                    </button>
-                                </div>
-                            </div>
-                            
-                            {loading && medicines.length === 0 ? (
-                                <div className="p-16 text-center">
-                                    <div className="w-10 h-10 border-2 border-gray-900 border-t-transparent rounded-full animate-spin mx-auto"></div>
-                                    <p className="text-gray-500 mt-4 text-sm">Loading inventory...</p>
-                                </div>
-                            ) : medicines.length === 0 ? (
-                                <div className="p-16 text-center">
-                                    <Package className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-                                    <h3 className="text-lg font-semibold text-gray-700 mb-2">No Medicines Found</h3>
-                                    <p className="text-gray-500 mb-6 text-sm">Add your first medicine to get started</p>
-                                    <button 
-                                        onClick={() => setShowAddModal(true)}
-                                        className="px-5 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 text-sm font-medium"
-                                    >
-                                        Add First Medicine
-                                    </button>
-                                </div>
-                            ) : (
-                                <>
-                                    {/* Mobile Card View */}
-                                    <div className="lg:hidden divide-y divide-gray-100">
-                                        {medicines.map((medicine) => (
-                                            <div key={medicine.id} className="p-4 space-y-3">
-                                                <div className="flex items-start justify-between">
-                                                    <div>
-                                                        <p className="text-sm font-medium text-gray-900">{medicine.name}</p>
-                                                        {medicine.description && (
-                                                            <p className="text-xs text-gray-500 mt-0.5">{medicine.description}</p>
+                                    {!predictionsLoading && (!predictions?.predictions || predictions.predictions.length === 0) && (
+                                        <div className="flex flex-col items-center justify-center py-14 gap-3 text-center">
+                                            <div className="p-3 bg-slate-100 rounded-full">
+                                                <TrendingUp className="w-6 h-6 text-slate-400" />
+                                            </div>
+                                            <p className="text-sm font-medium text-slate-600">No prediction data available</p>
+                                            <p className="text-xs text-slate-400 max-w-xs">Add medicines and record transactions to enable AI stock forecasting.</p>
+                                            <button onClick={fetchPredictions} className="mt-1 px-4 py-2 bg-blue-600 text-white text-xs font-semibold rounded-lg hover:bg-blue-700 transition">Retry</button>
+                                        </div>
+                                    )}
+
+                                    {!predictionsLoading && predictions?.predictions && predictions.predictions.length > 0 && (
+                                        <div className="space-y-5">
+                                            <div>
+                                                <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-2">Select Medicine</p>
+                                                <div className="flex flex-wrap gap-2">
+                                                    {predictions.predictions.map((pred, i) => {
+                                                        const urgent = pred.daysUntilStockout <= 3;
+                                                        const atRisk = pred.daysUntilStockout <= 7 && !urgent;
+                                                        return (
+                                                            <button
+                                                                key={i}
+                                                                onClick={() => setSelectedPrediction(pred)}
+                                                                className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border transition-all ${
+                                                                    selectedPrediction?.medicineName === pred.medicineName
+                                                                        ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
+                                                                        : 'bg-white text-slate-600 border-slate-200 hover:border-blue-300 hover:text-blue-600'
+                                                                }`}
+                                                            >
+                                                                {urgent && <span className="w-1.5 h-1.5 rounded-full bg-red-500 shrink-0" />}
+                                                                {atRisk && <span className="w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0" />}
+                                                                {pred.medicineName}
+                                                            </button>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </div>
+
+                                            {selectedPrediction && (() => {
+                                                const pts = selectedPrediction.predictions?.slice(0, 7) || [];
+                                                const urgent = selectedPrediction.daysUntilStockout <= 3;
+                                                const atRisk = !urgent && selectedPrediction.daysUntilStockout <= 7;
+                                                const statusColor = urgent ? '#dc2626' : atRisk ? '#d97706' : '#059669';
+                                                const statusLabel = urgent ? 'Urgent Restock' : atRisk ? 'At Risk' : 'Stable';
+                                                const statusBg = urgent ? 'bg-red-50 text-red-600 border-red-200' : atRisk ? 'bg-amber-50 text-amber-600 border-amber-200' : 'bg-emerald-50 text-emerald-600 border-emerald-200';
+                                                const W = 600, H = 180, PL = 40, PR = 16, PT = 24, PB = 8;
+                                                const chartW = W - PL - PR, chartH = H - PT - PB;
+                                                const maxV = Math.max(...pts.map(d => d.predictedStock), selectedPrediction.currentStock || 0, 1);
+                                                const minV = Math.max(0, Math.min(...pts.map(d => d.predictedStock)) - 5);
+                                                const range = maxV - minV || 1;
+                                                const toX = i2 => PL + (i2 / Math.max(pts.length - 1, 1)) * chartW;
+                                                const toY = v => PT + chartH * (1 - (v - minV) / range);
+                                                const points = pts.map((d, i2) => ({ x: toX(i2), y: toY(d.predictedStock), val: d.predictedStock }));
+                                                const linePath = points.map((p, i2) => `${i2 === 0 ? 'M' : 'L'}${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ');
+                                                const fillPath = `${linePath} L${points[points.length - 1].x.toFixed(1)},${(PT + chartH).toFixed(1)} L${PL},${(PT + chartH).toFixed(1)} Z`;
+                                                const threshold = 50;
+                                                const threshY = toY(threshold);
+                                                const trendVal = selectedPrediction.trendAnalysis;
+                                                const trendLabel = trendVal === 'increasing' ? 'Up' : trendVal === 'decreasing' ? 'Down' : 'Stable';
+                                                const trendColor = trendVal === 'increasing' ? 'text-emerald-600' : trendVal === 'decreasing' ? 'text-red-600' : 'text-slate-500';
+                                                const trendArrow = trendVal === 'increasing' ? '\u2191' : trendVal === 'decreasing' ? '\u2193' : '\u2192';
+                                                return (
+                                                    <div className="rounded-2xl border border-slate-200 overflow-hidden">
+                                                        <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-3 bg-slate-50 border-b border-slate-100">
+                                                            <div>
+                                                                <p className="text-sm font-semibold text-slate-900">{selectedPrediction.medicineName}</p>
+                                                                <p className="text-xs text-slate-400">Current stock: <span className="font-semibold text-slate-600">{selectedPrediction.currentStock ?? '\u2014'} units</span></p>
+                                                            </div>
+                                                            <span className={`text-xs font-semibold px-2.5 py-1 rounded-full border ${statusBg}`}>{statusLabel}</span>
+                                                        </div>
+
+                                                        <div className="px-4 pt-4 pb-1 bg-white">
+                                                            <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-2">7-Day Stock Forecast</p>
+                                                            {pts.length ? (
+                                                                <svg viewBox={`0 0 ${W} ${H}`} className="w-full" preserveAspectRatio="xMidYMid meet">
+                                                                    <defs>
+                                                                        <linearGradient id="predGrad" x1="0" y1="0" x2="0" y2="1">
+                                                                            <stop offset="0%" stopColor={statusColor} stopOpacity="0.18" />
+                                                                            <stop offset="100%" stopColor={statusColor} stopOpacity="0.02" />
+                                                                        </linearGradient>
+                                                                    </defs>
+                                                                    {[0, 0.25, 0.5, 0.75, 1].map(t => {
+                                                                        const gy = PT + chartH * t;
+                                                                        const gv = Math.round(maxV - range * t);
+                                                                        return (
+                                                                            <g key={t}>
+                                                                                <line x1={PL} y1={gy} x2={W - PR} y2={gy} stroke="#e2e8f0" strokeWidth="1" strokeDasharray="4 3" />
+                                                                                <text x={PL - 6} y={gy + 4} textAnchor="end" fontSize="9" fill="#94a3b8">{gv}</text>
+                                                                            </g>
+                                                                        );
+                                                                    })}
+                                                                    {threshold >= minV && threshold <= maxV && (
+                                                                        <g>
+                                                                            <line x1={PL} y1={threshY} x2={W - PR} y2={threshY} stroke="#f59e0b" strokeWidth="1.5" strokeDasharray="5 3" />
+                                                                            <text x={W - PR + 3} y={threshY + 4} fontSize="9" fill="#d97706" fontWeight="600">Low</text>
+                                                                        </g>
+                                                                    )}
+                                                                    <path d={fillPath} fill="url(#predGrad)" />
+                                                                    <path d={linePath} fill="none" stroke={statusColor} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                                                                    {points.map((p, i2) => (
+                                                                        <g key={i2}>
+                                                                            <circle cx={p.x} cy={p.y} r="5" fill="white" stroke={statusColor} strokeWidth="2" />
+                                                                            <text x={p.x} y={p.y - 9} textAnchor="middle" fontSize="10" fill="#475569" fontWeight="700">{p.val}</text>
+                                                                        </g>
+                                                                    ))}
+                                                                </svg>
+                                                            ) : (
+                                                                <p className="text-xs text-slate-400 text-center py-8">No forecast data for this medicine</p>
+                                                            )}
+                                                            <div className="flex justify-between text-[10px] text-slate-400 font-medium mt-0.5 mb-2" style={{ paddingLeft: `${PL}px`, paddingRight: `${PR}px` }}>
+                                                                {pts.map((d, i2) => (
+                                                                    <span key={i2}>{new Date(d.date).toLocaleDateString('en-US', { weekday: 'short' })}</span>
+                                                                ))}
+                                                            </div>
+                                                        </div>
+
+                                                        <div className="grid grid-cols-2 sm:grid-cols-4 divide-x divide-y sm:divide-y-0 divide-slate-100 border-t border-slate-100">
+                                                            {[
+                                                                { label: 'Avg Daily Demand', value: selectedPrediction.averageDailyDemand?.toFixed(1) ?? '0', sub: 'units/day', color: 'text-blue-600' },
+                                                                { label: 'Days to Stockout', value: selectedPrediction.daysUntilStockout > 30 ? '30+' : (selectedPrediction.daysUntilStockout ?? '\u2014'), sub: 'days remaining', color: urgent ? 'text-red-600' : atRisk ? 'text-amber-600' : 'text-emerald-600' },
+                                                                { label: 'Trend', value: `${trendArrow} ${trendLabel}`, sub: 'demand trend', color: trendColor },
+                                                                { label: 'Algorithm', value: 'Linear Reg.', sub: 'forecast model', color: 'text-violet-600' },
+                                                            ].map(({ label, value, sub, color }) => (
+                                                                <div key={label} className="px-5 py-3 bg-white text-center">
+                                                                    <p className="text-xs text-slate-400 mb-0.5">{label}</p>
+                                                                    <p className={`text-base font-bold ${color} leading-tight`}>{value}</p>
+                                                                    <p className="text-[10px] text-slate-300 mt-0.5">{sub}</p>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+
+                                                        {selectedPrediction.restockRecommendation && (
+                                                            <div className={`px-5 py-2.5 text-xs font-medium border-t ${urgent ? 'bg-red-50 text-red-700 border-red-100' : atRisk ? 'bg-amber-50 text-amber-700 border-amber-100' : 'bg-emerald-50 text-emerald-700 border-emerald-100'}`}>
+                                                                {selectedPrediction.restockRecommendation}
+                                                            </div>
                                                         )}
                                                     </div>
-                                                    <span className="inline-flex px-2.5 py-1 text-xs font-medium bg-gray-100 text-gray-700 rounded-full">
-                                                        {medicine.category || 'General'}
-                                                    </span>
-                                                </div>
-                                                <div className="grid grid-cols-3 gap-2 text-sm">
-                                                    <div>
-                                                        <p className="text-xs text-gray-500">Quantity</p>
-                                                        <span className={`inline-flex px-2 py-0.5 text-xs font-medium rounded-full ${
-                                                            medicine.quantity === 0 ? 'bg-red-50 text-red-700' :
-                                                            medicine.quantity < 50 ? 'bg-yellow-50 text-yellow-700' :
-                                                            'bg-green-50 text-green-700'
-                                                        }`}>
-                                                            {medicine.quantity}
-                                                        </span>
-                                                    </div>
-                                                    <div>
-                                                        <p className="text-xs text-gray-500">Price</p>
-                                                        <p className="font-medium text-gray-900">₹{medicine.price || '0.00'}</p>
-                                                    </div>
-                                                    <div>
-                                                        <p className="text-xs text-gray-500">Expiry</p>
-                                                        <p className="text-gray-600">{medicine.expiryDate ? new Date(medicine.expiryDate).toLocaleDateString() : '—'}</p>
-                                                    </div>
-                                                </div>
-                                                <div className="flex items-center space-x-4 pt-2 border-t border-gray-100">
-                                                    <button 
-                                                        onClick={() => openIssueModal(medicine)}
-                                                        className="text-sm text-blue-600 hover:text-blue-700 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-                                                        disabled={medicine.quantity === 0}
-                                                    >
-                                                        Issue
-                                                    </button>
-                                                    <button 
-                                                        onClick={() => openEditModal(medicine)}
-                                                        className="text-sm text-gray-600 hover:text-gray-700 font-medium"
-                                                    >
-                                                        Edit
-                                                    </button>
-                                                    <button 
-                                                        onClick={() => handleRemoveMedicine(medicine.id, medicine.name)}
-                                                        className="text-sm text-red-600 hover:text-red-700 font-medium"
-                                                    >
-                                                        Remove
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                    
-                                    {/* Desktop Table View */}
-                                    <div className="hidden lg:block overflow-x-auto">
-                                        <table className="w-full">
+                                                );
+                                            })()}
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* ─── INVENTORY TAB ─── */}
+                    {activeTab === 'inventory' && (
+                        <div className="space-y-6">
+                            <div className="flex items-center justify-between">
+                                <h2 className="text-lg font-semibold text-slate-900">Medicine Inventory</h2>
+                                <div className="flex gap-2">
+                                    <button onClick={() => { resetIssueForm(); setShowIssueModal(true); }} className="flex items-center gap-1.5 px-3 py-2 bg-emerald-600 text-white text-sm font-medium rounded-lg hover:bg-emerald-700 transition-all">
+                                        <Send className="w-3.5 h-3.5" /><span>Issue</span>
+                                    </button>
+                                    <button onClick={() => setShowAddModal(true)} className="flex items-center gap-1.5 px-3 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-all">
+                                        <Plus className="w-3.5 h-3.5" /><span>Add Medicine</span>
+                                    </button>
+                                </div>
+                            </div>
+
+                            {loading && medicines.length === 0 ? (
+                                <div className="bg-white border border-slate-200 rounded-2xl p-16 text-center">
+                                    <div className="w-10 h-10 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+                                    <p className="text-sm text-slate-400">Loading inventory&#8230;</p>
+                                </div>
+                            ) : medicines.length === 0 ? (
+                                <div className="bg-white border border-slate-200 rounded-2xl p-16 text-center">
+                                    <div className="p-4 bg-slate-100 rounded-2xl w-fit mx-auto mb-4"><Package className="w-8 h-8 text-slate-400" /></div>
+                                    <p className="text-base font-semibold text-slate-700 mb-1">No medicines found</p>
+                                    <p className="text-sm text-slate-400 mb-5">Add your first medicine to start tracking inventory</p>
+                                    <button onClick={() => setShowAddModal(true)} className="px-5 py-2 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700 transition-all">Add First Medicine</button>
+                                </div>
+                            ) : (
+                                <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden">
+                                    <div className="overflow-x-auto">
+                                        <table className="w-full text-sm">
                                             <thead>
-                                                <tr className="border-b border-gray-200">
-                                                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Medicine</th>
-                                                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Category</th>
-                                                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Quantity</th>
-                                                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Price</th>
-                                                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Expiry</th>
-                                                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Actions</th>
+                                                <tr className="bg-slate-50 text-xs font-semibold text-slate-500 uppercase tracking-wide">
+                                                    <th className="px-5 py-3.5 text-left">Medicine</th>
+                                                    <th className="px-5 py-3.5 text-left hidden sm:table-cell">Category</th>
+                                                    <th className="px-5 py-3.5 text-left">Stock</th>
+                                                    <th className="px-5 py-3.5 text-left hidden md:table-cell">Price</th>
+                                                    <th className="px-5 py-3.5 text-left hidden lg:table-cell">Expiry</th>
+                                                    <th className="px-5 py-3.5 text-right">Actions</th>
                                                 </tr>
                                             </thead>
-                                            <tbody className="divide-y divide-gray-100">
+                                            <tbody className="divide-y divide-slate-100">
                                                 {medicines.map((medicine) => (
-                                                    <tr key={medicine.id} className="hover:bg-gray-50 transition-colors">
-                                                        <td className="px-6 py-4">
-                                                            <p className="text-sm font-medium text-gray-900">{medicine.name}</p>
-                                                            {medicine.description && (
-                                                                <p className="text-xs text-gray-500 mt-0.5">{medicine.description}</p>
-                                                            )}
+                                                    <tr key={medicine.id} className="hover:bg-slate-50 transition-colors">
+                                                        <td className="px-5 py-3.5">
+                                                            <p className="font-medium text-slate-900">{medicine.name}</p>
+                                                            {medicine.description && <p className="text-xs text-slate-400 mt-0.5 truncate max-w-xs">{medicine.description}</p>}
                                                         </td>
-                                                        <td className="px-6 py-4">
-                                                            <span className="inline-flex px-2.5 py-1 text-xs font-medium bg-gray-100 text-gray-700 rounded-full">
-                                                                {medicine.category || 'General'}
-                                                            </span>
+                                                        <td className="px-5 py-3.5 hidden sm:table-cell">
+                                                            <span className="text-xs bg-slate-100 text-slate-600 font-medium px-2 py-0.5 rounded-full">{medicine.category || 'General'}</span>
                                                         </td>
-                                                        <td className="px-6 py-4">
-                                                            <span className={`inline-flex px-2.5 py-1 text-xs font-medium rounded-full ${
-                                                                medicine.quantity === 0 ? 'bg-red-50 text-red-700' :
-                                                                medicine.quantity < 50 ? 'bg-yellow-50 text-yellow-700' :
-                                                                'bg-green-50 text-green-700'
-                                                            }`}>
-                                                                {medicine.quantity} units
-                                                            </span>
+                                                        <td className="px-5 py-3.5">
+                                                            <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${stockBadge(medicine.quantity)}`}>{medicine.quantity} units</span>
                                                         </td>
-                                                        <td className="px-6 py-4">
-                                                            <span className="text-sm font-medium text-gray-900">₹{medicine.price || '0.00'}</span>
-                                                        </td>
-                                                        <td className="px-6 py-4 text-sm text-gray-500">
-                                                            {medicine.expiryDate ? new Date(medicine.expiryDate).toLocaleDateString() : '—'}
-                                                        </td>
-                                                        <td className="px-6 py-4">
-                                                            <div className="flex items-center space-x-3">
-                                                                <button 
-                                                                    onClick={() => openIssueModal(medicine)}
-                                                                    className="text-sm text-blue-600 hover:text-blue-700 font-medium hover:underline disabled:opacity-50 disabled:cursor-not-allowed disabled:no-underline"
-                                                                    disabled={medicine.quantity === 0}
-                                                                >
-                                                                    Issue
-                                                                </button>
-                                                                <button 
-                                                                    onClick={() => openEditModal(medicine)}
-                                                                    className="text-sm text-gray-600 hover:text-gray-700 font-medium hover:underline"
-                                                                >
-                                                                    Edit
-                                                                </button>
-                                                                <button 
-                                                                    onClick={() => handleRemoveMedicine(medicine.id, medicine.name)}
-                                                                    className="text-sm text-red-600 hover:text-red-700 font-medium hover:underline"
-                                                                >
-                                                                    Remove
-                                                                </button>
+                                                        <td className="px-5 py-3.5 hidden md:table-cell font-medium text-slate-900">&#8377;{medicine.price || 0}</td>
+                                                        <td className="px-5 py-3.5 hidden lg:table-cell text-slate-500 text-xs">{medicine.expiryDate ? new Date(medicine.expiryDate).toLocaleDateString('en-GB') : '&#8212;'}</td>
+                                                        <td className="px-5 py-3.5 text-right">
+                                                            <div className="flex items-center justify-end gap-3">
+                                                                <button onClick={() => openIssueModal(medicine)} disabled={medicine.quantity === 0} className="text-xs font-semibold text-emerald-600 hover:text-emerald-700 disabled:opacity-40 disabled:cursor-not-allowed transition">Issue</button>
+                                                                <button onClick={() => openEditModal(medicine)} className="text-xs font-semibold text-blue-600 hover:text-blue-700 transition">Edit</button>
+                                                                <button onClick={() => handleRemoveMedicine(medicine.id, medicine.name)} className="text-xs font-semibold text-red-500 hover:text-red-600 transition">Remove</button>
                                                             </div>
                                                         </td>
                                                     </tr>
@@ -1247,184 +1015,137 @@ const PharmacistDashboard = () => {
                                             </tbody>
                                         </table>
                                     </div>
-                                </>
+                                </div>
                             )}
                         </div>
-                    </div>
-                )}
+                    )}
 
-                {activeTab === 'reports' && (
-                    <div className="space-y-6">
-                        {/* Reports Header */}
-                        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-                            <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
-                                <h3 className="text-lg font-semibold text-gray-900">Reports</h3>
-                                <button 
-                                    onClick={() => setShowReportModal(true)}
-                                    className="px-4 py-2 bg-gray-900 text-white rounded-lg text-sm font-medium hover:bg-gray-800 transition-colors flex items-center space-x-2"
-                                >
-                                    <Plus className="w-4 h-4" />
-                                    <span>Generate Report</span>
-                                </button>
-                            </div>
-                            
-                            {loading && reports.length === 0 ? (
-                                <div className="p-16 text-center">
-                                    <div className="w-10 h-10 border-2 border-gray-900 border-t-transparent rounded-full animate-spin mx-auto"></div>
-                                    <p className="text-gray-500 mt-4 text-sm">Loading reports...</p>
+                    {/* ─── TRANSACTIONS TAB ─── */}
+                    {activeTab === 'transactions' && (
+                        <div className="space-y-6">
+                            <h2 className="text-lg font-semibold text-slate-900">Transaction History</h2>
+
+                            {loading && transactions.length === 0 ? (
+                                <div className="bg-white border border-slate-200 rounded-2xl p-16 text-center">
+                                    <div className="w-10 h-10 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+                                    <p className="text-sm text-slate-400">Loading transactions&#8230;</p>
                                 </div>
-                            ) : reports.length === 0 ? (
-                                <div className="p-16 text-center">
-                                    <FileText className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-                                    <h3 className="text-lg font-semibold text-gray-700 mb-2">No Reports Found</h3>
-                                    <p className="text-gray-500 mb-6 text-sm">Generate your first report to get started</p>
-                                    <button 
-                                        onClick={() => setShowReportModal(true)}
-                                        className="px-5 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 text-sm font-medium"
-                                    >
-                                        Generate First Report
-                                    </button>
+                            ) : transactions.length === 0 ? (
+                                <div className="bg-white border border-slate-200 rounded-2xl p-16 text-center">
+                                    <div className="p-4 bg-slate-100 rounded-2xl w-fit mx-auto mb-4"><ArrowLeftRight className="w-8 h-8 text-slate-400" /></div>
+                                    <p className="text-base font-semibold text-slate-700 mb-1">No transactions yet</p>
+                                    <p className="text-sm text-slate-400">Transaction history will appear here once medicines are issued or updated</p>
                                 </div>
                             ) : (
-                                <>
-                                    {/* Mobile Card View */}
-                                    <div className="lg:hidden divide-y divide-gray-100">
-                                        {reports.map((report) => (
-                                            <div key={report.id} className="p-4 space-y-3">
-                                                <div className="flex items-start justify-between">
-                                                    <div className="flex items-center space-x-3">
-                                                        <FileText className="w-5 h-5 text-gray-400" />
-                                                        <div>
-                                                            <p className="text-sm font-medium text-gray-900">{report.title}</p>
-                                                            {report.description && (
-                                                                <p className="text-xs text-gray-500 mt-0.5">{report.description}</p>
-                                                            )}
-                                                        </div>
-                                                    </div>
-                                                    <span className={`inline-flex px-2 py-0.5 text-xs font-medium rounded-full ${
-                                                        report.status === 'completed' ? 'bg-green-50 text-green-700' :
-                                                        report.status === 'generating' ? 'bg-yellow-50 text-yellow-700' :
-                                                        'bg-red-50 text-red-700'
-                                                    }`}>
-                                                        {report.status.charAt(0).toUpperCase() + report.status.slice(1)}
-                                                    </span>
-                                                </div>
-                                                <div className="grid grid-cols-3 gap-2 text-sm">
-                                                    <div>
-                                                        <p className="text-xs text-gray-500">Type</p>
-                                                        <span className={`inline-flex px-2 py-0.5 text-xs font-medium rounded-full ${
-                                                            report.reportType === 'inventory' ? 'bg-blue-50 text-blue-700' :
-                                                            report.reportType === 'transaction' ? 'bg-green-50 text-green-700' :
-                                                            'bg-purple-50 text-purple-700'
-                                                        }`}>
-                                                            {report.reportType.charAt(0).toUpperCase() + report.reportType.slice(1)}
-                                                        </span>
-                                                    </div>
-                                                    <div>
-                                                        <p className="text-xs text-gray-500">Size</p>
-                                                        <p className="text-gray-600">{formatFileSize(report.fileSize)}</p>
-                                                    </div>
-                                                    <div>
-                                                        <p className="text-xs text-gray-500">Generated</p>
-                                                        <p className="text-gray-600">{new Date(report.generatedAt).toLocaleDateString()}</p>
-                                                    </div>
-                                                </div>
-                                                <div className="flex items-center space-x-4 pt-2 border-t border-gray-100">
-                                                    {report.status === 'completed' && (
-                                                        <button 
-                                                            onClick={() => handleDownloadReport(report.id)}
-                                                            className="text-blue-600 hover:text-blue-700 font-medium text-sm flex items-center space-x-1"
-                                                        >
-                                                            <Download className="w-4 h-4" />
-                                                            <span>Download</span>
-                                                        </button>
-                                                    )}
-                                                    <button 
-                                                        onClick={() => handleDeleteReport(report.id, report.title)}
-                                                        className="text-red-600 hover:text-red-700 font-medium text-sm flex items-center space-x-1"
-                                                    >
-                                                        <Trash2 className="w-4 h-4" />
-                                                        <span>Delete</span>
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                    
-                                    {/* Desktop Table View */}
-                                    <div className="hidden lg:block overflow-x-auto">
-                                        <table className="w-full">
+                                <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden">
+                                    <div className="overflow-x-auto">
+                                        <table className="w-full text-sm">
                                             <thead>
-                                                <tr className="border-b border-gray-200">
-                                                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Report</th>
-                                                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Type</th>
-                                                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Generated</th>
-                                                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Size</th>
-                                                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Status</th>
-                                                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Actions</th>
+                                                <tr className="bg-slate-50 text-xs font-semibold text-slate-500 uppercase tracking-wide">
+                                                    <th className="px-5 py-3.5 text-left">Date</th>
+                                                    <th className="px-5 py-3.5 text-left">Type</th>
+                                                    <th className="px-5 py-3.5 text-left">Medicine</th>
+                                                    <th className="px-5 py-3.5 text-left hidden sm:table-cell">Qty</th>
+                                                    <th className="px-5 py-3.5 text-left hidden md:table-cell">Amount</th>
+                                                    <th className="px-5 py-3.5 text-left hidden lg:table-cell">Patient</th>
                                                 </tr>
                                             </thead>
-                                            <tbody className="divide-y divide-gray-100">
+                                            <tbody className="divide-y divide-slate-100">
+                                                {transactions.map((txn) => (
+                                                    <tr key={txn.id} className="hover:bg-slate-50 transition-colors">
+                                                        <td className="px-5 py-3.5 text-slate-500 text-xs whitespace-nowrap">
+                                                            {new Date(txn.createdAt).toLocaleString('en-IN', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                                                        </td>
+                                                        <td className="px-5 py-3.5">
+                                                            <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${typeBadge(txn.type)}`}>{txn.type.charAt(0).toUpperCase() + txn.type.slice(1)}</span>
+                                                        </td>
+                                                        <td className="px-5 py-3.5 font-medium text-slate-900">{txn.medicineName}</td>
+                                                        <td className="px-5 py-3.5 text-slate-600 hidden sm:table-cell">{txn.quantity}</td>
+                                                        <td className="px-5 py-3.5 font-medium text-slate-900 hidden md:table-cell">&#8377;{txn.totalAmount?.toFixed(2) || '0.00'}</td>
+                                                        <td className="px-5 py-3.5 text-slate-500 hidden lg:table-cell">{txn.patientName || '&#8212;'}</td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    {/* ─── REPORTS TAB ─── */}
+                    {activeTab === 'reports' && (
+                        <div className="space-y-6">
+                            <div className="flex items-center justify-between">
+                                <h2 className="text-lg font-semibold text-slate-900">Reports</h2>
+                                <button onClick={() => setShowReportModal(true)} className="flex items-center gap-1.5 px-3 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-all">
+                                    <Plus className="w-3.5 h-3.5" /><span>Generate Report</span>
+                                </button>
+                            </div>
+
+                            {loading && reports.length === 0 ? (
+                                <div className="bg-white border border-slate-200 rounded-2xl p-16 text-center">
+                                    <div className="w-10 h-10 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+                                    <p className="text-sm text-slate-400">Loading reports&#8230;</p>
+                                </div>
+                            ) : reports.length === 0 ? (
+                                <div className="bg-white border border-slate-200 rounded-2xl p-16 text-center">
+                                    <div className="p-4 bg-slate-100 rounded-2xl w-fit mx-auto mb-4"><FileText className="w-8 h-8 text-slate-400" /></div>
+                                    <p className="text-base font-semibold text-slate-700 mb-1">No reports yet</p>
+                                    <p className="text-sm text-slate-400 mb-5">Generate your first report to get started</p>
+                                    <button onClick={() => setShowReportModal(true)} className="px-5 py-2 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700 transition-all">Generate First Report</button>
+                                </div>
+                            ) : (
+                                <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden">
+                                    <div className="overflow-x-auto">
+                                        <table className="w-full text-sm">
+                                            <thead>
+                                                <tr className="bg-slate-50 text-xs font-semibold text-slate-500 uppercase tracking-wide">
+                                                    <th className="px-5 py-3.5 text-left">Report</th>
+                                                    <th className="px-5 py-3.5 text-left hidden sm:table-cell">Type</th>
+                                                    <th className="px-5 py-3.5 text-left hidden md:table-cell">Generated</th>
+                                                    <th className="px-5 py-3.5 text-left hidden lg:table-cell">Size</th>
+                                                    <th className="px-5 py-3.5 text-left">Status</th>
+                                                    <th className="px-5 py-3.5 text-right">Actions</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody className="divide-y divide-slate-100">
                                                 {reports.map((report) => (
-                                                    <tr key={report.id} className="hover:bg-gray-50 transition-colors">
-                                                        <td className="px-6 py-4">
-                                                            <div className="flex items-center space-x-3">
-                                                                <FileText className="w-5 h-5 text-gray-400" />
+                                                    <tr key={report.id} className="hover:bg-slate-50 transition-colors">
+                                                        <td className="px-5 py-3.5">
+                                                            <div className="flex items-center gap-3">
+                                                                <div className="p-2 bg-blue-50 rounded-lg shrink-0"><FileText className="w-4 h-4 text-blue-500" /></div>
                                                                 <div>
-                                                                    <p className="text-sm font-medium text-gray-900">{report.title}</p>
-                                                                    {report.description && (
-                                                                        <p className="text-xs text-gray-500 mt-0.5">{report.description}</p>
-                                                                    )}
+                                                                    <p className="font-medium text-slate-900">{report.title}</p>
+                                                                    {report.description && <p className="text-xs text-slate-400 mt-0.5">{report.description}</p>}
                                                                 </div>
                                                             </div>
                                                         </td>
-                                                        <td className="px-6 py-4">
-                                                            <span className={`inline-flex px-2.5 py-1 text-xs font-medium rounded-full ${
-                                                                report.reportType === 'inventory' ? 'bg-blue-50 text-blue-700' :
-                                                                report.reportType === 'transaction' ? 'bg-green-50 text-green-700' :
-                                                                'bg-purple-50 text-purple-700'
-                                                            }`}>
-                                                                {report.reportType.charAt(0).toUpperCase() + report.reportType.slice(1)}
-                                                            </span>
+                                                        <td className="px-5 py-3.5 hidden sm:table-cell">
+                                                            <span className={`text-xs font-semibold px-2.5 py-1 rounded-full border ${
+                                                                report.reportType === 'inventory' ? 'bg-blue-50 text-blue-600 border-blue-200' :
+                                                                report.reportType === 'transaction' ? 'bg-emerald-50 text-emerald-600 border-emerald-200' :
+                                                                'bg-violet-50 text-violet-600 border-violet-200'
+                                                            }`}>{report.reportType.charAt(0).toUpperCase() + report.reportType.slice(1)}</span>
                                                         </td>
-                                                        <td className="px-6 py-4 text-sm text-gray-500">
-                                                            {new Date(report.generatedAt).toLocaleString('en-IN', {
-                                                                month: 'short',
-                                                                day: 'numeric',
-                                                                year: 'numeric',
-                                                                hour: '2-digit',
-                                                                minute: '2-digit'
-                                                            })}
+                                                        <td className="px-5 py-3.5 text-slate-500 text-xs hidden md:table-cell">{new Date(report.generatedAt).toLocaleString('en-IN', { month: 'short', day: 'numeric', year: 'numeric' })}</td>
+                                                        <td className="px-5 py-3.5 text-slate-500 text-xs hidden lg:table-cell">{formatFileSize(report.fileSize)}</td>
+                                                        <td className="px-5 py-3.5">
+                                                            <span className={`text-xs font-semibold px-2.5 py-1 rounded-full border ${
+                                                                report.status === 'completed' ? 'bg-emerald-50 text-emerald-600 border-emerald-200' :
+                                                                report.status === 'generating' ? 'bg-amber-50 text-amber-600 border-amber-200' :
+                                                                'bg-red-50 text-red-600 border-red-200'
+                                                            }`}>{report.status.charAt(0).toUpperCase() + report.status.slice(1)}</span>
                                                         </td>
-                                                        <td className="px-6 py-4 text-sm text-gray-500">
-                                                            {formatFileSize(report.fileSize)}
-                                                        </td>
-                                                        <td className="px-6 py-4">
-                                                            <span className={`inline-flex px-2.5 py-1 text-xs font-medium rounded-full ${
-                                                                report.status === 'completed' ? 'bg-green-50 text-green-700' :
-                                                                report.status === 'generating' ? 'bg-yellow-50 text-yellow-700' :
-                                                                'bg-red-50 text-red-700'
-                                                            }`}>
-                                                                {report.status.charAt(0).toUpperCase() + report.status.slice(1)}
-                                                            </span>
-                                                        </td>
-                                                        <td className="px-6 py-4">
-                                                            <div className="flex items-center space-x-3">
+                                                        <td className="px-5 py-3.5 text-right">
+                                                            <div className="flex items-center justify-end gap-3">
                                                                 {report.status === 'completed' && (
-                                                                    <button 
-                                                                        onClick={() => handleDownloadReport(report.id)}
-                                                                        className="text-blue-600 hover:text-blue-700 font-medium text-sm hover:underline flex items-center space-x-1"
-                                                                    >
-                                                                        <Download className="w-4 h-4" />
-                                                                        <span>Download</span>
+                                                                    <button onClick={() => handleDownloadReport(report.id)} className="flex items-center gap-1 text-xs font-semibold text-blue-600 hover:text-blue-700 transition">
+                                                                        <Download className="w-3.5 h-3.5" /><span>Download</span>
                                                                     </button>
                                                                 )}
-                                                                <button 
-                                                                    onClick={() => handleDeleteReport(report.id, report.title)}
-                                                                    className="text-red-600 hover:text-red-700 font-medium text-sm hover:underline flex items-center space-x-1"
-                                                                >
-                                                                    <Trash2 className="w-4 h-4" />
-                                                                    <span>Delete</span>
+                                                                <button onClick={() => handleDeleteReport(report.id, report.title)} className="flex items-center gap-1 text-xs font-semibold text-red-500 hover:text-red-600 transition">
+                                                                    <Trash2 className="w-3.5 h-3.5" /><span>Delete</span>
                                                                 </button>
                                                             </div>
                                                         </td>
@@ -1433,555 +1154,253 @@ const PharmacistDashboard = () => {
                                             </tbody>
                                         </table>
                                     </div>
-                                </>
+                                </div>
                             )}
                         </div>
+                    )}
+
+                    {/* ─── SETTINGS TAB ─── */}
+                    {activeTab === 'personal-details' && (
+                        <div className="space-y-6">
+                            {/* Profile card */}
+                            <div className="bg-white border border-slate-200 rounded-2xl p-6">
+                                <div className="flex items-center gap-4 pb-5 mb-5 border-b border-slate-100">
+                                    <div className="w-14 h-14 bg-blue-600 rounded-2xl flex items-center justify-center text-xl font-bold text-white shrink-0">
+                                        {user?.fullName?.charAt(0)?.toUpperCase() || 'P'}
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <p className="text-base font-semibold text-slate-900 truncate">{user?.fullName || profileForm.name || 'Pharmacist'}</p>
+                                        <p className="text-sm text-slate-400 truncate">{user?.email || ''}</p>
+                                    </div>
+                                    <div className="text-right shrink-0">
+                                        <p className="text-xs text-slate-400">Pharmacist ID</p>
+                                        <p className="text-sm font-mono font-bold text-blue-600">#{user?.userId || 'N/A'}</p>
+                                    </div>
+                                </div>
+
+                                <h3 className="text-sm font-semibold text-slate-900 mb-4">Profile Information</h3>
+                                <form onSubmit={handleUpdateProfile} className="space-y-4">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                        <div>
+                                            <label className={labelCls}>Full Name</label>
+                                            <input type="text" required value={profileForm.name} onChange={(e) => setProfileForm({...profileForm, name: e.target.value})} className={inputCls} placeholder="Enter your name" />
+                                        </div>
+                                        <div>
+                                            <label className={labelCls}>Gender</label>
+                                            <select value={profileForm.gender} onChange={(e) => setProfileForm({...profileForm, gender: e.target.value})} className={inputCls}>
+                                                <option value="">Select gender</option>
+                                                <option value="male">Male</option>
+                                                <option value="female">Female</option>
+                                                <option value="other">Other</option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label className={labelCls}>Phone</label>
+                                            <input type="tel" value={profileForm.phone} onChange={(e) => setProfileForm({...profileForm, phone: e.target.value})} className={inputCls} placeholder="Enter phone number" />
+                                        </div>
+                                    </div>
+                                    <button type="submit" disabled={loading} className="px-5 py-2.5 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-all">
+                                        {loading ? 'Saving&#8230;' : 'Save Changes'}
+                                    </button>
+                                </form>
+                            </div>
+
+                            {/* Password card */}
+                            <div className="bg-white border border-slate-200 rounded-2xl p-6">
+                                <h3 className="text-sm font-semibold text-slate-900 mb-4">Change Password</h3>
+                                <form onSubmit={handleUpdatePassword} className="space-y-4">
+                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                        <div>
+                                            <label className={labelCls}>Current Password</label>
+                                            <input type="password" required value={passwordForm.currentPassword} onChange={(e) => setPasswordForm({...passwordForm, currentPassword: e.target.value})} className={inputCls} placeholder="Current password" />
+                                        </div>
+                                        <div>
+                                            <label className={labelCls}>New Password</label>
+                                            <input type="password" required value={passwordForm.newPassword} onChange={(e) => setPasswordForm({...passwordForm, newPassword: e.target.value})} className={inputCls} placeholder="New password" />
+                                        </div>
+                                        <div>
+                                            <label className={labelCls}>Confirm Password</label>
+                                            <input type="password" required value={passwordForm.confirmPassword} onChange={(e) => setPasswordForm({...passwordForm, confirmPassword: e.target.value})} className={inputCls} placeholder="Confirm password" />
+                                        </div>
+                                    </div>
+                                    <button type="submit" disabled={loading} className="px-5 py-2.5 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-all">
+                                        {loading ? 'Updating&#8230;' : 'Update Password'}
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    )}
+
                     </div>
-                )}
+                </main>
 
-                {activeTab === 'personal-details' && (
-                    <div className="space-y-4 sm:space-y-6">
-                        {/* <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Settings</h2> */}
-
-                        {error && (
-                            <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-                                <p className="text-red-700 text-sm">{error}</p>
-                            </div>
-                        )}
-                        {success && (
-                            <div className="bg-green-50 border border-green-200 rounded-lg p-3">
-                                <p className="text-green-700 text-sm">{success}</p>
-                            </div>
-                        )}
-
-                        {/* Profile Settings */}
-                        <div className="bg-white rounded-xl border border-gray-200 p-5">
-                            <div className="flex items-center justify-between gap-4 mb-6 pb-4 border-b border-gray-100">
-                                <div className="flex items-center gap-4">
-                                    <div className="w-14 h-14 bg-blue-100 rounded-full flex items-center justify-center text-xl font-bold text-blue-600">
-                                        {user?.fullName?.charAt(0)?.toUpperCase() || user?.email?.charAt(0)?.toUpperCase() || 'P'}
-                                    </div>
-                                    <div>
-                                        <h3 className="font-semibold text-gray-900">{user?.fullName || profileForm.name || 'Pharmacist'}</h3>
-                                        <p className="text-sm text-gray-500">{user?.email || 'No email'}</p>
-                                    </div>
-                                </div>
-                                <div className="text-right">
-                                    <p className="text-xs text-gray-500">Pharmacist ID</p>
-                                    <p className="text-lg font-mono font-bold text-blue-600">#{user?.userId || user?.id?.slice(-6) || 'N/A'}</p>
-                                </div>
-                            </div>
-                            <h3 className="text-lg font-semibold text-gray-900 mb-4">Profile Information</h3>
-                            <form onSubmit={handleUpdateProfile} className="space-y-4">
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-2">Full Name</label>
-                                        <input
-                                            type="text"
-                                            name="fullname"
-                                            required
-                                            value={profileForm.name}
-                                            onChange={(e) => setProfileForm({...profileForm, name: e.target.value})}
-                                            className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg outline-none focus:border-blue-500 focus:ring-0 transition-colors"
-                                            placeholder="Enter your name"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-2">Gender</label>
-                                        <select
-                                            name="gender"
-                                            value={profileForm.gender}
-                                            onChange={(e) => setProfileForm({...profileForm, gender: e.target.value})}
-                                            className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg outline-none focus:border-blue-500 focus:ring-0 transition-colors"
-                                        >
-                                            <option value="">Select gender</option>
-                                            <option value="male">Male</option>
-                                            <option value="female">Female</option>
-                                            <option value="other">Other</option>
-                                        </select>
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-2">Phone</label>
-                                        <input
-                                            type="tel"
-                                            name="phone"
-                                            value={profileForm.phone}
-                                            onChange={(e) => setProfileForm({...profileForm, phone: e.target.value})}
-                                            className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg outline-none focus:border-blue-500 focus:ring-0 transition-colors"
-                                            placeholder="Enter phone number"
-                                        />
-                                    </div>
-                                </div>
-                                <button
-                                    type="submit"
-                                    disabled={loading}
-                                    className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors disabled:bg-gray-400"
-                                >
-                                    {loading ? 'Saving...' : 'Save Changes'}
-                                </button>
-                            </form>
-                        </div>
-
-                        {/* Password Change */}
-                        <div className="bg-white rounded-xl border border-gray-200 p-5">
-                            <h3 className="text-lg font-semibold text-gray-900 mb-4">Change Password</h3>
-                            <form onSubmit={handleUpdatePassword} className="space-y-4">
-                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-2">Current Password</label>
-                                        <input
-                                            type="password"
-                                            name="currentPassword"
-                                            required
-                                            value={passwordForm.currentPassword}
-                                            onChange={(e) => setPasswordForm({...passwordForm, currentPassword: e.target.value})}
-                                            className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg outline-none focus:border-blue-500 focus:ring-0 transition-colors"
-                                            placeholder="Current password"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-2">New Password</label>
-                                        <input
-                                            type="password"
-                                            name="newPassword"
-                                            required
-                                            value={passwordForm.newPassword}
-                                            onChange={(e) => setPasswordForm({...passwordForm, newPassword: e.target.value})}
-                                            className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg outline-none focus:border-blue-500 focus:ring-0 transition-colors"
-                                            placeholder="New password"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-2">Confirm Password</label>
-                                        <input
-                                            type="password"
-                                            name="confirmPassword"
-                                            required
-                                            value={passwordForm.confirmPassword}
-                                            onChange={(e) => setPasswordForm({...passwordForm, confirmPassword: e.target.value})}
-                                            className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg outline-none focus:border-blue-500 focus:ring-0 transition-colors"
-                                            placeholder="Confirm password"
-                                        />
-                                    </div>
-                                </div>
-                                <button
-                                    type="submit"
-                                    disabled={loading}
-                                    className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors disabled:bg-gray-400"
-                                >
-                                    {loading ? 'Updating...' : 'Update Password'}
-                                </button>
-                            </form>
-                        </div>
-                    </div>
-                )}
-            </main>
-
-            {/* Add Medicine Modal */}
-            {showAddModal && (
-                <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-                    <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-                        <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
-                            <h3 className="text-lg font-semibold text-gray-900">Add New Medicine</h3>
-                            <button onClick={() => { setShowAddModal(false); resetMedicineForm(); }} className="text-gray-400 hover:text-gray-600">
-                                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                </svg>
-                            </button>
-                        </div>
+                {/* ─── Add Medicine Modal ─── */}
+                {showAddModal && (
+                    <Modal title="Add New Medicine" onClose={() => { setShowAddModal(false); resetMedicineForm(); }} size="lg">
                         <form onSubmit={handleAddMedicine} className="p-6 space-y-4">
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Medicine Name *</label>
-                                <input
-                                    type="text"
-                                    required
-                                    value={medicineForm.name}
-                                    onChange={(e) => setMedicineForm({...medicineForm, name: e.target.value})}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                    placeholder="e.g., Paracetamol 500mg"
-                                />
+                                <label className={labelCls}>Medicine Name *</label>
+                                <input type="text" required value={medicineForm.name} onChange={(e) => setMedicineForm({...medicineForm, name: e.target.value})} className={inputCls} placeholder="e.g., Paracetamol 500mg" />
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-                                <textarea
-                                    value={medicineForm.description}
-                                    onChange={(e) => setMedicineForm({...medicineForm, description: e.target.value})}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                    placeholder="Brief description"
-                                    rows="3"
-                                />
+                                <label className={labelCls}>Description</label>
+                                <textarea value={medicineForm.description} onChange={(e) => setMedicineForm({...medicineForm, description: e.target.value})} className={inputCls} rows="2" placeholder="Brief description" />
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
-                                    <select
-                                        value={medicineForm.category}
-                                        onChange={(e) => setMedicineForm({...medicineForm, category: e.target.value})}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                    >
+                                    <label className={labelCls}>Category</label>
+                                    <select value={medicineForm.category} onChange={(e) => setMedicineForm({...medicineForm, category: e.target.value})} className={inputCls}>
                                         <option value="">Select category</option>
-                                        <option value="Antibiotic">Antibiotic</option>
-                                        <option value="Painkiller">Painkiller</option>
-                                        <option value="Vitamin">Vitamin</option>
-                                        <option value="Antacid">Antacid</option>
-                                        <option value="Antihistamine">Antihistamine</option>
-                                        <option value="Other">Other</option>
+                                        <option>Antibiotic</option><option>Painkiller</option><option>Vitamin</option>
+                                        <option>Antacid</option><option>Antihistamine</option><option>Other</option>
                                     </select>
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Quantity *</label>
-                                    <input
-                                        type="number"
-                                        required
-                                        min="0"
-                                        value={medicineForm.quantity}
-                                        onChange={(e) => setMedicineForm({...medicineForm, quantity: e.target.value})}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                        placeholder="0"
-                                    />
+                                    <label className={labelCls}>Quantity *</label>
+                                    <input type="number" required min="0" value={medicineForm.quantity} onChange={(e) => setMedicineForm({...medicineForm, quantity: e.target.value})} className={inputCls} placeholder="0" />
                                 </div>
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Price (₹)</label>
-                                    <input
-                                        type="number"
-                                        min="0"
-                                        step="0.01"
-                                        value={medicineForm.price}
-                                        onChange={(e) => setMedicineForm({...medicineForm, price: e.target.value})}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                        placeholder="0.00"
-                                    />
+                                    <label className={labelCls}>Price (&#8377;)</label>
+                                    <input type="number" min="0" step="0.01" value={medicineForm.price} onChange={(e) => setMedicineForm({...medicineForm, price: e.target.value})} className={inputCls} placeholder="0.00" />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Expiry Date</label>
-                                    <input
-                                        type="date"
-                                        value={medicineForm.expiryDate}
-                                        onChange={(e) => setMedicineForm({...medicineForm, expiryDate: e.target.value})}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                    />
+                                    <label className={labelCls}>Expiry Date</label>
+                                    <input type="date" value={medicineForm.expiryDate} onChange={(e) => setMedicineForm({...medicineForm, expiryDate: e.target.value})} className={inputCls} />
                                 </div>
                             </div>
-                            <div className="flex space-x-3 pt-4">
-                                <button
-                                    type="submit"
-                                    disabled={loading}
-                                    className="flex-1 bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50"
-                                >
-                                    {loading ? 'Adding...' : 'Add Medicine'}
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => { setShowAddModal(false); resetMedicineForm(); }}
-                                    className="flex-1 bg-gray-200 text-gray-700 py-2 rounded-lg hover:bg-gray-300"
-                                >
-                                    Cancel
-                                </button>
+                            <div className="flex gap-3 pt-2">
+                                <button type="submit" disabled={loading} className="flex-1 py-2.5 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-all">{loading ? 'Adding&#8230;' : 'Add Medicine'}</button>
+                                <button type="button" onClick={() => { setShowAddModal(false); resetMedicineForm(); }} className="flex-1 py-2.5 bg-slate-100 text-slate-700 text-sm font-semibold rounded-lg hover:bg-slate-200 transition-all">Cancel</button>
                             </div>
                         </form>
-                    </div>
-                </div>
-            )}
+                    </Modal>
+                )}
 
-            {/* Edit Medicine Modal */}
-            {showEditModal && (
-                <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-                    <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-                        <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
-                            <h3 className="text-lg font-semibold text-gray-900">Edit Medicine</h3>
-                            <button onClick={() => { setShowEditModal(false); resetMedicineForm(); }} className="text-gray-400 hover:text-gray-600">
-                                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                </svg>
-                            </button>
-                        </div>
+                {/* ─── Edit Medicine Modal ─── */}
+                {showEditModal && (
+                    <Modal title="Edit Medicine" onClose={() => { setShowEditModal(false); resetMedicineForm(); }} size="lg">
                         <form onSubmit={handleUpdateMedicine} className="p-6 space-y-4">
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Medicine Name *</label>
-                                <input
-                                    type="text"
-                                    required
-                                    value={medicineForm.name}
-                                    onChange={(e) => setMedicineForm({...medicineForm, name: e.target.value})}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                />
+                                <label className={labelCls}>Medicine Name *</label>
+                                <input type="text" required value={medicineForm.name} onChange={(e) => setMedicineForm({...medicineForm, name: e.target.value})} className={inputCls} />
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-                                <textarea
-                                    value={medicineForm.description}
-                                    onChange={(e) => setMedicineForm({...medicineForm, description: e.target.value})}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                    rows="3"
-                                />
+                                <label className={labelCls}>Description</label>
+                                <textarea value={medicineForm.description} onChange={(e) => setMedicineForm({...medicineForm, description: e.target.value})} className={inputCls} rows="2" />
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
-                                    <select
-                                        value={medicineForm.category}
-                                        onChange={(e) => setMedicineForm({...medicineForm, category: e.target.value})}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                    >
+                                    <label className={labelCls}>Category</label>
+                                    <select value={medicineForm.category} onChange={(e) => setMedicineForm({...medicineForm, category: e.target.value})} className={inputCls}>
                                         <option value="">Select category</option>
-                                        <option value="Antibiotic">Antibiotic</option>
-                                        <option value="Painkiller">Painkiller</option>
-                                        <option value="Vitamin">Vitamin</option>
-                                        <option value="Antacid">Antacid</option>
-                                        <option value="Antihistamine">Antihistamine</option>
-                                        <option value="Other">Other</option>
+                                        <option>Antibiotic</option><option>Painkiller</option><option>Vitamin</option>
+                                        <option>Antacid</option><option>Antihistamine</option><option>Other</option>
                                     </select>
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Quantity *</label>
-                                    <input
-                                        type="number"
-                                        required
-                                        min="0"
-                                        value={medicineForm.quantity}
-                                        onChange={(e) => setMedicineForm({...medicineForm, quantity: e.target.value})}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                    />
+                                    <label className={labelCls}>Quantity *</label>
+                                    <input type="number" required min="0" value={medicineForm.quantity} onChange={(e) => setMedicineForm({...medicineForm, quantity: e.target.value})} className={inputCls} />
                                 </div>
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Price (₹)</label>
-                                    <input
-                                        type="number"
-                                        min="0"
-                                        step="0.01"
-                                        value={medicineForm.price}
-                                        onChange={(e) => setMedicineForm({...medicineForm, price: e.target.value})}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                    />
+                                    <label className={labelCls}>Price (&#8377;)</label>
+                                    <input type="number" min="0" step="0.01" value={medicineForm.price} onChange={(e) => setMedicineForm({...medicineForm, price: e.target.value})} className={inputCls} />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Expiry Date</label>
-                                    <input
-                                        type="date"
-                                        value={medicineForm.expiryDate}
-                                        onChange={(e) => setMedicineForm({...medicineForm, expiryDate: e.target.value})}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                    />
+                                    <label className={labelCls}>Expiry Date</label>
+                                    <input type="date" value={medicineForm.expiryDate} onChange={(e) => setMedicineForm({...medicineForm, expiryDate: e.target.value})} className={inputCls} />
                                 </div>
                             </div>
-                            <div className="flex space-x-3 pt-4">
-                                <button
-                                    type="submit"
-                                    disabled={loading}
-                                    className="flex-1 bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50"
-                                >
-                                    {loading ? 'Updating...' : 'Update Medicine'}
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => { setShowEditModal(false); resetMedicineForm(); }}
-                                    className="flex-1 bg-gray-200 text-gray-700 py-2 rounded-lg hover:bg-gray-300"
-                                >
-                                    Cancel
-                                </button>
+                            <div className="flex gap-3 pt-2">
+                                <button type="submit" disabled={loading} className="flex-1 py-2.5 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-all">{loading ? 'Updating&#8230;' : 'Update Medicine'}</button>
+                                <button type="button" onClick={() => { setShowEditModal(false); resetMedicineForm(); }} className="flex-1 py-2.5 bg-slate-100 text-slate-700 text-sm font-semibold rounded-lg hover:bg-slate-200 transition-all">Cancel</button>
                             </div>
                         </form>
-                    </div>
-                </div>
-            )}
+                    </Modal>
+                )}
 
-            {/* Generate Report Modal */}
-            {showReportModal && (
-                <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-                    <div className="bg-white rounded-xl max-w-lg w-full">
-                        <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
-                            <h3 className="text-lg font-semibold text-gray-900">Generate Report</h3>
-                            <button onClick={() => setShowReportModal(false)} className="text-gray-400 hover:text-gray-600">
-                                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                </svg>
-                            </button>
-                        </div>
+                {/* ─── Issue Medicine Modal ─── */}
+                {showIssueModal && (
+                    <Modal title="Issue Medicine" onClose={() => { setShowIssueModal(false); resetIssueForm(); }}>
+                        <form onSubmit={handleIssueMedicine} className="p-6 space-y-4">
+                            <div>
+                                <label className={labelCls}>Select Medicine *</label>
+                                <select required value={issueForm.medicineId} onChange={(e) => { const sel = medicines.find(m => m.id === e.target.value); setIssueForm({...issueForm, medicineId: e.target.value}); setSelectedMedicine(sel); }} className={inputCls}>
+                                    <option value="">Choose a medicine&#8230;</option>
+                                    {medicines.filter(m => m.quantity > 0).map((m) => (
+                                        <option key={m.id} value={m.id}>{m.name} (Available: {m.quantity})</option>
+                                    ))}
+                                </select>
+                            </div>
+                            {selectedMedicine && (
+                                <div className="bg-blue-50 border border-blue-200 rounded-lg px-4 py-3 text-sm">
+                                    <p className="font-semibold text-blue-900">{selectedMedicine.name}</p>
+                                    <p className="text-blue-600">Available: {selectedMedicine.quantity} units{selectedMedicine.category ? ` · ${selectedMedicine.category}` : ''}</p>
+                                </div>
+                            )}
+                            <div>
+                                <label className={labelCls}>Quantity *</label>
+                                <input type="number" required min="1" max={selectedMedicine?.quantity} value={issueForm.quantity} onChange={(e) => setIssueForm({...issueForm, quantity: e.target.value})} className={inputCls} placeholder="Enter quantity" disabled={!issueForm.medicineId} />
+                            </div>
+                            <div>
+                                <label className={labelCls}>Patient Code *</label>
+                                <input type="text" required value={issueForm.patientName} onChange={(e) => setIssueForm({...issueForm, patientName: e.target.value})} className={inputCls} placeholder="Enter patient code" />
+                            </div>
+                            <div>
+                                <label className={labelCls}>Notes</label>
+                                <textarea value={issueForm.notes} onChange={(e) => setIssueForm({...issueForm, notes: e.target.value})} className={inputCls} rows="2" placeholder="Optional notes" />
+                            </div>
+                            <div className="flex gap-3 pt-2">
+                                <button type="submit" disabled={loading} className="flex-1 py-2.5 bg-emerald-600 text-white text-sm font-semibold rounded-lg hover:bg-emerald-700 disabled:opacity-50 transition-all">{loading ? 'Issuing&#8230;' : 'Issue Medicine'}</button>
+                                <button type="button" onClick={() => { setShowIssueModal(false); resetIssueForm(); }} className="flex-1 py-2.5 bg-slate-100 text-slate-700 text-sm font-semibold rounded-lg hover:bg-slate-200 transition-all">Cancel</button>
+                            </div>
+                        </form>
+                    </Modal>
+                )}
+
+                {/* ─── Generate Report Modal ─── */}
+                {showReportModal && (
+                    <Modal title="Generate Report" onClose={() => setShowReportModal(false)}>
                         <form onSubmit={handleGenerateReport} className="p-6 space-y-4">
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Report Type *</label>
-                                <select
-                                    required
-                                    value={reportForm.reportType}
-                                    onChange={(e) => setReportForm({...reportForm, reportType: e.target.value})}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                >
+                                <label className={labelCls}>Report Type *</label>
+                                <select required value={reportForm.reportType} onChange={(e) => setReportForm({...reportForm, reportType: e.target.value})} className={inputCls}>
                                     <option value="summary">Summary Report</option>
                                     <option value="inventory">Inventory Report</option>
                                     <option value="transaction">Transaction Report</option>
                                 </select>
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Report Title</label>
-                                <input
-                                    type="text"
-                                    value={reportForm.title}
-                                    onChange={(e) => setReportForm({...reportForm, title: e.target.value})}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                    placeholder="e.g., Monthly Inventory Report"
-                                />
+                                <label className={labelCls}>Report Title</label>
+                                <input type="text" value={reportForm.title} onChange={(e) => setReportForm({...reportForm, title: e.target.value})} className={inputCls} placeholder="e.g., Monthly Inventory Report" />
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-                                <textarea
-                                    value={reportForm.description}
-                                    onChange={(e) => setReportForm({...reportForm, description: e.target.value})}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                    placeholder="Brief description of the report"
-                                    rows="2"
-                                />
+                                <label className={labelCls}>Description</label>
+                                <textarea value={reportForm.description} onChange={(e) => setReportForm({...reportForm, description: e.target.value})} className={inputCls} rows="2" placeholder="Brief description" />
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">From Date</label>
-                                    <input
-                                        type="date"
-                                        value={reportForm.dateFrom}
-                                        onChange={(e) => setReportForm({...reportForm, dateFrom: e.target.value})}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                    />
+                                    <label className={labelCls}>From Date</label>
+                                    <input type="date" value={reportForm.dateFrom} onChange={(e) => setReportForm({...reportForm, dateFrom: e.target.value})} className={inputCls} />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">To Date</label>
-                                    <input
-                                        type="date"
-                                        value={reportForm.dateTo}
-                                        onChange={(e) => setReportForm({...reportForm, dateTo: e.target.value})}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                    />
+                                    <label className={labelCls}>To Date</label>
+                                    <input type="date" value={reportForm.dateTo} onChange={(e) => setReportForm({...reportForm, dateTo: e.target.value})} className={inputCls} />
                                 </div>
                             </div>
-                            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                                <p className="text-sm text-blue-700">
-                                    <strong>Note:</strong> The report will be generated as a PDF and stored in cloud storage. You can download it anytime from the reports list.
-                                </p>
+                            <div className="bg-blue-50 border border-blue-200 rounded-lg px-4 py-3 text-xs text-blue-700">
+                                The report will be generated as a PDF and stored securely. Download it anytime from the reports list.
                             </div>
-                            <div className="flex space-x-3 pt-4">
-                                <button
-                                    type="submit"
-                                    disabled={loading}
-                                    className="flex-1 bg-gray-900 text-white py-2 rounded-lg hover:bg-gray-800 disabled:opacity-50"
-                                >
-                                    {loading ? 'Generating...' : 'Generate Report'}
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => setShowReportModal(false)}
-                                    className="flex-1 bg-gray-200 text-gray-700 py-2 rounded-lg hover:bg-gray-300"
-                                >
-                                    Cancel
-                                </button>
+                            <div className="flex gap-3 pt-2">
+                                <button type="submit" disabled={loading} className="flex-1 py-2.5 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-all">{loading ? 'Generating&#8230;' : 'Generate Report'}</button>
+                                <button type="button" onClick={() => setShowReportModal(false)} className="flex-1 py-2.5 bg-slate-100 text-slate-700 text-sm font-semibold rounded-lg hover:bg-slate-200 transition-all">Cancel</button>
                             </div>
                         </form>
-                    </div>
-                </div>
-            )}
-
-            {/* Issue Medicine Modal */}
-            {showIssueModal && (
-                <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-                    <div className="bg-white rounded-xl max-w-lg w-full">
-                        <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
-                            <h3 className="text-lg font-semibold text-gray-900">Issue Medicine</h3>
-                            <button onClick={() => { setShowIssueModal(false); resetIssueForm(); }} className="text-gray-400 hover:text-gray-600">
-                                <X className="w-6 h-6" />
-                            </button>
-                        </div>
-                        <form onSubmit={handleIssueMedicine} className="p-6 space-y-4">
-                            {error && (
-                                <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-4 py-3">
-                                    {error}
-                                </div>
-                            )}
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Select Medicine *</label>
-                                <select
-                                    required
-                                    value={issueForm.medicineId}
-                                    onChange={(e) => {
-                                        const selected = medicines.find(m => m.id === e.target.value);
-                                        setIssueForm({...issueForm, medicineId: e.target.value});
-                                        setSelectedMedicine(selected);
-                                    }}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                >
-                                    <option value="">Choose a medicine...</option>
-                                    {medicines.filter(m => m.quantity > 0).map((medicine) => (
-                                        <option key={medicine.id} value={medicine.id}>
-                                            {medicine.name} (Available: {medicine.quantity})
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
-                            {selectedMedicine && (
-                                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                                    <p className="text-sm font-medium text-blue-900">Medicine: {selectedMedicine.name}</p>
-                                    <p className="text-sm text-blue-700">Available: {selectedMedicine.quantity} units</p>
-                                    {selectedMedicine.category && (
-                                        <p className="text-sm text-blue-700">Category: {selectedMedicine.category}</p>
-                                    )}
-                                </div>
-                            )}
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Quantity to Issue *</label>
-                                <input
-                                    type="number"
-                                    required
-                                    min="1"
-                                    max={selectedMedicine?.quantity || 999999}
-                                    value={issueForm.quantity}
-                                    onChange={(e) => setIssueForm({...issueForm, quantity: e.target.value})}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                    placeholder="Enter quantity"
-                                    disabled={!issueForm.medicineId}
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Patient Code *</label>
-                                <input
-                                    type="text"
-                                    required
-                                    value={issueForm.patientName}
-                                    onChange={(e) => setIssueForm({...issueForm, patientName: e.target.value})}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                    placeholder="Enter patient code"
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
-                                <textarea
-                                    value={issueForm.notes}
-                                    onChange={(e) => setIssueForm({...issueForm, notes: e.target.value})}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                    placeholder="Additional notes (optional)"
-                                    rows="3"
-                                />
-                            </div>
-                            <div className="flex space-x-3 pt-4">
-                                <button
-                                    type="submit"
-                                    disabled={loading}
-                                    className="flex-1 bg-green-600 text-white py-2 rounded-lg hover:bg-green-700 disabled:opacity-50"
-                                >
-                                    {loading ? 'Issuing...' : 'Issue Medicine'}
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => { setShowIssueModal(false); resetIssueForm(); }}
-                                    className="flex-1 bg-gray-200 text-gray-700 py-2 rounded-lg hover:bg-gray-300"
-                                >
-                                    Cancel
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            )}
-                
+                    </Modal>
+                )}
             </div>
         </div>
     );
