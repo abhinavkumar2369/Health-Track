@@ -1053,4 +1053,22 @@ router.get("/emergency/patient/:patientId", async (req, res) => {
   }
 });
 
+router.get("/total-revenue", async (req, res) => {
+  const { token } = req.query;
+  const admin = authenticateAdmin(token, res);
+  if (!admin) return;
+
+  try {
+    const result = await Transaction.aggregate([
+      { $match: { type: "issue" } },
+      { $group: { _id: null, total: { $sum: "$totalAmount" } } }
+    ]);
+    const totalRevenue = result.length > 0 ? result[0].total : 0;
+    res.json({ success: true, totalRevenue });
+  } catch (err) {
+    console.error("Revenue aggregation error:", err);
+    res.status(500).json({ success: false, message: "Failed to calculate revenue" });
+  }
+});
+
 export default router;

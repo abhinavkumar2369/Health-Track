@@ -22,7 +22,6 @@ const DASHBOARD_DUMMY_DATA = {
         totalDoctors: 14,
         totalPharmacists: 9,
         totalPatients: 86,
-        totalRevenue: 45287
     },
     inventoryData: {
         stats: {
@@ -154,8 +153,7 @@ const AdminDashboard = () => {
     const [stats, setStats] = useState({
         totalDoctors: 0,
         totalPharmacists: 0,
-        totalPatients: 0,
-        totalRevenue: 0
+        totalPatients: 0
     });
     const [inventoryData, setInventoryData] = useState({
         stats: {
@@ -269,8 +267,7 @@ const AdminDashboard = () => {
             setStats({
                 totalDoctors: doctorsRes.data?.length || 0,
                 totalPharmacists: pharmacistsRes.data?.length || 0,
-                totalPatients: patientsRes.data?.length || 0,
-                totalRevenue: 45287
+                totalPatients: patientsRes.data?.length || 0
             });
 
             if (inventoryRes.success) {
@@ -920,11 +917,10 @@ const AdminDashboard = () => {
                     {activeSection === 'dashboard' && (
                         <div className="space-y-6">
                             {/* Stat cards */}
-                            <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
+                            <div className="grid grid-cols-2 xl:grid-cols-3 gap-4">
                                 <StatCard label="Doctors"     value={stats.totalDoctors}     icon={Stethoscope}    color="blue"   sub="Active staff" />
                                 <StatCard label="Pharmacists" value={stats.totalPharmacists} icon={Pill}           color="green"  sub="Active staff" />
                                 <StatCard label="Patients"    value={stats.totalPatients}    icon={Users}          color="purple" sub="Registered"   />
-                                <StatCard label="Revenue"     value={`â‚¹${(stats.totalRevenue||0).toLocaleString()}`} icon={Activity} color="teal" sub="Total earnings" />
                             </div>
 
                             {/* Charts row */}

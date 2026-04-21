@@ -187,6 +187,10 @@ export const adminAPI = {
             body: JSON.stringify({ token }),
         });
     },
+    getTotalRevenue: async () => {
+        const token = ensureToken();
+        return apiRequest(`/admin/total-revenue?token=${token}`);
+    },
     // Emergency access - get complete user data (patient/doctor/pharmacist)
     getEmergencyUserData: async (identifier) => {
         const token = ensureToken();
