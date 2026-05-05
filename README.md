@@ -74,9 +74,6 @@
 #### Settings
 ![Doctor Settings](0_docs/screenshots/doctor_settings.png)
 
-#### My Profile
-![Doctor My Profile](0_docs/screenshots/doctor_my_profile.png)
-
 
 ### ➡️ Patient Dashboard
 
@@ -89,7 +86,7 @@
 
 #### Medical Records
 ![Medical Records Section 1](0_docs/screenshots/patient_medical_records_section_1.png)
-![Medical Records Section 2](0_docs/screenshots/patient_medical_records_section_2.png)
+
 
 #### Health Reports
 ![Generate Health Report](0_docs/screenshots/patient_generate_report.png)
@@ -122,9 +119,6 @@
 ![Pharmacist Settings](0_docs/screenshots/pharmacist_settings.png)
 
 
-
-
----
 
 ## ➡️ Features
 
