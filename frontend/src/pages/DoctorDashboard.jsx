@@ -457,37 +457,7 @@ const DoctorDashboard = () => {
         }
     };
 
-    const handleDownloadPatientList = (report) => {
-        if (report.patientData) {
-            const csvContent = generatePatientListCSV(report.patientData);
-            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-            const link = document.createElement('a');
-            const url = URL.createObjectURL(blob);
-            link.setAttribute('href', url);
-            link.setAttribute('download', `patient-list-${new Date().toISOString().split('T')[0]}.csv`);
-            link.style.visibility = 'hidden';
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-        }
-    };
 
-    const generatePatientListCSV = (patients) => {
-        const headers = ['Name', 'Email', 'Patient ID', 'Date Added'];
-        const rows = patients.map(p => [
-            p.name || 'N/A',
-            p.email || 'N/A',
-            p._id || 'N/A',
-            p.createdAt ? new Date(p.createdAt).toLocaleDateString() : 'N/A'
-        ]);
-        
-        let csv = headers.join(',') + '\n';
-        rows.forEach(row => {
-            csv += row.map(cell => `"${cell}"`).join(',') + '\n';
-        });
-        
-        return csv;
-    };
 
     const handleOpenPrescriptionModal = () => {
         setPrescriptionForm({
@@ -1672,13 +1642,7 @@ const DoctorDashboard = () => {
                                                                 <Users className="w-5 h-5" />
                                                             </button>
                                                         )}
-                                                        <button 
-                                                            onClick={() => report.reportType === 'patientList' ? handleDownloadPatientList(report) : null}
-                                                            className="text-emerald-600 hover:text-emerald-800 p-2 rounded-lg hover:bg-emerald-50 transition-colors"
-                                                            disabled={report.reportType !== 'patientList'}
-                                                        >
-                                                            <Download className="w-5 h-5" />
-                                                        </button>
+
                                                         <button 
                                                             onClick={() => handleDeleteReport(report.id)}
                                                             className="text-red-600 hover:text-red-800 p-2 rounded-lg hover:bg-red-50 transition-colors"

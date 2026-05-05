@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { jsPDF } from 'jspdf';
+import autoTable from 'jspdf-autotable';
 import { adminAPI } from '../services/api';
 import authService from '../services/authService';
 import { LayoutDashboard, Stethoscope, Users, Pill, BarChart3, Settings, LogOut, User, Lock, Plus, Menu, X, FileText, Download, Trash2, Network, AlertCircle, Search, Phone, Mail, Calendar, Activity, ChevronRight, CheckCircle } from 'lucide-react';
@@ -133,6 +135,151 @@ const StatCard = ({ label, value, sub, icon: Icon, color }) => {
     );
 };
 
+// ── Client-side PDF generator ──────────────────────────────────────────────
+const buildPDF = (reportType, reportTitle, description, dateFrom, dateTo, data) => {
+    const doc = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'a4' });
+    const pageW = doc.internal.pageSize.getWidth();
+    const blue = [30, 64, 175];
+
+    // Header banner
+    doc.setFillColor(...blue);
+    doc.rect(0, 0, pageW, 90, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(22);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Health Track', 40, 38);
+    doc.setFontSize(11);
+    doc.setFont('helvetica', 'normal');
+    doc.text('Admin Report', 40, 58);
+    doc.setFontSize(9);
+    doc.text(reportTitle, 40, 72);
+    doc.text(`Generated: ${new Date().toLocaleString()}`, 40, 83);
+
+    let y = 110;
+
+    // Description
+    if (description) {
+        doc.setTextColor(55, 65, 81);
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'normal');
+        doc.text(description, 40, y, { maxWidth: pageW - 80 });
+        y += 20;
+    }
+
+    // Date range
+    if (dateFrom || dateTo) {
+        doc.setTextColor(107, 114, 128);
+        doc.setFontSize(9);
+        doc.text(`Date Range: ${dateFrom || 'All time'} — ${dateTo || 'Present'}`, 40, y);
+        y += 18;
+    }
+
+    y += 6;
+
+    const sectionHeading = (text) => {
+        doc.setFontSize(13);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(...blue);
+        doc.text(text, 40, y);
+        doc.setDrawColor(...blue);
+        doc.setLineWidth(0.8);
+        doc.line(40, y + 4, pageW - 40, y + 4);
+        y += 22;
+    };
+
+    if (reportType === 'summary' && data.summary) {
+        sectionHeading('System Overview');
+        const s = data.summary;
+        const stats = [
+            { label: 'Doctors', value: s.doctorCount },
+            { label: 'Pharmacists', value: s.pharmacistCount },
+            { label: 'Patients', value: s.patientCount },
+            { label: 'Documents', value: s.docCount },
+        ];
+        const boxW = 110, boxH = 60, gap = 12;
+        let bx = 40;
+        stats.forEach(({ label, value }) => {
+            doc.setFillColor(239, 246, 255);
+            doc.setDrawColor(...blue);
+            doc.setLineWidth(0.8);
+            doc.roundedRect(bx, y, boxW, boxH, 6, 6, 'FD');
+            doc.setFontSize(24);
+            doc.setFont('helvetica', 'bold');
+            doc.setTextColor(...blue);
+            doc.text(String(value), bx + boxW / 2, y + 26, { align: 'center' });
+            doc.setFontSize(9);
+            doc.setFont('helvetica', 'normal');
+            doc.setTextColor(55, 65, 81);
+            doc.text(label, bx + boxW / 2, y + 46, { align: 'center' });
+            bx += boxW + gap;
+        });
+        y += boxH + 20;
+
+        if (data.summary.inventory && data.summary.inventory.total > 0) {
+            sectionHeading('Inventory Overview');
+            const inv = data.summary.inventory;
+            autoTable(doc, {
+                startY: y,
+                head: [['Total Items', 'Total Quantity', 'Low Stock ( < 50)', 'Out of Stock']],
+                body: [[String(inv.total), String(inv.totalQty), String(inv.lowStock), String(inv.outOfStock)]],
+                styles: { fontSize: 9, cellPadding: 6 },
+                headStyles: { fillColor: blue, textColor: 255 },
+                alternateRowStyles: { fillColor: [248, 250, 252] },
+                margin: { left: 40, right: 40 },
+            });
+            y = doc.lastAutoTable.finalY + 16;
+        }
+    } else if (reportType === 'activity') {
+        sectionHeading('Documents Uploaded');
+        const docRows = data.documents && data.documents.length > 0 ? data.documents : [];
+        autoTable(doc, {
+            startY: y,
+            head: [['Title', 'Category', 'Date']],
+            body: docRows.length > 0 ? docRows : [['No documents in this period.', '', '']],
+            styles: { fontSize: 9, cellPadding: 5 },
+            headStyles: { fillColor: blue, textColor: 255 },
+            alternateRowStyles: { fillColor: [248, 250, 252] },
+            margin: { left: 40, right: 40 },
+        });
+        y = doc.lastAutoTable.finalY + 16;
+
+        sectionHeading('New Patients Registered');
+        const patRows = data.patients && data.patients.length > 0 ? data.patients : [];
+        autoTable(doc, {
+            startY: y,
+            head: [['Name', 'Email', 'Registered']],
+            body: patRows.length > 0 ? patRows : [['No new patients in this period.', '', '']],
+            styles: { fontSize: 9, cellPadding: 5 },
+            headStyles: { fillColor: [5, 150, 105], textColor: 255 },
+            alternateRowStyles: { fillColor: [248, 250, 252] },
+            margin: { left: 40, right: 40 },
+        });
+    } else if (data.headers && data.rows) {
+        sectionHeading(`${reportTitle} — ${data.rows.length} record(s)`);
+        autoTable(doc, {
+            startY: y,
+            head: [data.headers],
+            body: data.rows.length > 0 ? data.rows : [Array(data.headers.length).fill('No records found.')],
+            styles: { fontSize: 9, cellPadding: 5 },
+            headStyles: { fillColor: blue, textColor: 255 },
+            alternateRowStyles: { fillColor: [248, 250, 252] },
+            margin: { left: 40, right: 40 },
+        });
+    }
+
+    // Footer
+    const pageH = doc.internal.pageSize.getHeight();
+    doc.setDrawColor(226, 232, 240);
+    doc.setLineWidth(0.5);
+    doc.line(40, pageH - 28, pageW - 40, pageH - 28);
+    doc.setFontSize(7);
+    doc.setTextColor(148, 163, 184);
+    doc.setFont('helvetica', 'normal');
+    doc.text('Health Track — Admin Report | Confidential', 40, pageH - 16);
+
+    return doc;
+};
+
 const AdminDashboard = () => {
     const navigate = useNavigate();
     const [user, setUser] = useState(null);
@@ -194,6 +341,7 @@ const AdminDashboard = () => {
     // Reports state
     const [reports, setReports] = useState([]);
     const [showReportModal, setShowReportModal] = useState(false);
+    const [isGeneratingReport, setIsGeneratingReport] = useState(false);
     const [reportForm, setReportForm] = useState({
         reportType: 'summary',
         title: '',
@@ -430,29 +578,57 @@ const AdminDashboard = () => {
         setEmergencyError('');
     };
 
-    const handleGenerateReport = (e) => {
+    const handleGenerateReport = async (e) => {
         e.preventDefault();
-        const newReport = {
-            id: Date.now(),
-            ...reportForm,
-            title: reportForm.title || `${reportForm.reportType.charAt(0).toUpperCase() + reportForm.reportType.slice(1)} Report`,
-            status: 'completed',
-            generatedAt: new Date().toISOString(),
-            fileSize: Math.floor(Math.random() * 500000) + 100000
-        };
-        const updatedReports = [newReport, ...reports];
-        setReports(updatedReports);
-        localStorage.setItem('adminReports', JSON.stringify(updatedReports));
-        setShowReportModal(false);
-        setReportForm({
-            reportType: 'summary',
-            title: '',
-            description: '',
-            dateFrom: '',
-            dateTo: ''
-        });
-        setSuccessMessage('Report generated successfully!');
-        setTimeout(() => setSuccessMessage(''), 3000);
+        setIsGeneratingReport(true);
+        setError('');
+        try {
+            const reportTitle = reportForm.title || `${reportForm.reportType.charAt(0).toUpperCase() + reportForm.reportType.slice(1)} Report`;
+
+            // Fetch report data as JSON from backend
+            const result = await adminAPI.getReportData({
+                reportType: reportForm.reportType,
+                dateFrom: reportForm.dateFrom,
+                dateTo: reportForm.dateTo,
+            });
+
+            if (!result.success) throw new Error(result.message || 'Failed to fetch report data');
+
+            // Generate PDF client-side
+            const doc = buildPDF(
+                reportForm.reportType,
+                reportTitle,
+                reportForm.description,
+                reportForm.dateFrom,
+                reportForm.dateTo,
+                result.data,
+            );
+
+            const safeFilename = `${reportTitle.replace(/[^a-z0-9_-]/gi, '_')}_${new Date().toISOString().split('T')[0]}.pdf`;
+            doc.save(safeFilename);
+
+            // Store metadata in state and localStorage
+            const newReport = {
+                id: Date.now(),
+                ...reportForm,
+                title: reportTitle,
+                status: 'completed',
+                generatedAt: new Date().toISOString(),
+                fileSize: doc.output('arraybuffer').byteLength,
+            };
+            const updatedReports = [newReport, ...reports];
+            setReports(updatedReports);
+            localStorage.setItem('adminReports', JSON.stringify(updatedReports));
+
+            setShowReportModal(false);
+            setReportForm({ reportType: 'summary', title: '', description: '', dateFrom: '', dateTo: '' });
+            setSuccessMessage('Report generated and downloaded successfully!');
+            setTimeout(() => setSuccessMessage(''), 3000);
+        } catch (err) {
+            setError(err.message || 'Failed to generate report');
+        } finally {
+            setIsGeneratingReport(false);
+        }
     };
 
     const handleDeleteReport = (reportId) => {
@@ -465,40 +641,32 @@ const AdminDashboard = () => {
         }
     };
 
-    const handleDownloadReport = (report) => {
-        // Create a JSON blob with report data
-        const reportData = {
-            title: report.title || `${report.reportType.charAt(0).toUpperCase() + report.reportType.slice(1)} Report`,
-            type: report.reportType,
-            description: report.description,
-            generatedAt: report.generatedAt,
-            dateRange: {
-                from: report.dateFrom || 'N/A',
-                to: report.dateTo || 'N/A'
-            },
-            status: report.status,
-            // Add actual data based on report type
-            data: {
-                message: 'Report data would be generated here based on the report type'
-            }
-        };
-        
-        // Convert to JSON string
-        const dataStr = JSON.stringify(reportData, null, 2);
-        
-        // Create blob and download
-        const blob = new Blob([dataStr], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = `${report.title || report.reportType}_${new Date(report.generatedAt).toISOString().split('T')[0]}.json`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
-        
-        setSuccessMessage('Report downloaded successfully!');
-        setTimeout(() => setSuccessMessage(''), 3000);
+    const handleDownloadReport = async (report) => {
+        try {
+            const result = await adminAPI.getReportData({
+                reportType: report.reportType,
+                dateFrom: report.dateFrom,
+                dateTo: report.dateTo,
+            });
+
+            if (!result.success) throw new Error(result.message || 'Failed to fetch report data');
+
+            const doc = buildPDF(
+                report.reportType,
+                report.title,
+                report.description,
+                report.dateFrom,
+                report.dateTo,
+                result.data,
+            );
+
+            const safeFilename = `${(report.title || report.reportType).replace(/[^a-z0-9_-]/gi, '_')}_${new Date(report.generatedAt).toISOString().split('T')[0]}.pdf`;
+            doc.save(safeFilename);
+            setSuccessMessage('Report downloaded successfully!');
+            setTimeout(() => setSuccessMessage(''), 3000);
+        } catch (err) {
+            setError(err.message || 'Failed to download report');
+        }
     };
 
     const formatFileSize = (bytes) => {
@@ -2435,7 +2603,9 @@ const AdminDashboard = () => {
                             </div>
                             <div className="flex justify-end gap-3 pt-2 border-t border-slate-100 mt-2">
                                 <button type="button" onClick={() => setShowReportModal(false)} className="px-4 py-2 text-sm font-medium text-slate-600 border border-slate-200 rounded-lg hover:bg-slate-50 transition">Cancel</button>
-                                <button type="submit" className="px-4 py-2 text-sm font-medium bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">Generate Report</button>
+                                <button type="submit" disabled={isGeneratingReport} className="px-4 py-2 text-sm font-medium bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition flex items-center gap-2">
+                                    {isGeneratingReport ? <><div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"/>Generating...</> : 'Generate Report'}
+                                </button>
                             </div>
                         </form>
                 </Modal>

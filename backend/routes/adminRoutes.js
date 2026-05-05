@@ -4,6 +4,7 @@ import jwt from "jsonwebtoken";
 import crypto from "crypto";
 import dotenv from "dotenv";
 import mongoose from "mongoose";
+import PDFDocument from "pdfkit";
 import { Doctor } from "../models/Doctor.js";
 import { Pharmacist } from "../models/Pharmacist.js";
 import { Patient } from "../models/Patient.js";
@@ -1068,6 +1069,524 @@ router.get("/total-revenue", async (req, res) => {
   } catch (err) {
     console.error("Revenue aggregation error:", err);
     res.status(500).json({ success: false, message: "Failed to calculate revenue" });
+  }
+});
+
+// Return report data as JSON (used by frontend for client-side PDF generation)
+router.post("/report-data", async (req, res) => {
+  const { token, reportType = "summary", dateFrom, dateTo } = req.body;
+  const decoded = authenticateAdmin(token, res);
+  if (!decoded) return;
+
+  try {
+    const dateFilter = {};
+    if (dateFrom) dateFilter.$gte = new Date(dateFrom);
+    if (dateTo) {
+      const to = new Date(dateTo);
+      to.setHours(23, 59, 59, 999);
+      dateFilter.$lte = to;
+    }
+    const hasDateFilter = Object.keys(dateFilter).length > 0;
+    const queryFilter = hasDateFilter ? { createdAt: dateFilter } : {};
+
+    let reportData = {};
+
+    switch (reportType) {
+      case "patients":
+        reportData.headers = ["Name", "Email", "User ID", "Gender", "Registered"];
+        reportData.rows = (
+          await Patient.find({ admin_id: decoded.id, ...queryFilter })
+            .select("name email userId gender createdAt")
+            .sort({ createdAt: -1 })
+            .lean()
+        ).map((p) => [
+          p.name || "N/A",
+          p.email,
+          p.userId || "N/A",
+          p.gender || "N/A",
+          new Date(p.createdAt).toLocaleDateString(),
+        ]);
+        break;
+
+      case "doctors":
+        reportData.headers = ["Name", "Email", "User ID", "Specialization", "Joined"];
+        reportData.rows = (
+          await Doctor.find({ admin_id: decoded.id, ...queryFilter })
+            .select("name email userId specialization createdAt")
+            .sort({ createdAt: -1 })
+            .lean()
+        ).map((d) => [
+          d.name || "N/A",
+          d.email,
+          d.userId || "N/A",
+          d.specialization || "N/A",
+          new Date(d.createdAt).toLocaleDateString(),
+        ]);
+        break;
+
+      case "pharmacists":
+        reportData.headers = ["Name", "Email", "User ID", "Joined"];
+        reportData.rows = (
+          await Pharmacist.find({ admin_id: decoded.id, ...queryFilter })
+            .select("name email userId createdAt")
+            .sort({ createdAt: -1 })
+            .lean()
+        ).map((ph) => [
+          ph.name || "N/A",
+          ph.email,
+          ph.userId || "N/A",
+          new Date(ph.createdAt).toLocaleDateString(),
+        ]);
+        break;
+
+      case "inventory":
+        reportData.headers = ["Name", "Category", "Quantity", "Expiry Date", "Price"];
+        reportData.rows = (
+          await Medicine.find(queryFilter)
+            .select("name category quantity expiryDate price")
+            .sort({ name: 1 })
+            .lean()
+        ).map((m) => [
+          m.name || "N/A",
+          m.category || "N/A",
+          String(m.quantity ?? 0),
+          m.expiryDate ? new Date(m.expiryDate).toLocaleDateString() : "N/A",
+          m.price != null ? `${m.price}` : "N/A",
+        ]);
+        break;
+
+      case "transactions":
+        reportData.headers = ["Medicine", "Type", "Quantity", "Amount", "Date"];
+        reportData.rows = (
+          await Transaction.find(queryFilter).sort({ createdAt: -1 }).lean()
+        ).map((t) => [
+          t.medicineName || "N/A",
+          t.type || "N/A",
+          String(t.quantity ?? ""),
+          t.totalAmount != null ? `${t.totalAmount}` : "N/A",
+          new Date(t.createdAt).toLocaleDateString(),
+        ]);
+        break;
+
+      case "activity": {
+        const actFilter = hasDateFilter
+          ? queryFilter
+          : { createdAt: { $gte: new Date(Date.now() - 7 * 86400000) } };
+        const [docs, patients] = await Promise.all([
+          Document.find(actFilter).select("title category createdAt").sort({ createdAt: -1 }).lean(),
+          Patient.find({ admin_id: decoded.id, ...actFilter })
+            .select("name email createdAt")
+            .lean(),
+        ]);
+        reportData.documents = docs.map((d) => [
+          d.title || "Untitled",
+          d.category || "N/A",
+          new Date(d.createdAt).toLocaleDateString(),
+        ]);
+        reportData.patients = patients.map((p) => [
+          p.name,
+          p.email,
+          new Date(p.createdAt).toLocaleDateString(),
+        ]);
+        break;
+      }
+
+      case "summary":
+      default: {
+        const [doctorCount, pharmacistCount, patientCount, medicineAgg, docCount] =
+          await Promise.all([
+            Doctor.countDocuments({ admin_id: decoded.id }),
+            Pharmacist.countDocuments({ admin_id: decoded.id }),
+            Patient.countDocuments({ admin_id: decoded.id }),
+            Medicine.aggregate([
+              {
+                $group: {
+                  _id: null,
+                  total: { $sum: 1 },
+                  totalQty: { $sum: "$quantity" },
+                  lowStock: { $sum: { $cond: [{ $lt: ["$quantity", 50] }, 1, 0] } },
+                  outOfStock: { $sum: { $cond: [{ $eq: ["$quantity", 0] }, 1, 0] } },
+                },
+              },
+            ]),
+            Document.countDocuments(),
+          ]);
+        reportData.summary = {
+          doctorCount,
+          pharmacistCount,
+          patientCount,
+          docCount,
+          inventory: medicineAgg[0] || { total: 0, totalQty: 0, lowStock: 0, outOfStock: 0 },
+        };
+        break;
+      }
+    }
+
+    return res.json({ success: true, reportType, data: reportData });
+  } catch (err) {
+    console.error("Report data error:", err);
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// Generate admin PDF report – streams the PDF directly to the client
+router.post("/generate-report", async (req, res) => {
+  const { token, reportType = "summary", title, description, dateFrom, dateTo } = req.body;
+  const decoded = authenticateAdmin(token, res);
+  if (!decoded) return;
+
+  try {
+    // Build optional date filter
+    const dateFilter = {};
+    if (dateFrom) dateFilter.$gte = new Date(dateFrom);
+    if (dateTo) {
+      const to = new Date(dateTo);
+      to.setHours(23, 59, 59, 999);
+      dateFilter.$lte = to;
+    }
+    const hasDateFilter = Object.keys(dateFilter).length > 0;
+    const queryFilter = hasDateFilter ? { createdAt: dateFilter } : {};
+
+    // Fetch data depending on report type
+    let reportData = {};
+    switch (reportType) {
+      case "patients":
+        reportData.items = await Patient.find({ admin_id: decoded.id, ...queryFilter })
+          .select("name email userId gender createdAt")
+          .sort({ createdAt: -1 })
+          .lean();
+        reportData.headers = ["Name", "Email", "User ID", "Gender", "Registered"];
+        reportData.rows = reportData.items.map((p) => [
+          p.name || "N/A",
+          p.email,
+          p.userId || "N/A",
+          p.gender || "N/A",
+          new Date(p.createdAt).toLocaleDateString(),
+        ]);
+        break;
+
+      case "doctors":
+        reportData.items = await Doctor.find({ admin_id: decoded.id, ...queryFilter })
+          .select("name email userId specialization createdAt")
+          .sort({ createdAt: -1 })
+          .lean();
+        reportData.headers = ["Name", "Email", "User ID", "Specialization", "Joined"];
+        reportData.rows = reportData.items.map((d) => [
+          d.name || "N/A",
+          d.email,
+          d.userId || "N/A",
+          d.specialization || "N/A",
+          new Date(d.createdAt).toLocaleDateString(),
+        ]);
+        break;
+
+      case "pharmacists":
+        reportData.items = await Pharmacist.find({ admin_id: decoded.id, ...queryFilter })
+          .select("name email userId createdAt")
+          .sort({ createdAt: -1 })
+          .lean();
+        reportData.headers = ["Name", "Email", "User ID", "Joined"];
+        reportData.rows = reportData.items.map((ph) => [
+          ph.name || "N/A",
+          ph.email,
+          ph.userId || "N/A",
+          new Date(ph.createdAt).toLocaleDateString(),
+        ]);
+        break;
+
+      case "inventory":
+        reportData.items = await Medicine.find(queryFilter)
+          .select("name category quantity expiryDate price")
+          .sort({ name: 1 })
+          .lean();
+        reportData.headers = ["Name", "Category", "Quantity", "Expiry Date", "Price"];
+        reportData.rows = reportData.items.map((m) => [
+          m.name || "N/A",
+          m.category || "N/A",
+          String(m.quantity ?? 0),
+          m.expiryDate ? new Date(m.expiryDate).toLocaleDateString() : "N/A",
+          m.price != null ? `${m.price}` : "N/A",
+        ]);
+        break;
+
+      case "transactions":
+        reportData.items = await Transaction.find(queryFilter).sort({ createdAt: -1 }).lean();
+        reportData.headers = ["Medicine", "Type", "Quantity", "Amount", "Date"];
+        reportData.rows = reportData.items.map((t) => [
+          t.medicineName || "N/A",
+          t.type || "N/A",
+          String(t.quantity ?? ""),
+          t.totalAmount != null ? `${t.totalAmount}` : "N/A",
+          new Date(t.createdAt).toLocaleDateString(),
+        ]);
+        break;
+
+      case "activity": {
+        const actFilter = hasDateFilter
+          ? queryFilter
+          : { createdAt: { $gte: new Date(Date.now() - 7 * 86400000) } };
+        const [docs, patients] = await Promise.all([
+          Document.find(actFilter).select("title category createdAt").sort({ createdAt: -1 }).lean(),
+          Patient.find({ admin_id: decoded.id, ...actFilter })
+            .select("name email createdAt")
+            .lean(),
+        ]);
+        reportData.documents = docs;
+        reportData.patients = patients;
+        break;
+      }
+
+      case "summary":
+      default: {
+        const [doctorCount, pharmacistCount, patientCount, medicineAgg, docCount] =
+          await Promise.all([
+            Doctor.countDocuments({ admin_id: decoded.id }),
+            Pharmacist.countDocuments({ admin_id: decoded.id }),
+            Patient.countDocuments({ admin_id: decoded.id }),
+            Medicine.aggregate([
+              {
+                $group: {
+                  _id: null,
+                  total: { $sum: 1 },
+                  totalQty: { $sum: "$quantity" },
+                  lowStock: { $sum: { $cond: [{ $lt: ["$quantity", 50] }, 1, 0] } },
+                  outOfStock: { $sum: { $cond: [{ $eq: ["$quantity", 0] }, 1, 0] } },
+                },
+              },
+            ]),
+            Document.countDocuments(),
+          ]);
+        reportData.summary = {
+          doctorCount,
+          pharmacistCount,
+          patientCount,
+          docCount,
+          inventory: medicineAgg[0] || { total: 0, totalQty: 0, lowStock: 0, outOfStock: 0 },
+        };
+        break;
+      }
+    }
+
+    // ── Stream PDF ─────────────────────────────────────────────
+    const reportTitle =
+      title ||
+      `${reportType.charAt(0).toUpperCase() + reportType.slice(1)} Report`;
+    const safeFilename = reportTitle.replace(/[^a-z0-9_-]/gi, "_");
+
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename="${safeFilename}_${Date.now()}.pdf"`
+    );
+
+    const doc = new PDFDocument({ margin: 50, size: "A4", autoFirstPage: true });
+    doc.pipe(res);
+
+    let y = 0;
+
+    // Header banner
+    doc.rect(0, 0, doc.page.width, 115).fill("#1e40af");
+    doc.fillColor("#ffffff").fontSize(24).font("Helvetica-Bold").text("Health Track", 50, 32);
+    doc.fillColor("#bfdbfe").fontSize(11).font("Helvetica").text("Admin Report", 50, 63);
+    doc.fillColor("#dbeafe")
+      .fontSize(9)
+      .text(reportTitle, 50, 80)
+      .text(`Generated: ${new Date().toLocaleString()}`, 50, 93);
+
+    y = 135;
+
+    if (description) {
+      doc.fillColor("#374151").fontSize(10).font("Helvetica").text(description, 50, y, { width: 495 });
+      y += doc.heightOfString(description, { width: 495 }) + 10;
+    }
+
+    if (dateFrom || dateTo) {
+      doc
+        .fillColor("#6b7280")
+        .fontSize(9)
+        .text(
+          `Date Range: ${dateFrom || "All time"} — ${dateTo || "Present"}`,
+          50,
+          y
+        );
+      y += 16;
+    }
+
+    y += 6;
+
+    // Helper: section heading
+    const drawHeading = (text, color = "#2563eb") => {
+      if (y > 730) { doc.addPage(); y = 50; }
+      doc.fillColor(color).fontSize(13).font("Helvetica-Bold").text(text, 50, y);
+      doc
+        .moveTo(50, y + 17)
+        .lineTo(doc.page.width - 50, y + 17)
+        .strokeColor(color)
+        .lineWidth(0.8)
+        .stroke();
+      y += 26;
+    };
+
+    // Helper: data table
+    const drawTable = (headers, rows, colWidths) => {
+      const totalW = colWidths.reduce((a, b) => a + b, 0);
+      if (y + 20 > 750) { doc.addPage(); y = 50; }
+      // Header row
+      doc.rect(50, y, totalW, 20).fill("#1e3a8a");
+      let cx = 50;
+      headers.forEach((h, i) => {
+        doc
+          .fillColor("#ffffff")
+          .fontSize(8)
+          .font("Helvetica-Bold")
+          .text(h, cx + 4, y + 6, { width: colWidths[i] - 6, lineBreak: false });
+        cx += colWidths[i];
+      });
+      y += 20;
+
+      // Data rows
+      rows.forEach((row, ri) => {
+        if (y > 750) { doc.addPage(); y = 50; }
+        doc.rect(50, y, totalW, 18).fill(ri % 2 === 0 ? "#f8fafc" : "#ffffff");
+        cx = 50;
+        row.forEach((cell, ci) => {
+          doc
+            .fillColor("#374151")
+            .fontSize(8)
+            .font("Helvetica")
+            .text(String(cell ?? ""), cx + 4, y + 5, {
+              width: colWidths[ci] - 6,
+              lineBreak: false,
+              ellipsis: true,
+            });
+          cx += colWidths[ci];
+        });
+        y += 18;
+      });
+      y += 12;
+    };
+
+    // ── Report-specific content ─────────────────────────────────
+    if (reportType === "summary") {
+      const s = reportData.summary;
+      drawHeading("System Overview");
+
+      // Stat boxes
+      const statBoxes = [
+        { label: "Doctors", value: s.doctorCount, color: "#3b82f6" },
+        { label: "Pharmacists", value: s.pharmacistCount, color: "#8b5cf6" },
+        { label: "Patients", value: s.patientCount, color: "#10b981" },
+        { label: "Documents", value: s.docCount, color: "#f59e0b" },
+      ];
+      const bw = 110, gap = 12;
+      let bx = 50;
+      statBoxes.forEach((box) => {
+        doc.rect(bx, y, bw, 65).fillAndStroke(`${box.color}22`, box.color);
+        doc
+          .fillColor(box.color)
+          .fontSize(26)
+          .font("Helvetica-Bold")
+          .text(String(box.value), bx, y + 8, { width: bw, align: "center" });
+        doc
+          .fillColor("#374151")
+          .fontSize(9)
+          .font("Helvetica")
+          .text(box.label, bx, y + 42, { width: bw, align: "center" });
+        bx += bw + gap;
+      });
+      y += 82;
+
+      // Inventory summary
+      const inv = s.inventory;
+      if (inv.total > 0) {
+        drawHeading("Inventory Overview", "#0891b2");
+        drawTable(
+          ["Total Items", "Total Quantity", "Low Stock ( < 50)", "Out of Stock"],
+          [
+            [
+              String(inv.total),
+              String(inv.totalQty),
+              String(inv.lowStock),
+              String(inv.outOfStock),
+            ],
+          ],
+          [130, 130, 130, 105]
+        );
+      }
+    } else if (reportType === "activity") {
+      drawHeading("Documents Uploaded");
+      if (reportData.documents && reportData.documents.length > 0) {
+        drawTable(
+          ["Title", "Category", "Date"],
+          reportData.documents
+            .slice(0, 100)
+            .map((d) => [
+              d.title || "Untitled",
+              d.category || "N/A",
+              new Date(d.createdAt).toLocaleDateString(),
+            ]),
+          [270, 120, 105]
+        );
+      } else {
+        doc.fillColor("#9ca3af").fontSize(9).text("No documents in this period.", 50, y);
+        y += 20;
+      }
+
+      drawHeading("New Patients Registered", "#059669");
+      if (reportData.patients && reportData.patients.length > 0) {
+        drawTable(
+          ["Name", "Email", "Registered"],
+          reportData.patients.map((p) => [
+            p.name,
+            p.email,
+            new Date(p.createdAt).toLocaleDateString(),
+          ]),
+          [180, 210, 105]
+        );
+      } else {
+        doc.fillColor("#9ca3af").fontSize(9).text("No new patients in this period.", 50, y);
+        y += 20;
+      }
+    } else if (reportData.rows) {
+      drawHeading(`${reportTitle} — ${reportData.rows.length} record(s)`);
+      if (reportData.rows.length === 0) {
+        doc
+          .fillColor("#9ca3af")
+          .fontSize(9)
+          .text("No records found for the selected criteria.", 50, y);
+        y += 20;
+      } else {
+        const numCols = reportData.headers.length;
+        const colWidths = reportData.headers.map(() => Math.floor(495 / numCols));
+        drawTable(reportData.headers, reportData.rows, colWidths);
+      }
+    }
+
+    // Page footer – must be wrapped in save/restore so the cursor is
+    // reset after drawing below the bottom margin, preventing PDFKit
+    // from auto-adding a blank trailing page.
+    const bottom = doc.page.height - 30;
+    doc.save()
+      .moveTo(50, bottom - 8)
+      .lineTo(doc.page.width - 50, bottom - 8)
+      .strokeColor("#e2e8f0")
+      .lineWidth(0.5)
+      .stroke()
+      .fillColor("#94a3b8")
+      .fontSize(7)
+      .text("Health Track — Admin Report | Confidential", 50, bottom - 4, {
+        width: 350,
+        align: "left",
+        lineBreak: false,
+      })
+      .restore();
+
+    doc.end();
+  } catch (err) {
+    console.error("Generate admin report error:", err);
+    if (!res.headersSent) {
+      res.status(500).json({ success: false, message: err.message });
+    }
   }
 });
 

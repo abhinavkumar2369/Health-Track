@@ -201,6 +201,14 @@ export const adminAPI = {
         const token = ensureToken();
         return apiRequest(`/admin/emergency/user/${encodeURIComponent(patientId)}?token=${token}`);
     },
+    // Fetch report data as JSON (used for client-side PDF generation)
+    getReportData: async ({ reportType, dateFrom, dateTo }) => {
+        const token = ensureToken();
+        return apiRequest('/admin/report-data', {
+            method: 'POST',
+            body: JSON.stringify({ token, reportType, dateFrom, dateTo }),
+        });
+    },
 };
 
 // Doctor API
